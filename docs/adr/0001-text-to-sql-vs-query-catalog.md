@@ -39,14 +39,54 @@ demands it.
 
 **Build the catalog if any threshold fires:**
 
-1. **Silent-wrong rate > 5%** — executes cleanly, returns plausible wrong numbers.
-   Tightest threshold and overrides the others, because it is undetectable live.
-   Measure by comparing result sets, not by whether the query ran.
-2. **Execution accuracy < 85%** — catalog maintenance becomes cheaper than
-   generation debugging.
+1. **Any silent-wrong result — investigated individually, regardless of rate.**
+   Executes cleanly, returns plausible wrong numbers. Overrides the others,
+   because it is undetectable live. Measure by comparing result sets, not by
+   whether the query ran. **One silent-wrong is a signal to diagnose. Two or
+   more distinct questions producing silent-wrong results fires the catalog
+   decision.**
+2. **Execution accuracy below 85%, judged against a confidence interval.**
+   Report as `83.3% (25/30, 95% CI 66–93%)`. If the interval **excludes** 85%,
+   the measurement decides. If it **straddles** 85%, the result is
+   inconclusive — and the response is more questions *targeted at the observed
+   failure modes*, not more questions in general.
 3. **Cross-run variance > 10%** — non-determinism is fatal for a repeated demo.
 4. **Median attempts-to-correct > 1.3** — a retry loop is a quota problem stacked
    on an accuracy problem.
+
+### Why 1 and 2 are stated that way
+
+Both were originally rates. At this sample size a rate is a worse instrument
+than it looks, and stating them as rates would have produced decisions the data
+cannot support.
+
+**Threshold 1 was already a count wearing a percentage.** At n≈40, one
+silent-wrong is 2.5% and two is 5%. Nothing lands *at* 5%, so "greater than 5%"
+resolves to "two or more" and always did. Saying so directly is both stricter
+and more honest, and it forces every silent-wrong to be diagnosed individually
+instead of averaged into a rate where one failure hides among forty passes.
+A single confidently-wrong answer to an agent that will act on it is not a
+rounding error.
+
+**Threshold 2 needs an interval because the point estimate is not the finding.**
+Observed 25/30 is 83.3%, which reads as "below 85%, build the catalog" — but the
+Wilson 95% interval is 66–93%, which straddles 85% and supports no decision at
+all. Growing the set does not rescue this: 42/50 is 84.0% with an interval of
+71–92%, still straddling. Bounds tight enough to resolve a five-point difference
+need several hundred questions, which is a benchmark, not this project.
+
+So the honest posture is: **measure, publish n and the interval every time, and
+act only when the interval clears the line.** When it does not, the useful next
+step is targeted questions probing whatever actually failed — which narrows the
+question, rather than more questions in general, which mostly does not.
+
+`api/scripts/wilson.py` computes the interval, so the published figure is
+derived rather than asserted, and a test pins the 25/30 case.
+
+**This applies to the Phase 2 extraction numbers too.** Header-field accuracy,
+line-item F1, hallucination and miss rates all get n and an interval, every
+time they are reported. A hallucination rate of "2%" over 50 documents is one
+document, and should be written so a reader can see that.
 
 ### The measurement has to survive its own convenience layer
 

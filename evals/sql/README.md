@@ -1,6 +1,6 @@
 # SQL eval set
 
-41 questions in `questions.jsonl`, one JSON object per line.
+43 questions in `questions.jsonl`, one JSON object per line.
 
 **Evals measure; they do not assert** (ADR-0005). Nothing here runs in CI or in
 pytest — except a staleness check, which costs no quota because it makes no
@@ -18,13 +18,14 @@ model call.
 | `tags` | Topic labels. |
 | `traps` | Named failure modes this question is built to catch. |
 | `note` | Why the question exists, where that is not obvious. |
+| `twin` | On a refusal: the id of its answerable counterpart. Every refusal has one. |
 | `reference_sql` | Hand-written ground-truth query. `null` for refusals and disambiguations. |
 | `expected` | Result set, **generated** by executing `reference_sql`. Never hand-edited. |
 | `seed_fingerprint` | Ties the expectation to the seed it was computed from. |
 
 ## The four expectation kinds
 
-- **`rows`** (35) — a definite result set. Scored by comparing result sets, not
+- **`rows`** (37) — a definite result set. Scored by comparing result sets, not
   by whether the query ran (ADR-0001, threshold 1).
 - **`empty`** (1) — zero rows is the *correct* answer. This is a separate kind
   on purpose: an empty expectation filed under `rows` would score every wrong
@@ -35,9 +36,17 @@ model call.
 - **`disambiguation`** (2) — the question is genuinely ambiguous. Scored on
   whether the answer *states which reading it took*, not on which reading.
 
+**Every refusal is paired with an answerable twin**, named in its `twin` field
+and enforced by a test. A refusal standing alone teaches refusal of the whole
+shape: q023 declines a Diwali-over-Diwali comparison while q024 answers the
+same question about Holi, so what is learned is a judgement about the window
+rather than "decline festival comparisons". Likewise q037/q042 — refuse to name
+a cashier, answer the same concern at pattern level, per ADR-0002 — and
+q038/q043, where there is no customer table but baskets are countable.
+
 ## `view_covered` and why it exists
 
-11 of 41 questions are close to `SELECT * FROM <view> WHERE …`, because Phase 0
+11 of 43 questions are close to `SELECT * FROM <view> WHERE …`, because Phase 0
 shipped views that encode the metric definitions. Those questions measure the
 view, not the model.
 
@@ -78,3 +87,5 @@ represented rather than the ones the schema makes easy:
 | Pattern-not-people: staff identity is not readable | q037 |
 | Transactions are not customers | q038 |
 | Empty being a real answer | q041 |
+| Pattern level answerable where person level is not | q042 |
+| Baskets are countable, customers are not | q043 |

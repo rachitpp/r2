@@ -111,18 +111,43 @@ def test_stock_policy_is_tested_all_three_ways(questions):
     assert "on_hand = 0" in sql, "no question targets already-out-of-stock"
 
 
-def test_the_impossible_comparison_is_a_refusal_and_has_a_possible_twin(questions):
-    """q023 must refuse; q024 must not. Otherwise it teaches blanket refusal."""
-    impossible = [q for q in questions if "impossible-yoy" in q["traps"]]
-    assert impossible and all(q["expects"] == "refusal" for q in impossible)
-    festival_yoy = [
-        q
-        for q in questions
-        if "festival" in q["tags"]
-        and "temporal" in q["tags"]
-        and q["expects"] == "rows"
-    ]
-    assert festival_yoy, "no answerable festival comparison to contrast the refusal"
+def test_every_refusal_has_an_answerable_twin(questions):
+    """A refusal on its own teaches refusal of the whole shape.
+
+    q023 refuses a Diwali-over-Diwali comparison; q024 answers the same
+    question about Holi, so what is being learned is a judgement about the
+    window, not "decline festival comparisons". The same has to hold for the
+    other two: q037 refuses to name a cashier while q042 answers the same
+    concern at pattern level, and q038 refuses to count customers while q043
+    answers about baskets.
+    """
+    by_id = {q["id"]: q for q in questions}
+    refusals = [q for q in questions if q["expects"] == "refusal"]
+    assert refusals, "the set has no refusal questions"
+
+    for q in refusals:
+        twin_id = q.get("twin")
+        assert twin_id, (
+            f"{q['id']} is an unpaired refusal — it teaches blanket refusal of "
+            "anything in its shape. Give it an answerable twin."
+        )
+        twin = by_id.get(twin_id)
+        assert twin, f"{q['id']} names twin {twin_id}, which does not exist"
+        assert twin["expects"] in ("rows", "empty"), (
+            f"{q['id']}'s twin {twin_id} is not answerable"
+        )
+        assert set(q["traps"]) & set(twin["traps"]), (
+            f"{q['id']} and {twin_id} share no trap, so the pair does not "
+            "isolate the judgement being tested"
+        )
+
+
+def test_the_yoy_family_has_a_refusable_and_an_answerable_case(questions):
+    """Both sides, or the set teaches one blanket rule or the other."""
+    family = [q for q in questions if "impossible-yoy" in q["traps"]]
+    kinds = {q["expects"] for q in family}
+    assert "refusal" in kinds, "no year-on-year question the window cannot support"
+    assert "rows" in kinds, "no year-on-year question the window CAN support"
 
 
 def test_expectations_match_the_committed_seed(questions):

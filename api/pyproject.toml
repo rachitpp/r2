@@ -40,8 +40,14 @@ select = [
 # generator's factor tables; that is deliberate, not a mutable-default bug.
 extend-immutable-calls = []
 
+[tool.uv]
+# No build backend: scripts and modules are imported via pythonpath
+# below rather than installed. Nothing here is published as a package.
+package = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src", "scripts"]
 addopts = "-q --strict-markers"
 markers = [
     "db: requires a seeded Postgres (skipped when TEST_DATABASE_URL is unset)",

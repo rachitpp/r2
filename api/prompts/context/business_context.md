@@ -119,12 +119,14 @@ multiplying.
 answers, not one.** Averaging across the boundary produces a number that was
 never the rate:
 
-- Effective rate in the months before the reform: about 8.4%
-- Effective rate in the months after: about 6.7%
-- Average across July–November: about 7.5% — **true of no period at all**
+- Effective rate July to 21 September 2025: **8.23%**
+- Effective rate 22 September to November 2025: **6.73%**
+- Average across the whole of July–November: **7.50%** — a figure that was the
+  rate on no day at all
 
-It executes cleanly and looks entirely reasonable. September itself is a blend,
-because the reform lands mid-month.
+It executes cleanly and looks entirely reasonable. September itself is a blend
+of both regimes (7.67%), because the reform lands mid-month — so even "the rate
+in September" needs splitting.
 
 So: **if a question about tax, or about a total that includes tax, spans
 22 September 2025, split the period at that date and report both — or say which

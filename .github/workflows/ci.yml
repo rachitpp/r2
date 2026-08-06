@@ -95,6 +95,10 @@ jobs:
         working-directory: api
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          # The guard tests connect AS pos_readonly, so they verify the role's
+          # own backstops — forced read-only transactions, and no grant on the
+          # staff-identity tables — rather than only the wrapper's checks.
+          TEST_READONLY_URL: postgresql://pos_readonly:pos_readonly_dev@localhost:5432/pos
         run: uv run pytest
 
       # Phase 2 targets. They skip while corpus/CHECKSUMS.txt is absent and
