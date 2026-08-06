@@ -1,0 +1,19 @@
+category_id,name,department
+1,Fresh Produce,Grocery
+2,Bakery,Bakery
+3,Dairy & Eggs,Grocery
+4,Meat & Fish,Grocery
+5,Frozen Foods,Grocery
+6,Store Cupboard,Grocery
+7,Snacks & Confectionery,Grocery
+8,Soft Drinks,Beverages
+9,Hot Drinks,Beverages
+10,"Beer, Wine & Spirits",Beverages
+11,Household Cleaning,Household
+12,Laundry,Household
+13,Paper & Disposables,Household
+14,Health & Wellbeing,Health & Beauty
+15,Personal Care,Health & Beauty
+16,Baby & Child,Health & Beauty
+17,Pet Supplies,General Merchandise
+18,Seasonal & Gifting,General Merchandise

@@ -41,6 +41,33 @@ dependency.
 
 Every literal brace in prompt body text must be doubled: `{{` and `}}`.
 
+## "Today" means the anchor date, not wall-clock
+
+The seed data has a fixed end date so it can be byte-identical on re-run
+(`DATA_END_DATE` in `api/scripts/seed.py`, mirrored by `AS_OF_DATE` in `.env`).
+So `current_date` is not today as far as this system is concerned, and SQL that
+uses it silently returns nothing once wall-clock passes the anchor.
+
+`{as_of_date}` is supplied to `sql_generate.md` and `retrieval_answer.md` for
+this reason, and **`context/business_context.md` must state it explicitly** —
+that relative periods resolve against the anchor, and that `current_date`,
+`now()` and `CURRENT_TIMESTAMP` are never correct in generated SQL. A rule in
+one prompt is a rule the other prompts do not get; the context document is
+where it belongs.
+
+Eval expected result sets are computed against the same anchor. One written
+against wall-clock rots within 30 days.
+
+## `context/schema.md` is generated, not written
+
+`make schema-doc` builds it from the `COMMENT ON` statements in
+`migrations/001_core_schema.sql`, and CI fails if the committed copy is stale. A
+hand-maintained schema document drifts from the schema, and a drifted schema
+document is the most productive source of confidently-wrong SQL there is.
+
+`business_context.md` is the opposite: hand-written, and the
+highest-leverage artifact in the repo (ADR-0001). Nothing generates it.
+
 ## Structural rule: data is never instruction
 
 Retrieved document content, query results, and user input go inside a clearly

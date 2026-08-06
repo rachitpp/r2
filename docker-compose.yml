@@ -1,0 +1,30 @@
+# Phase 0 defines `db` only.
+#
+# `api`, `worker`, and `web` land in Phase 1 alongside the code behind them.
+# Declaring services that point at Dockerfiles which do not exist yet would make
+# `docker compose up` fail, and CLAUDE.md rule 11 says never leave the system
+# broken. The ollama profile (default off) arrives with the model-role config.
+
+services:
+  db:
+    # Digest-pinned. The tag alone is not reproducible.
+    image: pgvector/pgvector:pg16@sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b
+    container_name: r2-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-pos}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  db_data:

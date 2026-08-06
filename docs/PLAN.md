@@ -7,7 +7,7 @@ Operational only. Reasoning lives in `docs/adr/`.
 Each phase leaves a working system. Later phases add to it; none is a
 prerequisite for something demoable.
 
-### Phase 0 — Data foundation (~20h)
+### Phase 0 — Data foundation (~32h)
 
 Postgres schema: products, inventory, sales, suppliers, users/roles. Include a
 `store_id` column now (multi-store UI is deferred, the column is not). Seeded
@@ -30,6 +30,20 @@ the OpenAPI schema, SSE consumer.
 **Done when:** the harness prints execution accuracy, silent-wrong rate, and
 cross-run variance; and a question asked in the web app returns an answer
 displayed beside the query that produced it. **Demo beat 1 works.**
+
+**Two things carried in from Phase 0, both of which fall between the phases if
+they are not written here:**
+
+1. **Eval expected result sets are computed against `AS_OF_DATE`, never against
+   wall-clock.** The seed has a fixed end date so it can be byte-identical on
+   re-run, so "last month" means the month before the anchor. An eval written
+   against `current_date` rots within 30 days of being written and the README
+   number goes stale silently.
+2. **The row `LIMIT` is the query wrapper's job.** Phase 0 ships the read-only
+   role, forced read-only transactions and a 5s statement timeout. Postgres has
+   no max-rows setting, so Phase 1 owes: reject anything that is not a single
+   `SELECT`, wrap it as `SELECT * FROM (<sql>) _q LIMIT :n`, and fetch through a
+   capped server-side cursor.
 
 ### Phase 2 — Corpus ingestion and extraction measurement (~30h)
 
@@ -102,14 +116,21 @@ the divisor to your actual sitting.
 
 | Phase | Hours | Sessions | Cumulative |
 |---|---|---|---|
-| 0 Data foundation | 20 | 7 | 7 |
-| 1 Structured Q&A | 32 | 11 | **18 — first demo** |
-| 2 Corpus ingestion | 30 | 10 | 28 |
-| 3 Document Q&A | 20 | 7 | **35 — second demo** |
-| 4 Procurement agent | 38 | 13 | **48 — third demo** |
-| 5 Polish | 20 | 7 | 55 — complete |
+| 0 Data foundation | 32 | 11 | 11 |
+| 1 Structured Q&A | 32 | 11 | **22 — first demo** |
+| 2 Corpus ingestion | 30 | 10 | 32 |
+| 3 Document Q&A | 20 | 7 | **39 — second demo** |
+| 4 Procurement agent | 38 | 13 | **52 — third demo** |
+| 5 Polish | 20 | 7 | 59 — complete |
 
-~160h total; first demo at ~52h.
+~172h total; first demo at ~64h.
+
+Phase 0 was budgeted at 20h and came in at ~32h. The overrun is scope that was
+accepted, not slippage: temporal supplier terms and prices with exclusion
+constraints, a stock-simulating generator rather than independent draws, a
+template-database build, generated schema documentation, and pinned-image
+determinism. ADR-0007's cost note still quotes the pre-Phase-0 figures, since it
+records what was known when that decision was made.
 
 **The only scheduling rule that matters:** each phase leaves a working system, so
 stopping after any of them leaves something demoable rather than something broken.
@@ -144,8 +165,9 @@ with the executed query shown beside it.
 answer citing the actual clause and its effective date. Then: *"and what were
 they before the renegotiation?"* Correct historical answer.
 
-**Beat 3 (1:50–3:00)** — "Draft a restock order for anything under 5 units."
-Agent produces a draft PO with written reasoning into the approval queue. Show
+**Beat 3 (1:50–3:00)** — "Draft a restock order for anything below its reorder
+point." Agent produces a draft PO with written reasoning into the approval
+queue. Show
 the card: reasoning, spending cap, expiry, stale-price warning. Approve one.
 Audit entry appears.
 

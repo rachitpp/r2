@@ -1,0 +1,25 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+.coverage
+
+# Node (Phase 1)
+node_modules/
+.next/
+next-env.d.ts
+
+# Seed artifacts
+# `seed/small/` IS committed — it is the dev-loop dataset and a reviewable
+# artifact. `seed/full/` is ~45MB and is regenerated on demand; its byte
+# identity is still asserted via seed/CHECKSUMS.txt. See ADR-0004.
+seed/full/
+
+# Local scratch
+*.tmp
+.DS_Store

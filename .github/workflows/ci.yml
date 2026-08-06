@@ -1,0 +1,95 @@
+name: CI
+
+# Runs on every push with NO API key present (CLAUDE.md rule 1). Nothing here
+# calls a model. Evals are local `make` targets and never run here — they
+# measure, they do not assert (ADR-0005).
+#
+# The web job arrives in Phase 1 alongside web/.
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: python
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: pgvector/pgvector:pg16@sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+
+    env:
+      PGPASSWORD: postgres
+      # Bare client instead of `docker compose exec` — the database here is a
+      # service container, not a compose service. This is the only difference
+      # between CI and a local run.
+      PSQL: psql -v ON_ERROR_STOP=1 -h localhost -U postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: api/uv.lock
+
+      - name: Install dependencies
+        working-directory: api
+        run: uv sync --all-groups --frozen
+
+      - name: ruff check
+        working-directory: api
+        run: uv run ruff check .
+
+      - name: ruff format --check
+        working-directory: api
+        run: uv run ruff format --check .
+
+      # The seed layer is the one place in this project where an end-to-end
+      # reproducibility assertion is free: it is stdlib-only Python and needs
+      # no model call and no key. Generation runs in the same digest-pinned
+      # image `make seed-generate` uses locally, which is what makes the
+      # byte-identity claim hold across machines.
+      - name: Seed is byte-identical (small)
+        run: make verify-seed SEED_SIZE=small
+
+      - name: Seed is byte-identical (full)
+        run: make verify-seed SEED_SIZE=full
+
+      - name: Build the database
+        run: make db SEED_SIZE=full
+
+      - name: Committed schema.md matches the migration
+        run: |
+          make schema-doc
+          git diff --exit-code -- api/prompts/context/schema.md \
+            || { echo "::error::schema.md is stale. Run 'make schema-doc' and commit."; exit 1; }
+
+      - name: pytest
+        working-directory: api
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: uv run pytest
+
+      # Phase 2 targets. They skip while corpus/CHECKSUMS.txt is absent and
+      # fail loudly once it is not, so CI's shape never changes when the
+      # corpus lands (ADR-0006).
+      - name: verify-corpus
+        run: make verify-corpus
+
+      - name: verify-parse
+        run: make verify-parse

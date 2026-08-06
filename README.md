@@ -164,4 +164,11 @@ scoped accordingly rather than overstated.
 ## Status
 
 <!-- TODO: keep current -->
-Phase 0 of 5. See [`docs/PLAN.md`](docs/PLAN.md).
+**Phase 0 complete — data foundation.** Postgres schema with temporal supplier
+terms and prices, a stock-simulating seed generator, and a read-only role.
+`make db` builds a seeded database; `make reset` rebuilds it in about a second
+from a template. Seed output is byte-identical on re-run, asserted in CI at both
+sizes with no API key.
+
+Phase 1 (structured Q&A, eval harness, first UI) is next. See
+[`docs/PLAN.md`](docs/PLAN.md).

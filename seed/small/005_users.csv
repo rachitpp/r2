@@ -1,0 +1,9 @@
+user_id,username,display_name,role,store_id,is_active
+1,owner,Owner,owner,,true
+2,manager01,Manager 01,manager,1,true
+3,clerk0101,Clerk 01-01,clerk,1,true
+4,clerk0102,Clerk 01-02,clerk,1,true
+5,clerk0103,Clerk 01-03,clerk,1,true
+6,clerk0104,Clerk 01-04,clerk,1,true
+7,clerk0105,Clerk 01-05,clerk,1,true
+8,clerk0106,Clerk 01-06,clerk,1,true

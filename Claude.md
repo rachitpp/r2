@@ -32,8 +32,13 @@ Not preferences. Work that breaks one of these gets reverted.
    (bge-small-en-v1.5, CPU). Flag anything that spends quota in a loop.
 3. **Agent loop caps at ~6 tool calls.** Bounded sequences, not open-ended
    exploration. Rate limits are the binding constraint on design.
-4. **SQL generation runs as a read-only role with an enforced `LIMIT`.** No
-   exceptions, no "just for this one query".
+4. **SQL generation runs as the read-only role, and the row `LIMIT` is enforced
+   by the query wrapper — not by the database.** Postgres has no max-rows
+   setting, so the role cannot provide it. What the role gives is forced
+   read-only transactions and a statement timeout; what the API owes is
+   rejecting anything that is not a single `SELECT`, wrapping it as
+   `SELECT * FROM (<sql>) _q LIMIT :n`, and fetching through a capped
+   server-side cursor. No exceptions, no "just for this one query".
 5. **Role-scope before generation, never after.** Restrict what a user may see
    when building the query or the retrieval filter — not by dropping rows from
    results afterwards.
