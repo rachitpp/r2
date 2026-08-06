@@ -570,7 +570,7 @@ SELECT
     COALESCE(sum(sl.quantity)  FILTER (WHERE sl.quantity > 0), 0)  AS units_sold,
     COALESCE(-sum(sl.quantity) FILTER (WHERE sl.quantity < 0), 0)  AS return_units,
     sum(sl.quantity)                                               AS net_units,
-    sum(sl.line_total)                                             AS gross_revenue,
+    sum(sl.line_total)                                             AS net_revenue,
     sum(sl.quantity * sl.unit_cost)                                AS cogs
 FROM sale_lines sl
 GROUP BY sl.store_id, sl.product_id, sl.business_date;
@@ -580,6 +580,22 @@ COMMENT ON MATERIALIZED VIEW daily_product_sales IS
     'sale_lines. Refreshed by `make seed`. Gross, returns and net are named '
     'separately so no query has to remember that sale_lines.quantity is '
     'signed. Days with no sales have no row.';
+
+COMMENT ON COLUMN daily_product_sales.units_sold IS
+    'Units sold outward on this day. Positive quantities only — returns are '
+    'excluded and counted separately. This is GROSS units.';
+COMMENT ON COLUMN daily_product_sales.return_units IS
+    'Units handed back on this day, as a POSITIVE number.';
+COMMENT ON COLUMN daily_product_sales.net_units IS
+    'units_sold minus return_units. This is the honest "how many did we move" '
+    'figure and the right default for a sales-volume question.';
+COMMENT ON COLUMN daily_product_sales.net_revenue IS
+    'Takings for the day, NET of returns and NET of GST. Refund lines carry a '
+    'negative line_total and are already subtracted. Add sales.tax_total if a '
+    'question is about cash collected rather than revenue.';
+COMMENT ON COLUMN daily_product_sales.cogs IS
+    'Cost of goods sold, net of returns, using the cost frozen on each line at '
+    'the time of sale. Margin for a period is net_revenue - cogs.';
 
 CREATE UNIQUE INDEX daily_product_sales_pk_idx
     ON daily_product_sales (store_id, product_id, business_date);
@@ -602,7 +618,7 @@ sold AS (
     SELECT d.store_id, d.product_id,
            sum(d.net_units)     AS net_units_30d,
            sum(d.units_sold)    AS units_sold_30d,
-           sum(d.gross_revenue) AS revenue_30d
+           sum(d.net_revenue) AS revenue_30d
     FROM daily_product_sales d, bounds b
     WHERE d.business_date BETWEEN b.from_date AND b.as_of_date
     GROUP BY d.store_id, d.product_id

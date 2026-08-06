@@ -270,11 +270,11 @@ Per store, per product, per trading day sales rollup, derived from sale_lines. R
 | `store_id` | smallint |  |  |
 | `product_id` | integer |  |  |
 | `business_date` | date |  |  |
-| `units_sold` | bigint |  |  |
-| `return_units` | bigint |  |  |
-| `net_units` | bigint |  |  |
-| `gross_revenue` | numeric |  |  |
-| `cogs` | numeric |  |  |
+| `units_sold` | bigint |  | Units sold outward on this day. Positive quantities only — returns are excluded and counted separately. This is GROSS units. |
+| `return_units` | bigint |  | Units handed back on this day, as a POSITIVE number. |
+| `net_units` | bigint |  | units_sold minus return_units. This is the honest "how many did we move" figure and the right default for a sales-volume question. |
+| `net_revenue` | numeric |  | Takings for the day, NET of returns and NET of GST. Refund lines carry a negative line_total and are already subtracted. Add sales.tax_total if a question is about cash collected rather than revenue. |
+| `cogs` | numeric |  | Cost of goods sold, net of returns, using the cost frozen on each line at the time of sale. Margin for a period is net_revenue - cogs. |
 
 ## `v_product_velocity_30d` — view
 
