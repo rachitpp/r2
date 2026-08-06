@@ -137,52 +137,56 @@ def run(args: argparse.Namespace) -> int:
     judgements: list[tuple[dict, object]] = []
     per_question_outcomes: dict[str, list[str]] = {}
 
-    with psycopg.connect(url) as conn:
-        conn.execute("SET default_transaction_read_only = on")
-        for run_index in range(args.runs):
-            for q in questions:
-                prompt = bundle.render(
-                    question=q["question"],
-                    as_of_date=os.environ.get("AS_OF_DATE", "2026-06-30"),
-                    user_role=q.get("user_role", "owner"),
-                    store_scope=q.get("store_scope", "all stores"),
-                )
+    # One short-lived connection per query, opened only around the execution.
+    #
+    # A single long-lived connection does not work here and should not: the
+    # read-only role sets idle_in_transaction_session_timeout = 10s, and the
+    # model call between two queries takes longer than that once pacing is
+    # added. Postgres terminates the connection, correctly. Holding a database
+    # transaction open across a network call to a third party is the actual
+    # mistake; the timeout just makes it visible.
+    for run_index in range(args.runs):
+        for q in questions:
+            prompt = bundle.render(
+                question=q["question"],
+                as_of_date=os.environ.get("AS_OF_DATE", "2026-06-30"),
+                user_role=q.get("user_role", "owner"),
+                store_scope=q.get("store_scope", "all stores"),
+            )
 
-                cached = cache.get(fingerprint, q["id"], run_index)
-                if cached is None:
-                    cached = provider.generate(prompt)
-                    cache.put(fingerprint, q["id"], run_index, cached)
+            cached = cache.get(fingerprint, q["id"], run_index)
+            if cached is None:
+                cached = provider.generate(prompt)
+                cache.put(fingerprint, q["id"], run_index, cached)
 
-                sql = strip_fences(cached)
-                execution, error = None, None
-                if not sql.lstrip().startswith("--"):
-                    try:
+            sql = strip_fences(cached)
+            execution, error = None, None
+            if not sql.lstrip().startswith("--"):
+                try:
+                    with psycopg.connect(url) as conn:
                         execution = execute(
                             conn,
                             sql,
                             max_rows=int(os.environ.get("SQL_MAX_ROWS", "100")),
                             visible_store_ids=scope_ids(q),
                         )
-                    except UnsafeQuery as exc:
-                        error = f"refused by guard: {exc}"
-                    except Exception as exc:
-                        error = f"{type(exc).__name__}: {exc}"
-                        conn.rollback()
+                except UnsafeQuery as exc:
+                    error = f"refused by guard: {exc}"
+                except Exception as exc:
+                    error = f"{type(exc).__name__}: {exc}"
 
-                verdict = judge(q, sql, execution, error)
-                judgements.append((q, verdict))
-                per_question_outcomes.setdefault(q["id"], []).append(
-                    str(verdict.outcome)
-                )
+            verdict = judge(q, sql, execution, error)
+            judgements.append((q, verdict))
+            per_question_outcomes.setdefault(q["id"], []).append(str(verdict.outcome))
 
-                mark = {
-                    Outcome.CORRECT: "ok  ",
-                    Outcome.NEEDS_REVIEW: "?   ",
-                }.get(verdict.outcome, "FAIL")
-                print(
-                    f"  {mark} {q['id']} run{run_index}  {verdict.outcome}"
-                    f"{'  — ' + verdict.detail if verdict.detail else ''}"
-                )
+            mark = {
+                Outcome.CORRECT: "ok  ",
+                Outcome.NEEDS_REVIEW: "?   ",
+            }.get(verdict.outcome, "FAIL")
+            print(
+                f"  {mark} {q['id']} run{run_index}  {verdict.outcome}"
+                f"{'  — ' + verdict.detail if verdict.detail else ''}"
+            )
 
     stats = summarise(judgements)
 

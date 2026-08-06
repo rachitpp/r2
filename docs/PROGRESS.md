@@ -65,6 +65,36 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
+## BLOCKED: the eval set is under-determined — read before running it again
+
+Stage 1 (5 questions x 1 run, `gemini-3.6-flash`) returned 0/4. **That is not a
+measurement of the model. It is the instrument failing**, and no result file was
+kept, because a 0% sitting in `evals/results/` would be a lie.
+
+Two defects, both mine:
+
+1. **17 of 38 scorable questions have their row count fixed by an arbitrary
+   `LIMIT` the question never asks for.** "What should we reorder at Nashik?"
+   has no natural answer length; the reference says `LIMIT 20` and the model
+   said `LIMIT 100`. Verified on q004: **the model's first 20 rows match the
+   reference's 20 exactly.** It was right and scored wrong. Same shape on q005,
+   q002.
+2. **q001's reference filters `store_id = 1` although the question names no
+   store** — which contradicts `sql_generate.md`'s own rule ("when it does not
+   name a store, aggregate across stores"). The model followed the rule; the
+   reference broke it. 139 rows vs the correct 440.
+
+Ordering has the same problem: 19 reference queries impose an `ORDER BY` the
+question does not imply.
+
+**Do not re-run until this is fixed, and do not read anything into the 0%.**
+Proposed fix is a `result_shape` field per question (`top_n` / `all_matching` /
+`scalar`) so comparison matches what the question actually determines — awaiting
+a ruling.
+
+Cost so far: ~7 model calls. Staging caught this before the 135-call run, which
+is exactly what staging is for.
+
 ## Model providers and live limits
 
 Decided 2026-08-06. Reasoning in **ADR-0009** — the split is on **data terms**,
@@ -107,7 +137,7 @@ should be guessed from blogs:
 
 | Model | RPM | TPM | RPD |
 |---|---|---|---|
-| `gemini-3.6-flash` (PLAN) | __ | __ | __ |
+| `gemini-3.6-flash` (PLAN) | __ | __ | __ |   <- CONFIRMED enabled and answering
 | `gemini-3.5-flash-lite` (CLASSIFY) | __ | __ | __ |
 
 ⚠️ **Also confirm `gemini-3.6-flash` is free-tier eligible in YOUR project.**
