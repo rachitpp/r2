@@ -456,10 +456,12 @@ COMMENT ON COLUMN sales.discount_total IS
     'Total promotional discount given on this sale, as a positive number. It '
     'has already been taken off subtotal — do not subtract it again.';
 COMMENT ON COLUMN sales.tax_total IS
-    'GST charged, summed per line at the rate for that product''s category. '
-    'Rates vary by category: staples and fresh produce are 0% or 5%, packaged '
-    'foods 12%, most household and personal care 18%, aerated drinks 28%. So '
-    'the effective rate on a basket is a blend and cannot be assumed.';
+    'GST charged, summed per line at the rate that applied to that product''s '
+    'category ON THAT DAY. Rates vary by category AND over time — they were '
+    'restructured on 22 September 2025, inside this sales history. See the '
+    'gst_rates table. Two consequences: the effective rate on a basket is a '
+    'blend and cannot be assumed, and the rate on an old sale is not the rate '
+    'today.';
 COMMENT ON COLUMN sales.total IS
     'What the customer paid: subtotal + tax_total. Revenue questions normally '
     'mean subtotal (net of tax); cash-collected questions mean total.';

@@ -18,6 +18,22 @@ Product categories, one level deep, grouped into departments. Demand seasonality
 | `name` | text NOT NULL |  |  |
 | `department` | text NOT NULL |  |  |
 
+## `gst_rates`
+
+The GST rate for each category, over time. One row per rate period. The rate India charges on a product changed on 22 September 2025 (56th GST Council): the 12% and 28% slabs were withdrawn, most 12% items moved to 5%, most 28% items to 18%, and aerated beverages to a new 40% slab. That date is inside the sales history, so ANY question about tax over a period crossing it has two answers, not one. Averaging across the boundary produces a number that was never the rate.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `gst_rate_id` | integer NOT NULL | PK |  |
+| `category_id` | smallint NOT NULL | FK → categories |  |
+| `rate_pct` | numeric(5,2) NOT NULL |  | Percentage points, not a fraction: 18 means 18%%, not 1800%%. Divide by 100 before multiplying a value by it. |
+| `effective_from` | date NOT NULL |  |  |
+| `effective_to` | date |  | NULL means in force. Every category has exactly one open-ended row. |
+| `valid_period` | daterange |  | Generated half-open range [effective_from, effective_to). Use valid_period @> <the sale's business_date> to get the rate that actually applied to a sale. Comparing the two date columns by hand risks an off-by-one on 22 September 2025 itself. |
+| `source` | text NOT NULL |  |  |
+| `notes` | text |  | What changed and why. Populated for the reform rows. |
+| `supersedes_id` | integer | FK → gst_rates |  |
+
 ## `inventory`
 
 Current stock per store per product, with that store's restock policy. on_hand is a materialisation of the movement history: it equals the sum of inventory_movements.quantity minus the sum of sale_lines.quantity for the same store and product. That invariant is asserted by a test.
@@ -159,7 +175,7 @@ Transaction headers — one row per basket. A refund is a separate row with sale
 | `tender_type` | text NOT NULL |  |  |
 | `subtotal` | numeric(12,2) NOT NULL |  | Sum of the line totals, NET of tax. Equals sum(sale_lines.line_total) for this sale. |
 | `discount_total` | numeric(12,2) NOT NULL |  | Total promotional discount given on this sale, as a positive number. It has already been taken off subtotal — do not subtract it again. |
-| `tax_total` | numeric(12,2) NOT NULL |  | GST charged, summed per line at the rate for that product's category. Rates vary by category: staples and fresh produce are 0% or 5%, packaged foods 12%, most household and personal care 18%, aerated drinks 28%. So the effective rate on a basket is a blend and cannot be assumed. |
+| `tax_total` | numeric(12,2) NOT NULL |  | GST charged, summed per line at the rate that applied to that product's category ON THAT DAY. Rates vary by category AND over time — they were restructured on 22 September 2025, inside this sales history. See the gst_rates table. Two consequences: the effective rate on a basket is a blend and cannot be assumed, and the rate on an old sale is not the rate today. |
 | `total` | numeric(12,2) NOT NULL |  | What the customer paid: subtotal + tax_total. Revenue questions normally mean subtotal (net of tax); cash-collected questions mean total. |
 
 ## `stockout_days`
@@ -275,6 +291,18 @@ Per store, per product, per trading day sales rollup, derived from sale_lines. R
 | `net_units` | bigint |  | units_sold minus return_units. This is the honest "how many did we move" figure and the right default for a sales-volume question. |
 | `net_revenue` | numeric |  | Takings for the day, NET of returns and NET of GST. Refund lines carry a negative line_total and are already subtracted. Add sales.tax_total if a question is about cash collected rather than revenue. |
 | `cogs` | numeric |  | Cost of goods sold, net of returns, using the cost frozen on each line at the time of sale. Margin for a period is net_revenue - cogs. |
+
+## `v_gst_rate_current` — view
+
+The GST rate in force now, per category. Correct for a question about today. WRONG for any question about a past period — historical tax must come from gst_rates with valid_period @> the business_date of the sale, because rates changed on 22 September 2025.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `gst_rate_id` | integer |  |  |
+| `category_id` | smallint |  |  |
+| `rate_pct` | numeric(5,2) |  |  |
+| `effective_from` | date |  |  |
+| `notes` | text |  |  |
 
 ## `v_product_velocity_30d` — view
 

@@ -70,19 +70,66 @@ numbers that are quietly a little wrong — the worst kind.
 `total` when the question is about cash collected, banking, or what a customer
 paid.
 
-GST is charged **per category**, not at one rate:
+## GST changed on 22 September 2025, inside this data
 
-| Slab | Categories |
+This is the single most important thing to know about tax here.
+
+GST is charged **per category**. It is also charged **per date**: the 56th GST
+Council meeting restructured the slabs with effect from **22 September 2025**,
+which falls in the middle of the sales history. The 12% and 28% slabs were
+withdrawn. Most 12% items moved to 5%, most 28% items moved to 18%, and luxury
+and sin goods — aerated beverages among them — moved to a new 40% slab.
+
+| | Slabs in use |
 |---|---|
-| 0% | Fruits & Vegetables |
-| 5% | Atta/Rice/Dal, Dairy & Paneer, Edible Oils & Ghee, Masalas, Tea & Coffee, Sweets |
-| 12% | Snacks & Namkeen, Ready to Cook, Health & Wellness, Pooja & Festive |
-| 18% | Biscuits & Bakery, Home Care, Detergents, Paper, Personal Care, Baby Care |
-| 28% | Soft Drinks & Juices |
+| Before 22 Sep 2025 | 0 / 5 / 12 / 18 / 28 |
+| From 22 Sep 2025 | 0 / 5 / 18 / 40 |
 
-So a basket's effective rate is a blend of whatever was in it. **Never compute
-tax by multiplying a total by a single rate** — sum `tax_total`, or join to the
-category and use the real slab.
+The categories that actually moved:
+
+| Category | Before | From 22 Sep 2025 |
+|---|---|---|
+| Soft Drinks & Juices | 28% | **40%** |
+| Dairy & Paneer, Snacks & Namkeen, Ready to Cook | 12% | 5% |
+| Personal Care, Health & Wellness, Baby Care, Pooja & Festive | 12% | 5% |
+
+Everything else kept its rate. The full history is in the **`gst_rates`**
+table, one row per category per rate period, with the same shape as supplier
+terms: `effective_from` inclusive, `effective_to` exclusive, NULL meaning in
+force.
+
+**For the rate that applied to a past sale, look it up by that sale's date:**
+
+    JOIN gst_rates g
+      ON g.category_id = p.category_id
+     AND g.valid_period @> s.business_date
+
+**For the rate today**, use `v_gst_rate_current`.
+
+`rate_pct` is percentage points — 18 means 18%. Divide by 100 before
+multiplying.
+
+### The trap this creates
+
+**Any question about tax over a period spanning 22 September 2025 has two
+answers, not one.** Averaging across the boundary produces a number that was
+never the rate:
+
+- Effective rate in the months before the reform: about 8.4%
+- Effective rate in the months after: about 6.7%
+- Average across July–November: about 7.5% — **true of no period at all**
+
+It executes cleanly and looks entirely reasonable. September itself is a blend,
+because the reform lands mid-month.
+
+So: **if a question about tax, or about a total that includes tax, spans
+22 September 2025, split the period at that date and report both — or say which
+side you are reporting.** Do not return a single blended rate for a span that
+crosses it. The same applies to "has our tax bill gone up" questions: the rate
+change is usually the entire explanation and should be named.
+
+Never compute tax by multiplying a total by one rate. Sum `tax_total`, which
+was calculated per line at the rate in force on the day of that sale.
 
 **Margin** is `net_revenue - cogs`, both available per product per day in
 `daily_product_sales`. Cost is frozen on the sale line at the moment of sale
@@ -252,8 +299,26 @@ Consequences for queries:
 - Other seasonality: soft drinks peak hard in the May–June summer, tea and
   coffee peak in winter, fresh produce peaks with the mango season.
 
-The data covers roughly 18 months and contains **one Diwali**. Year-on-year
-comparisons across it are not available for most of the calendar.
+### What the window can and cannot support
+
+The data runs from January 2025 to the end of June 2026 — about 18 months. That
+has a hard consequence for festival comparisons:
+
+- **There is exactly one Diwali in the data** (Dhanteras 18 October 2025).
+  Dhanteras 2026 falls on 6 November, past the end of the data. **A
+  Diwali-over-Diwali comparison is therefore impossible**, and so is any
+  "compared to last Diwali", "year-on-year festive season", or "how did this
+  Diwali do against last" question.
+- **Holi and Gudi Padwa appear twice** — March 2025 and March 2026 — so
+  spring-festival year-on-year comparisons work normally.
+
+If a question asks for a comparison the window cannot support, **say so rather
+than producing one**. Constructing a Diwali-over-Diwali figure from a single
+Diwali means either silently comparing it to a non-festive period or inventing
+a baseline, and both produce a confident number with nothing behind it. Where
+the SQL interface is concerned, that is the
+`-- INSUFFICIENT SCHEMA: <what is missing>` path, and using it is the correct
+answer, not a failure to answer.
 
 ---
 
@@ -319,12 +384,20 @@ confused.
 A short list of what to double-check, in rough order of how often it bites:
 
 1. `current_date` anywhere — returns nothing, looks like no sales.
-2. `SUM(quantity)` when the question wanted gross units.
-3. Aggregating on `sold_at` instead of `business_date`.
-4. Dividing sales by 30 instead of by available days for velocity.
-5. Listing `on_hand = 0` products as the answer to "what's running low".
-6. Applying one GST rate to a mixed basket.
-7. Comparing periods across the festive season without saying so.
-8. Joining to current supplier prices for a historical cost.
-9. An `ORDER BY` with no tiebreak.
-10. Treating "no terms in force on that date" as "supplier not found".
+2. **A single tax rate over a period spanning 22 September 2025.** The rates
+   changed; a blended figure was true of no period.
+3. `SUM(quantity)` when the question wanted gross units.
+4. Aggregating on `sold_at` instead of `business_date`.
+5. Dividing sales by 30 instead of by available days for velocity.
+6. Listing `on_hand = 0` products as the answer to "what's running low".
+7. Applying one GST rate to a mixed basket.
+8. Comparing periods across the festive season without saying so.
+9. Joining to current supplier prices — or `v_gst_rate_current` — for a
+   historical figure.
+10. An `ORDER BY` with no tiebreak.
+11. Treating "no terms in force on that date" as "supplier not found".
+12. **Fabricating a year-on-year comparison that the data cannot support.**
+    There is only one Diwali in the window (October 2025); Dhanteras 2026 falls
+    past the end of the data. A Diwali-over-Diwali comparison is impossible and
+    the honest answer says so. Holi and Gudi Padwa appear twice, so spring
+    festival comparisons are fine.

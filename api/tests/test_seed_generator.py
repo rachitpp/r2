@@ -129,10 +129,28 @@ def test_sunday_outsells_saturday():
         assert row[6] >= row[5], "Sunday is the peak grocery day in this market"
 
 
-def test_gst_rates_are_valid_slabs():
-    slabs = {"0.00", "0.05", "0.12", "0.18", "0.28"}
-    for cat in seed.CATEGORY_DEFS:
-        assert cat.gst_rate in slabs, f"{cat.name} has slab {cat.gst_rate}"
+def test_gst_slabs_match_the_reform():
+    """0/5/12/18/28 before 22 Sep 2025, 0/5/18/40 after."""
+    before = {rates[0] for rates in seed.GST_SLABS.values()}
+    after = {rates[1] for rates in seed.GST_SLABS.values()}
+    assert before == {0, 5, 12, 18, 28}
+    assert after == {0, 5, 18, 40}
+    assert seed.GST_REFORM_DATE.isoformat() == "2025-09-22"
+
+
+def test_every_category_has_a_gst_slab():
+    assert {c.name for c in seed.CATEGORY_DEFS} == set(seed.GST_SLABS)
+
+
+def test_aerated_drinks_moved_to_the_sin_slab():
+    assert seed.GST_SLABS["Soft Drinks & Juices"] == (28, 40)
+
+
+def test_no_rate_went_up_except_the_sin_slab():
+    for name, (before, after) in seed.GST_SLABS.items():
+        if name == "Soft Drinks & Juices":
+            continue
+        assert after <= before, f"{name} went from {before}% to {after}%"
 
 
 def test_no_user_display_name_looks_like_a_person(tmp_path):
@@ -144,7 +162,9 @@ def test_no_user_display_name_looks_like_a_person(tmp_path):
     finally:
         csvs.close()
 
-    rows = list(csv.DictReader((tmp_path / "005_users.csv").open(encoding="utf-8")))
+    # Derived, not hardcoded: adding a table renumbers every file after it.
+    name = csvs.filenames()[seed.TABLE_ORDER.index("users")]
+    rows = list(csv.DictReader((tmp_path / name).open(encoding="utf-8")))
     assert rows
     for row in rows:
         assert row["display_name"].split()[0] in {"Owner", "Manager", "Clerk"}

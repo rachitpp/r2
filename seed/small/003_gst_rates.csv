@@ -1,0 +1,37 @@
+gst_rate_id,category_id,rate_pct,effective_from,effective_to,source,notes,supersedes_id
+1,1,0.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+2,1,0.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",1
+3,2,5.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+4,2,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",3
+5,3,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+6,3,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",5
+7,4,5.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+8,4,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",7
+9,5,5.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+10,5,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",9
+11,6,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+12,6,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",11
+13,7,18.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+14,7,18.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",13
+15,8,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+16,8,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",15
+17,9,5.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+18,9,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",17
+19,10,28.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+20,10,40.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 28% to 40%",19
+21,11,5.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+22,11,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",21
+23,12,18.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+24,12,18.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",23
+25,13,18.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+26,13,18.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",25
+27,14,18.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+28,14,18.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025",27
+29,15,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+30,15,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",29
+31,16,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+32,16,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",31
+33,17,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+34,17,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",33
+35,18,12.00,2020-09-22,2025-09-22,seed,Pre-reform slab,
+36,18,5.00,2025-09-22,,seed,"56th GST Council, effective 22 September 2025 — moved from 12% to 5%",35

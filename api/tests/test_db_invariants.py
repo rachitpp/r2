@@ -180,3 +180,117 @@ def test_readonly_role_is_forced_read_only_and_time_limited(conn):
     settings = dict(item.split("=", 1) for item in config)
     assert settings["default_transaction_read_only"] == "on"
     assert settings["statement_timeout"] == "5s"
+
+
+def test_gst_rates_have_no_overlapping_periods(conn):
+    """The exclusion constraint should make this impossible; check it anyway."""
+    (worst,) = fetch_one(
+        conn,
+        """
+        SELECT coalesce(max(n), 0) FROM (
+            SELECT count(*) AS n FROM gst_rates
+            WHERE valid_period @> DATE '2026-06-30'
+            GROUP BY category_id) t
+        """,
+    )
+    assert worst == 1
+
+
+def test_every_category_has_a_rate_on_both_sides_of_the_reform(conn):
+    """A gap here would silently untax part of the history."""
+    for probe in ("2025-09-21", "2025-09-22", "2026-06-30"):
+        (uncovered,) = fetch_one(
+            conn,
+            f"""
+            SELECT count(*) FROM categories c
+            WHERE NOT EXISTS (
+                SELECT 1 FROM gst_rates g
+                WHERE g.category_id = c.category_id
+                  AND g.valid_period @> DATE '{probe}')
+            """,
+        )
+        assert uncovered == 0, f"{uncovered} categories have no GST rate on {probe}"
+
+
+def test_the_reform_removed_the_12_and_28_slabs(conn):
+    before = {
+        r[0]
+        for r in fetch_all(
+            conn,
+            "SELECT DISTINCT rate_pct FROM gst_rates WHERE effective_to IS NOT NULL",
+        )
+    }
+    after = {
+        r[0]
+        for r in fetch_all(
+            conn, "SELECT DISTINCT rate_pct FROM gst_rates WHERE effective_to IS NULL"
+        )
+    }
+    assert {int(r) for r in before} == {0, 5, 12, 18, 28}
+    assert {int(r) for r in after} == {0, 5, 18, 40}
+
+
+def test_aerated_drinks_moved_to_the_40_percent_slab(conn):
+    rows = fetch_all(
+        conn,
+        """
+        SELECT g.rate_pct FROM gst_rates g JOIN categories c USING (category_id)
+        WHERE c.name = 'Soft Drinks & Juices'
+        ORDER BY g.effective_from
+        """,
+    )
+    assert [int(r[0]) for r in rows] == [28, 40]
+
+
+def test_tax_charged_matches_the_rate_in_force_on_the_day(conn):
+    """The seed must have taxed each sale at its own date's rate, not today's.
+
+    Checked at the line level either side of the reform: if the generator had
+    used a single rate, one of these two would be wrong.
+    """
+    for probe, expected in (("2025-08-15", 28), ("2025-10-15", 40)):
+        (charged,) = fetch_one(
+            conn,
+            f"""
+            SELECT round(100.0 * sum(sl.quantity * sl.unit_price * g.rate_pct / 100)
+                         / NULLIF(sum(sl.line_total), 0))
+            FROM sale_lines sl
+            JOIN products p USING (product_id)
+            JOIN categories c USING (category_id)
+            JOIN gst_rates g ON g.category_id = c.category_id
+                            AND g.valid_period @> sl.business_date
+            WHERE c.name = 'Soft Drinks & Juices'
+              AND sl.business_date = DATE '{probe}'
+            """,
+        )
+        assert int(charged) == expected
+
+
+def test_the_reform_moved_the_effective_tax_rate(conn):
+    """The trap has to be real, or the eval question testing it is theatre."""
+    (before, after) = fetch_one(
+        conn,
+        """
+        WITH era AS (
+            SELECT business_date >= DATE '2025-09-22' AS post, subtotal, tax_total
+            FROM sales
+            WHERE business_date BETWEEN DATE '2025-07-01' AND DATE '2025-11-30'
+        )
+        SELECT
+          round(100.0 * sum(tax_total) FILTER (WHERE NOT post)
+                / NULLIF(sum(subtotal) FILTER (WHERE NOT post), 0), 2),
+          round(100.0 * sum(tax_total) FILTER (WHERE post)
+                / NULLIF(sum(subtotal) FILTER (WHERE post), 0), 2)
+        FROM era
+        """,
+    )
+    assert before > after
+    assert before - after > 1.0, "the reform should be plainly visible, not marginal"
+
+
+def test_only_one_diwali_in_the_window(conn):
+    """Festival year-on-year is impossible for Diwali and must stay that way."""
+    (last,) = fetch_one(conn, "SELECT max(business_date) FROM sale_lines")
+    assert last.isoformat() == "2026-06-30"
+    # Dhanteras 2026 is 6 November — past the end of the data.
+    assert last < __import__("datetime").date(2026, 11, 6)

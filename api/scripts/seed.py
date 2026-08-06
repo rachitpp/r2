@@ -71,16 +71,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # Chaturthi is a far larger retail event in Maharashtra than nationally, and a
 # chain spread across four states would not show that shape.
 #
-# TWO THINGS TO VERIFY AGAINST THE CORPUS WHEN IT LANDS:
+# Festival dates are verified. The two that carry the most weight — Dhanteras
+# 2025-10-18 and Diwali 2025-10-20 — were checked directly. Moon-sighting dates
+# (the two Eids) are inherently plus or minus a day and that does not move a
+# demand curve, so they are not flagged.
 #
-#   1. Festival dates. The solar ones (Makar Sankranti, Republic Day,
-#      Independence Day) are fixed. The lunisolar and lunar ones — Diwali,
-#      Holi, Ganesh Chaturthi, and especially the two Eids, which depend on a
-#      moon sighting — are marked APPROX. Wrong festival dates are visible to
-#      any Indian reviewer, so check them rather than trusting this block.
-#   2. GST slabs. India simplified the slab structure during 2025, so the
-#      per-category rates below are indicative. If the corpus contains real
-#      invoices they carry the real rates, and those win.
+# GST is NOT in this block. It changed on 22 September 2025, inside the window,
+# so it is temporal data and lives in the gst_rates table — see GST_SLABS below
+# and migrations/002_gst_rates.sql.
 #
 # To change any of it: edit this block, `make seed-generate` at both sizes,
 # commit the regenerated seed/small/ and seed/CHECKSUMS.txt.
@@ -189,8 +187,11 @@ TENDER_WEIGHTS = [("mobile", 52), ("cash", 27), ("card", 19), ("voucher", 2)]
 class CategoryDef:
     """Demand shape for a category.
 
-    A dataclass rather than a tuple because these are read by position in the
-    hot loop and adding a field to a tuple silently shifts every index.
+    Constructed with keyword arguments: there are enough fields that a
+    positional call is unreadable, and adding one in the middle would silently
+    shift every value after it.
+
+    GST is deliberately NOT here. It is time-varying — see GST_SLABS.
     """
 
     name: str
@@ -201,159 +202,101 @@ class CategoryDef:
     promo_elasticity: float  # demand response to a discount
     margin: float  # gross margin on shelf price
     demand_weight: float  # how much of total store volume this pulls
-    gst_rate: str  # GST slab, as a decimal string
     festive_lift: float  # sensitivity to the festival factor
 
 
+def _cat(
+    name, department, amplitude, peak_doy, weekend, elasticity, margin, weight, festive
+) -> CategoryDef:
+    return CategoryDef(
+        name=name,
+        department=department,
+        amplitude=amplitude,
+        peak_doy=peak_doy,
+        weekend_uplift=weekend,
+        promo_elasticity=elasticity,
+        margin=margin,
+        demand_weight=weight,
+        festive_lift=festive,
+    )
+
+
+# Positional order: name, department, amplitude, peak_doy, weekend_uplift,
+# promo_elasticity, margin, demand_weight, festive_lift.
 CATEGORY_DEFS = [
-    CategoryDef(
-        "Fruits & Vegetables", "Fresh", 0.26, 150, 1.34, 1.10, 0.30, 2.40, "0.00", 0.7
+    _cat("Fruits & Vegetables", "Fresh", 0.26, 150, 1.34, 1.10, 0.30, 2.40, 0.7),
+    _cat("Atta, Rice & Dal", "Staples", 0.09, 300, 1.22, 0.70, 0.14, 3.10, 0.8),
+    _cat("Dairy & Paneer", "Fresh", 0.13, 295, 1.26, 0.80, 0.22, 2.70, 0.9),
+    _cat("Edible Oils & Ghee", "Staples", 0.24, 290, 1.20, 0.95, 0.18, 1.60, 1.5),
+    _cat("Masalas & Spices", "Staples", 0.16, 298, 1.18, 0.75, 0.34, 1.30, 1.2),
+    _cat("Snacks & Namkeen", "Packaged Foods", 0.21, 295, 1.40, 1.45, 0.36, 1.70, 1.4),
+    _cat("Biscuits & Bakery", "Packaged Foods", 0.11, 320, 1.30, 1.20, 0.32, 1.55, 1.0),
+    _cat("Ready to Cook", "Packaged Foods", 0.13, 200, 1.24, 1.05, 0.30, 0.85, 0.8),
+    _cat("Tea & Coffee", "Beverages", 0.32, 15, 1.14, 1.10, 0.38, 1.10, 0.9),
+    _cat("Soft Drinks & Juices", "Beverages", 0.52, 150, 1.38, 1.60, 0.34, 1.45, 0.9),
+    _cat(
+        "Sweets & Chocolates", "Packaged Foods", 0.34, 293, 1.42, 1.55, 0.40, 1.20, 2.4
     ),
-    CategoryDef(
-        "Atta, Rice & Dal", "Staples", 0.09, 300, 1.22, 0.70, 0.14, 3.10, "0.05", 0.8
-    ),
-    CategoryDef(
-        "Dairy & Paneer", "Fresh", 0.13, 295, 1.26, 0.80, 0.22, 2.70, "0.05", 0.9
-    ),
-    CategoryDef(
-        "Edible Oils & Ghee", "Staples", 0.24, 290, 1.20, 0.95, 0.18, 1.60, "0.05", 1.5
-    ),
-    CategoryDef(
-        "Masalas & Spices", "Staples", 0.16, 298, 1.18, 0.75, 0.34, 1.30, "0.05", 1.2
-    ),
-    CategoryDef(
-        "Snacks & Namkeen",
-        "Packaged Foods",
-        0.21,
-        295,
-        1.40,
-        1.45,
-        0.36,
-        1.70,
-        "0.12",
-        1.4,
-    ),
-    CategoryDef(
-        "Biscuits & Bakery",
-        "Packaged Foods",
-        0.11,
-        320,
-        1.30,
-        1.20,
-        0.32,
-        1.55,
-        "0.18",
-        1.0,
-    ),
-    CategoryDef(
-        "Ready to Cook",
-        "Packaged Foods",
-        0.13,
-        200,
-        1.24,
-        1.05,
-        0.30,
-        0.85,
-        "0.12",
-        0.8,
-    ),
-    CategoryDef(
-        "Tea & Coffee", "Beverages", 0.32, 15, 1.14, 1.10, 0.38, 1.10, "0.05", 0.9
-    ),
-    CategoryDef(
-        "Soft Drinks & Juices",
-        "Beverages",
-        0.52,
-        150,
-        1.38,
-        1.60,
-        0.34,
-        1.45,
-        "0.28",
-        0.9,
-    ),
-    CategoryDef(
-        "Sweets & Chocolates",
-        "Packaged Foods",
-        0.34,
-        293,
-        1.42,
-        1.55,
-        0.40,
-        1.20,
-        "0.05",
-        2.4,
-    ),
-    CategoryDef(
-        "Home Care", "Household", 0.17, 290, 1.20, 0.95, 0.36, 0.75, "0.18", 1.6
-    ),
-    CategoryDef(
-        "Detergents & Laundry",
-        "Household",
-        0.11,
-        190,
-        1.18,
-        0.90,
-        0.32,
-        0.80,
-        "0.18",
-        0.9,
-    ),
-    CategoryDef(
-        "Paper & Disposables",
-        "Household",
-        0.08,
-        300,
-        1.20,
-        0.75,
-        0.30,
-        0.55,
-        "0.18",
-        0.8,
-    ),
-    CategoryDef(
-        "Personal Care",
-        "Health & Beauty",
-        0.11,
-        180,
-        1.16,
-        0.95,
-        0.42,
-        0.90,
-        "0.18",
-        1.1,
-    ),
-    CategoryDef(
-        "Health & Wellness",
-        "Health & Beauty",
-        0.26,
-        30,
-        1.10,
-        0.85,
-        0.44,
-        0.35,
-        "0.12",
-        0.6,
-    ),
-    CategoryDef(
-        "Baby Care", "Health & Beauty", 0.07, 180, 1.22, 0.80, 0.30, 0.40, "0.18", 0.7
-    ),
+    _cat("Home Care", "Household", 0.17, 290, 1.20, 0.95, 0.36, 0.75, 1.6),
+    _cat("Detergents & Laundry", "Household", 0.11, 190, 1.18, 0.90, 0.32, 0.80, 0.9),
+    _cat("Paper & Disposables", "Household", 0.08, 300, 1.20, 0.75, 0.30, 0.55, 0.8),
+    _cat("Personal Care", "Health & Beauty", 0.11, 180, 1.16, 0.95, 0.42, 0.90, 1.1),
+    _cat("Health & Wellness", "Health & Beauty", 0.26, 30, 1.10, 0.85, 0.44, 0.35, 0.6),
+    _cat("Baby Care", "Health & Beauty", 0.07, 180, 1.22, 0.80, 0.30, 0.40, 0.7),
     # The festive category — diyas, rangoli, incense, gift boxes. Its seasonal
     # peak sits on Diwali and its festive_lift is the highest in the catalogue,
     # so the October ramp is unmistakable in the data.
-    CategoryDef(
-        "Pooja & Festive",
-        "General Merchandise",
-        0.62,
-        292,
-        1.30,
-        1.70,
-        0.48,
-        0.30,
-        "0.12",
-        3.2,
+    _cat(
+        "Pooja & Festive", "General Merchandise", 0.62, 292, 1.30, 1.70, 0.48, 0.30, 3.2
     ),
 ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GST — and the 22 September 2025 reform, which is INSIDE the data window
+#
+# The 56th GST Council meeting (3 September 2025) approved a restructuring
+# effective 22 September 2025. The 12% and 28% slabs were removed: 12% items
+# moved almost entirely to 5%, around 90% of 28% items moved to 18%, and
+# luxury and sin goods — aerated beverages among them — moved to a new 40%
+# slab. The resulting structure is 0 / 5 / 18 / 40.
+#
+# This is modelled temporally rather than as a flat correction, because the
+# reform date falls inside the generated window. Rates live in the gst_rates
+# table with the same [from, to) + exclusion-constraint machinery as
+# supplier_terms, and the seed looks up the rate for the business_date of each
+# sale — not the rate as it stands today.
+#
+# It also creates a genuine silent-wrong trap. "What was our average tax rate
+# last year" spanning 22 September returns a blended figure that was true of no
+# actual period, executes cleanly, and looks entirely plausible. That is
+# ADR-0001's first threshold, found rather than invented.
+# ─────────────────────────────────────────────────────────────────────────────
+
+GST_REFORM_DATE = date(2025, 9, 22)
+
+# category -> (rate before the reform, rate from the reform onward)
+GST_SLABS = {
+    "Fruits & Vegetables": (0, 0),
+    "Atta, Rice & Dal": (5, 5),
+    "Dairy & Paneer": (12, 5),
+    "Edible Oils & Ghee": (5, 5),
+    "Masalas & Spices": (5, 5),
+    "Snacks & Namkeen": (12, 5),
+    "Biscuits & Bakery": (18, 18),
+    "Ready to Cook": (12, 5),
+    "Tea & Coffee": (5, 5),
+    "Soft Drinks & Juices": (28, 40),  # aerated beverages -> the new sin slab
+    "Sweets & Chocolates": (5, 5),
+    "Home Care": (18, 18),
+    "Detergents & Laundry": (18, 18),
+    "Paper & Disposables": (18, 18),
+    "Personal Care": (12, 5),
+    "Health & Wellness": (12, 5),
+    "Baby Care": (12, 5),
+    "Pooja & Festive": (12, 5),
+}
+
 
 # Typical shelf price in rupees for a mid-size pack in each category. Without
 # these the log-normal is category-blind and produces ₹225 bananas next to a
@@ -836,6 +779,7 @@ def weighted_choice(rng: Random, options: list[tuple[object, int]]) -> object:
 TABLE_ORDER = [
     "stores",
     "categories",
+    "gst_rates",
     "suppliers",
     "products",
     "users",
@@ -859,6 +803,16 @@ TABLE_ORDER = [
 COLUMNS = {
     "stores": ["store_id", "code", "name", "city", "timezone", "opened_on"],
     "categories": ["category_id", "name", "department"],
+    "gst_rates": [
+        "gst_rate_id",
+        "category_id",
+        "rate_pct",
+        "effective_from",
+        "effective_to",
+        "source",
+        "notes",
+        "supersedes_id",
+    ],
     "suppliers": ["supplier_id", "code", "name", "contact_email", "is_active"],
     "products": [
         "product_id",
@@ -998,6 +952,16 @@ class CsvSet:
         self._writers: dict[str, object] = {}
         self.counts: dict[str, int] = {}
         out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clear previously generated files first. Adding or removing a table
+        # renumbers every file after it, and a stale CSV left behind from the
+        # old numbering gets picked up by `make seed`'s glob and loaded a
+        # second time under its old name — which surfaces as a duplicate-key
+        # error if you are lucky and as duplicated data if you are not.
+        # Scoped to the NNN_name.csv pattern so nothing else in the directory
+        # is at risk.
+        for stale in out_dir.glob("[0-9][0-9][0-9]_*.csv"):
+            stale.unlink()
         for index, table in enumerate(TABLE_ORDER, start=1):
             path = out_dir / f"{index:03d}_{table}.csv"
             handle = path.open("w", newline="", encoding="utf-8")
@@ -1061,6 +1025,47 @@ def build_categories(csvs: CsvSet) -> dict[str, int]:
         ids[cat.name] = index
         csvs.row("categories", index, cat.name, cat.department)
     return ids
+
+
+def build_gst_rates(csvs: CsvSet, category_ids: dict[str, int]) -> None:
+    """GST rates as a temporal history, one row per category per slab period.
+
+    Two rows per category: the pre-reform rate, closed on the reform date, and
+    the post-reform rate, open-ended. Categories whose rate did not change
+    still get two rows — the slab was legally re-enacted, the period boundary
+    is real, and collapsing unchanged categories into one row would make
+    "which categories changed on 22 September" answerable only by comparing
+    row counts, which is a worse question to have to ask.
+    """
+    rate_id = 0
+    for name, (before, after) in GST_SLABS.items():
+        category_id = category_ids[name]
+        rate_id += 1
+        first_id = rate_id
+        csvs.row(
+            "gst_rates",
+            rate_id,
+            category_id,
+            f"{before}.00",
+            (GST_REFORM_DATE - timedelta(days=1826)).isoformat(),
+            GST_REFORM_DATE.isoformat(),
+            "seed",
+            "Pre-reform slab",
+            None,
+        )
+        rate_id += 1
+        csvs.row(
+            "gst_rates",
+            rate_id,
+            category_id,
+            f"{after}.00",
+            GST_REFORM_DATE.isoformat(),
+            None,
+            "seed",
+            "56th GST Council, effective 22 September 2025"
+            + ("" if before == after else f" — moved from {before}% to {after}%"),
+            first_id,
+        )
 
 
 def build_stores(csvs: CsvSet, spec: SizeSpec) -> list[Store]:
@@ -1526,6 +1531,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
     window_start = window_end - timedelta(days=spec.days - 1)
 
     category_ids = build_categories(csvs)
+    build_gst_rates(csvs, category_ids)
     stores = build_stores(csvs, spec)
     supplier_by_category = build_suppliers(csvs)
     products = build_products(csvs, spec, category_ids, supplier_by_category)
@@ -1541,9 +1547,16 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
     trend = [1.0 + 0.12 * (i / max(1, spec.days - 1)) for i in range(spec.days)]
 
     by_id = {p.product_id: p for p in products}
-    gst_rate = {
-        p.product_id: Decimal(CATEGORY_DEFS[p.category_id - 1].gst_rate)
-        for p in products
+    # GST is looked up by (category, business_date), not by category alone:
+    # the 22 September 2025 reform falls inside the window, so a sale in
+    # August and a sale in October are taxed at different rates for the same
+    # product. Both rates are precomputed as fractions to keep the hot loop
+    # free of lookups.
+    gst_before = {
+        p.product_id: Decimal(GST_SLABS[p.category_name][0]) / 100 for p in products
+    }
+    gst_after = {
+        p.product_id: Decimal(GST_SLABS[p.category_name][1]) / 100 for p in products
     }
     festive_lift = {
         p.product_id: CATEGORY_DEFS[p.category_id - 1].festive_lift for p in products
@@ -1602,6 +1615,8 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
             weekday = business_date.weekday()
             doy = business_date.timetuple().tm_yday
             day_factor = day_factors.get(business_date, 1.0)
+            # Which side of the 22 September 2025 GST reform this day sits on.
+            rate_today = gst_after if business_date >= GST_REFORM_DATE else gst_before
             trend_factor = trend[day_index]
 
             # Deliveries arrive before trading.
@@ -1732,7 +1747,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
                     product = by_id[pid]
                     gross = money(unit_price * quantity)
                     discount = money((product.list_price - unit_price) * quantity)
-                    tax = money(gross * gst_rate[pid])
+                    tax = money(gross * rate_today[pid])
                     subtotal += gross
                     discount_total += discount
                     tax_total += tax
@@ -1788,7 +1803,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
                     quantity = -brng.choice([1, 1, 2])
                     on_hand[pid] -= quantity
                     gross = money(unit_price * quantity)
-                    tax = money(gross * gst_rate[pid])
+                    tax = money(gross * rate_today[pid])
                     sale_id += 1
                     sale_line_id += 1
                     sold_at = datetime(
