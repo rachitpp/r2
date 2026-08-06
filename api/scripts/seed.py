@@ -60,61 +60,124 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LOCALE — PLACEHOLDER, NOT YET DERIVED FROM THE CORPUS
+# LOCALE — India. Currency INR, timezone Asia/Kolkata.
 #
-# Phase 0's seed and Phase 2's corpus have to share a world: currency, holiday
-# calendar, store names and SKU conventions should all come from the same place
-# the real invoices come from. The corpus does not exist yet, so everything in
-# this block is a placeholder chosen to be easy to replace, not a decision.
+# Phase 0's seed and Phase 2's corpus share a world: currency, festival
+# calendar, store locations and SKU conventions all come from the same place
+# the real invoices come from.
 #
-# To change it: edit this block, run `make seed-generate SEED_SIZE=small` and
-# `make seed-generate SEED_SIZE=full`, then commit the regenerated
-# seed/small/ and seed/CHECKSUMS.txt. Nothing else in the project needs to
-# change. Roughly two minutes of work — but it must happen before the Phase 1
-# eval set is written, because every expected result set depends on this data.
+# The chain is modelled as a Maharashtra grocery retailer — Pune, Nashik,
+# Nagpur — which is what makes the regional weighting below coherent: Ganesh
+# Chaturthi is a far larger retail event in Maharashtra than nationally, and a
+# chain spread across four states would not show that shape.
+#
+# TWO THINGS TO VERIFY AGAINST THE CORPUS WHEN IT LANDS:
+#
+#   1. Festival dates. The solar ones (Makar Sankranti, Republic Day,
+#      Independence Day) are fixed. The lunisolar and lunar ones — Diwali,
+#      Holi, Ganesh Chaturthi, and especially the two Eids, which depend on a
+#      moon sighting — are marked APPROX. Wrong festival dates are visible to
+#      any Indian reviewer, so check them rather than trusting this block.
+#   2. GST slabs. India simplified the slab structure during 2025, so the
+#      per-category rates below are indicative. If the corpus contains real
+#      invoices they carry the real rates, and those win.
+#
+# To change any of it: edit this block, `make seed-generate` at both sizes,
+# commit the regenerated seed/small/ and seed/CHECKSUMS.txt.
 # ─────────────────────────────────────────────────────────────────────────────
 
-CURRENCY = "GBP"
-TIMEZONE = "Europe/London"
-TAX_RATE = Decimal("0.20")
-TAX_EXEMPT_DEPARTMENTS = ("Grocery", "Bakery")
+CURRENCY = "INR"
+TIMEZONE = "Asia/Kolkata"
 
 STORE_DEFS = [
     # code, name, city, demand factor, opened
-    ("ST-01", "Riverside", "Bristol", 1.00, date(2019, 3, 11)),
-    ("ST-02", "Northgate", "Leeds", 0.72, date(2021, 9, 6)),
-    ("ST-03", "Meadowbank", "Manchester", 1.35, date(2017, 6, 19)),
+    ("ST-01", "Kothrud", "Pune", 1.00, date(2019, 3, 11)),
+    ("ST-02", "Gangapur Road", "Nashik", 0.72, date(2021, 9, 6)),
+    ("ST-03", "Dharampeth", "Nagpur", 1.35, date(2017, 6, 19)),
 ]
 
-# Public holidays that fall inside the generated window. Retail does not simply
-# stop on a holiday — trade collapses on the day and spikes in the days before
-# it, and that shape is a large part of what makes seeded data look real.
-HOLIDAY_DEFS = [
-    (date(2025, 1, 1), "New Year's Day", 0.35),
-    (date(2025, 4, 18), "Good Friday", 0.80),
-    (date(2025, 4, 21), "Easter Monday", 0.75),
-    (date(2025, 5, 5), "Early May bank holiday", 0.85),
-    (date(2025, 5, 26), "Spring bank holiday", 0.85),
-    (date(2025, 8, 25), "Summer bank holiday", 0.88),
-    (date(2025, 12, 25), "Christmas Day", 0.00),
-    (date(2025, 12, 26), "Boxing Day", 0.45),
-    (date(2026, 1, 1), "New Year's Day", 0.35),
-    (date(2026, 4, 3), "Good Friday", 0.80),
-    (date(2026, 4, 6), "Easter Monday", 0.75),
-    (date(2026, 5, 4), "Early May bank holiday", 0.85),
-    (date(2026, 5, 25), "Spring bank holiday", 0.85),
+
+@dataclass(frozen=True)
+class Festival:
+    """A festival and the shape of trade around it.
+
+    A single-day multiplier cannot express an Indian festive season. Diwali is
+    not a spike — it is a build that starts three to four weeks out, steepens
+    through Dhanteras, peaks the day before Lakshmi Puja, and drops into a
+    slump afterwards. The yearly sinusoid in CategoryDef cannot produce it
+    either: a sinusoid is symmetric and slow, and this shape is asymmetric and
+    sharp. So festivals are their own factor, applied on top of seasonality.
+    """
+
+    name: str
+    peak: date
+    ramp_days: int  # how many days ahead demand starts building
+    ramp_peak: float  # multiplier on the day before the peak
+    ramp_shape: float  # >1 keeps the early ramp flat and steepens it late
+    day_factor: float  # multiplier on the festival day itself
+    tail_days: int  # length of the post-festival slump
+    tail_factor: float  # multiplier at the start of that slump
+
+
+# Only festivals falling inside 2025-01-01 .. 2026-06-30 are listed. Diwali
+# 2026 (8 November) is past DATA_END_DATE, so `full` contains exactly one
+# Diwali and `small` (which starts 2026-01-02) contains none — worth knowing
+# before writing an eval question about it.
+FESTIVALS = [
+    # ── 2025 ────────────────────────────────────────────────────────────────
+    Festival("Makar Sankranti", date(2025, 1, 14), 6, 1.30, 2.0, 1.05, 2, 0.88),
+    Festival("Republic Day", date(2025, 1, 26), 3, 1.12, 1.5, 0.92, 1, 0.95),
+    Festival("Maha Shivaratri", date(2025, 2, 26), 4, 1.18, 2.0, 0.85, 1, 0.94),
+    Festival("Holi", date(2025, 3, 14), 9, 1.62, 2.2, 0.55, 2, 0.80),
+    Festival("Gudi Padwa", date(2025, 3, 30), 7, 1.45, 2.0, 0.95, 2, 0.88),
+    Festival("Eid al-Fitr", date(2025, 3, 31), 12, 1.55, 2.2, 0.75, 2, 0.85),
+    Festival("Ram Navami", date(2025, 4, 6), 4, 1.16, 2.0, 0.90, 1, 0.94),
+    Festival("Akshaya Tritiya", date(2025, 4, 30), 5, 1.28, 2.0, 1.10, 1, 0.92),
+    Festival("Eid al-Adha", date(2025, 6, 7), 8, 1.38, 2.0, 0.80, 2, 0.87),
+    Festival("Raksha Bandhan", date(2025, 8, 9), 8, 1.42, 2.1, 1.05, 2, 0.86),
+    Festival("Independence Day", date(2025, 8, 15), 3, 1.14, 1.5, 0.95, 1, 0.95),
+    Festival("Janmashtami", date(2025, 8, 16), 5, 1.26, 2.0, 0.92, 1, 0.92),
+    # Ganesh Chaturthi runs eleven days in Maharashtra and is the largest
+    # retail event of the year here after Diwali.
+    Festival("Ganesh Chaturthi", date(2025, 8, 27), 14, 1.95, 2.3, 1.35, 11, 0.90),
+    Festival("Navratri", date(2025, 9, 22), 8, 1.40, 2.0, 1.15, 9, 1.08),
+    Festival("Dussehra", date(2025, 10, 2), 6, 1.55, 2.0, 1.10, 2, 0.90),
+    # Diwali. Dhanteras (18 Oct) is the buying peak for anything durable or
+    # gifted; Lakshmi Puja (20 Oct) is the festival itself. The ramp starts 26
+    # days out, which overlaps Navratri and Dussehra — that overlap IS the
+    # six-week festive season, and it is deliberate.
+    Festival("Dhanteras", date(2025, 10, 18), 26, 2.75, 2.6, 2.40, 1, 1.60),
+    Festival("Diwali", date(2025, 10, 20), 2, 2.20, 1.6, 1.45, 12, 0.72),
+    Festival("Bhai Dooj", date(2025, 10, 23), 2, 1.30, 1.5, 1.10, 2, 0.85),
+    Festival("Guru Nanak Jayanti", date(2025, 11, 5), 4, 1.18, 2.0, 0.90, 1, 0.94),
+    Festival("Christmas", date(2025, 12, 25), 8, 1.45, 2.2, 0.85, 2, 0.88),
+    # ── 2026 ────────────────────────────────────────────────────────────────
+    Festival("New Year", date(2026, 1, 1), 4, 1.32, 1.8, 0.70, 2, 0.86),
+    Festival("Makar Sankranti", date(2026, 1, 14), 6, 1.30, 2.0, 1.05, 2, 0.88),
+    Festival("Republic Day", date(2026, 1, 26), 3, 1.12, 1.5, 0.92, 1, 0.95),
+    Festival("Maha Shivaratri", date(2026, 2, 15), 4, 1.18, 2.0, 0.85, 1, 0.94),
+    Festival("Holi", date(2026, 3, 4), 9, 1.62, 2.2, 0.55, 2, 0.80),
+    Festival("Gudi Padwa", date(2026, 3, 19), 7, 1.45, 2.0, 0.95, 2, 0.88),
+    Festival("Eid al-Fitr", date(2026, 3, 20), 12, 1.55, 2.2, 0.75, 2, 0.85),
+    Festival("Ram Navami", date(2026, 3, 26), 4, 1.16, 2.0, 0.90, 1, 0.94),
+    Festival("Akshaya Tritiya", date(2026, 4, 19), 5, 1.28, 2.0, 1.10, 1, 0.92),
+    Festival("Eid al-Adha", date(2026, 5, 27), 8, 1.38, 2.0, 0.80, 2, 0.87),
 ]
 
-# Days before a holiday, and the demand multiplier on each. Christmas gets its
-# own, much larger ramp.
-PRE_HOLIDAY_RAMP = {1: 1.35, 2: 1.18, 3: 1.08}
-CHRISTMAS_RAMP = {1: 2.30, 2: 1.95, 3: 1.60, 4: 1.35, 5: 1.20, 6: 1.12, 7: 1.08}
+# Ganesh Chaturthi and Gudi Padwa are weighted by store because they are
+# regional events, not national ones. Pune is the Maharashtra stronghold.
+# Any festival not listed applies equally at every store.
+REGIONAL_FESTIVAL_WEIGHT = {
+    "Ganesh Chaturthi": {1: 1.00, 2: 0.94, 3: 0.88},
+    "Gudi Padwa": {1: 1.00, 2: 0.96, 3: 0.90},
+}
 
-OPEN_HOUR, CLOSE_HOUR = 8, 21
-# Relative footfall by hour from OPEN_HOUR to CLOSE_HOUR - 1.
-HOURLY_WEIGHTS = [3, 5, 7, 9, 12, 11, 8, 7, 8, 10, 9, 6, 3]
+OPEN_HOUR, CLOSE_HOUR = 8, 22
+# Relative footfall by hour, 08:00 to 21:00. Indian grocery skews to a strong
+# evening peak after work rather than the UK lunchtime peak.
+HOURLY_WEIGHTS = [4, 6, 7, 7, 8, 6, 5, 6, 9, 13, 14, 11, 7, 3]
 
-TENDER_WEIGHTS = [("card", 62), ("cash", 18), ("mobile", 17), ("voucher", 3)]
+TENDER_WEIGHTS = [("mobile", 52), ("cash", 27), ("card", 19), ("voucher", 2)]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -134,314 +197,549 @@ class CategoryDef:
     department: str
     amplitude: float  # seasonal swing, +/- around 1.0
     peak_doy: int  # day of year demand peaks
-    weekend_uplift: float  # Saturday multiplier
+    weekend_uplift: float  # Sunday multiplier; Saturday derives from it
     promo_elasticity: float  # demand response to a discount
     margin: float  # gross margin on shelf price
     demand_weight: float  # how much of total store volume this pulls
+    gst_rate: str  # GST slab, as a decimal string
+    festive_lift: float  # sensitivity to the festival factor
 
 
 CATEGORY_DEFS = [
-    CategoryDef("Fresh Produce", "Grocery", 0.28, 196, 1.30, 1.10, 0.32, 2.60),
-    CategoryDef("Bakery", "Bakery", 0.16, 350, 1.42, 0.90, 0.45, 1.90),
-    CategoryDef("Dairy & Eggs", "Grocery", 0.12, 200, 1.28, 0.85, 0.28, 2.80),
-    CategoryDef("Meat & Fish", "Grocery", 0.22, 355, 1.48, 1.25, 0.30, 1.80),
-    CategoryDef("Frozen Foods", "Grocery", 0.18, 20, 1.24, 1.05, 0.34, 1.40),
-    CategoryDef("Store Cupboard", "Grocery", 0.10, 340, 1.15, 0.80, 0.36, 1.50),
-    CategoryDef("Snacks & Confectionery", "Grocery", 0.20, 300, 1.38, 1.45, 0.42, 1.70),
-    CategoryDef("Soft Drinks", "Beverages", 0.42, 200, 1.35, 1.60, 0.40, 1.60),
-    CategoryDef("Hot Drinks", "Beverages", 0.38, 15, 1.12, 1.15, 0.44, 0.90),
-    CategoryDef("Beer, Wine & Spirits", "Beverages", 0.30, 355, 1.62, 1.35, 0.30, 1.00),
-    CategoryDef("Household Cleaning", "Household", 0.12, 90, 1.18, 0.95, 0.38, 0.60),
-    CategoryDef("Laundry", "Household", 0.10, 100, 1.16, 0.90, 0.36, 0.45),
-    CategoryDef("Paper & Disposables", "Household", 0.08, 340, 1.20, 0.75, 0.33, 0.80),
     CategoryDef(
-        "Health & Wellbeing", "Health & Beauty", 0.24, 25, 1.10, 0.85, 0.46, 0.35
-    ),
-    CategoryDef("Personal Care", "Health & Beauty", 0.10, 180, 1.14, 0.95, 0.44, 0.60),
-    CategoryDef("Baby & Child", "Health & Beauty", 0.08, 180, 1.22, 0.80, 0.35, 0.40),
-    CategoryDef(
-        "Pet Supplies", "General Merchandise", 0.10, 190, 1.26, 0.90, 0.37, 0.50
+        "Fruits & Vegetables", "Fresh", 0.26, 150, 1.34, 1.10, 0.30, 2.40, "0.00", 0.7
     ),
     CategoryDef(
-        "Seasonal & Gifting", "General Merchandise", 0.55, 352, 1.55, 1.70, 0.52, 0.25
+        "Atta, Rice & Dal", "Staples", 0.09, 300, 1.22, 0.70, 0.14, 3.10, "0.05", 0.8
+    ),
+    CategoryDef(
+        "Dairy & Paneer", "Fresh", 0.13, 295, 1.26, 0.80, 0.22, 2.70, "0.05", 0.9
+    ),
+    CategoryDef(
+        "Edible Oils & Ghee", "Staples", 0.24, 290, 1.20, 0.95, 0.18, 1.60, "0.05", 1.5
+    ),
+    CategoryDef(
+        "Masalas & Spices", "Staples", 0.16, 298, 1.18, 0.75, 0.34, 1.30, "0.05", 1.2
+    ),
+    CategoryDef(
+        "Snacks & Namkeen",
+        "Packaged Foods",
+        0.21,
+        295,
+        1.40,
+        1.45,
+        0.36,
+        1.70,
+        "0.12",
+        1.4,
+    ),
+    CategoryDef(
+        "Biscuits & Bakery",
+        "Packaged Foods",
+        0.11,
+        320,
+        1.30,
+        1.20,
+        0.32,
+        1.55,
+        "0.18",
+        1.0,
+    ),
+    CategoryDef(
+        "Ready to Cook",
+        "Packaged Foods",
+        0.13,
+        200,
+        1.24,
+        1.05,
+        0.30,
+        0.85,
+        "0.12",
+        0.8,
+    ),
+    CategoryDef(
+        "Tea & Coffee", "Beverages", 0.32, 15, 1.14, 1.10, 0.38, 1.10, "0.05", 0.9
+    ),
+    CategoryDef(
+        "Soft Drinks & Juices",
+        "Beverages",
+        0.52,
+        150,
+        1.38,
+        1.60,
+        0.34,
+        1.45,
+        "0.28",
+        0.9,
+    ),
+    CategoryDef(
+        "Sweets & Chocolates",
+        "Packaged Foods",
+        0.34,
+        293,
+        1.42,
+        1.55,
+        0.40,
+        1.20,
+        "0.05",
+        2.4,
+    ),
+    CategoryDef(
+        "Home Care", "Household", 0.17, 290, 1.20, 0.95, 0.36, 0.75, "0.18", 1.6
+    ),
+    CategoryDef(
+        "Detergents & Laundry",
+        "Household",
+        0.11,
+        190,
+        1.18,
+        0.90,
+        0.32,
+        0.80,
+        "0.18",
+        0.9,
+    ),
+    CategoryDef(
+        "Paper & Disposables",
+        "Household",
+        0.08,
+        300,
+        1.20,
+        0.75,
+        0.30,
+        0.55,
+        "0.18",
+        0.8,
+    ),
+    CategoryDef(
+        "Personal Care",
+        "Health & Beauty",
+        0.11,
+        180,
+        1.16,
+        0.95,
+        0.42,
+        0.90,
+        "0.18",
+        1.1,
+    ),
+    CategoryDef(
+        "Health & Wellness",
+        "Health & Beauty",
+        0.26,
+        30,
+        1.10,
+        0.85,
+        0.44,
+        0.35,
+        "0.12",
+        0.6,
+    ),
+    CategoryDef(
+        "Baby Care", "Health & Beauty", 0.07, 180, 1.22, 0.80, 0.30, 0.40, "0.18", 0.7
+    ),
+    # The festive category — diyas, rangoli, incense, gift boxes. Its seasonal
+    # peak sits on Diwali and its festive_lift is the highest in the catalogue,
+    # so the October ramp is unmistakable in the data.
+    CategoryDef(
+        "Pooja & Festive",
+        "General Merchandise",
+        0.62,
+        292,
+        1.30,
+        1.70,
+        0.48,
+        0.30,
+        "0.12",
+        3.2,
     ),
 ]
 
-CATEGORY_CODES = {
-    "Fresh Produce": "PRD",
-    "Bakery": "BAK",
-    "Dairy & Eggs": "DRY",
-    "Meat & Fish": "MTF",
-    "Frozen Foods": "FRZ",
-    "Store Cupboard": "CUP",
-    "Snacks & Confectionery": "SNK",
-    "Soft Drinks": "SFT",
-    "Hot Drinks": "HOT",
-    "Beer, Wine & Spirits": "BWS",
-    "Household Cleaning": "CLN",
-    "Laundry": "LDY",
-    "Paper & Disposables": "PPR",
-    "Health & Wellbeing": "HLW",
-    "Personal Care": "PSC",
-    "Baby & Child": "BBY",
-    "Pet Supplies": "PET",
-    "Seasonal & Gifting": "SEA",
+# Typical shelf price in rupees for a mid-size pack in each category. Without
+# these the log-normal is category-blind and produces ₹225 bananas next to a
+# ₹78 five-litre oil jar — which loads cleanly, passes every constraint, and
+# makes "highest-revenue category" answer noise.
+CATEGORY_PRICE_MEDIAN = {
+    "Fruits & Vegetables": 45,
+    "Atta, Rice & Dal": 180,
+    "Dairy & Paneer": 60,
+    "Edible Oils & Ghee": 220,
+    "Masalas & Spices": 85,
+    "Snacks & Namkeen": 45,
+    "Biscuits & Bakery": 40,
+    "Ready to Cook": 75,
+    "Tea & Coffee": 250,
+    "Soft Drinks & Juices": 50,
+    "Sweets & Chocolates": 180,
+    "Home Care": 110,
+    "Detergents & Laundry": 140,
+    "Paper & Disposables": 90,
+    "Personal Care": 130,
+    "Health & Wellness": 150,
+    "Baby Care": 280,
+    "Pooja & Festive": 120,
 }
 
-# Product name parts per category: (brand-ish prefixes, nouns, variants).
+# Pack size moves price. Matched as substrings against the product's variant,
+# most specific first — "10 kg" must be tested before "1 kg".
+VARIANT_PRICE_FACTOR = [
+    ("10 kg", 3.20),
+    ("5 kg", 2.40),
+    ("5 L Jar", 2.80),
+    ("2 kg", 1.70),
+    ("1 kg", 1.30),
+    ("1.25 L", 1.40),
+    ("2 L", 1.80),
+    ("1 L", 1.20),
+    ("Gift Set", 2.20),
+    ("Gift Box", 2.00),
+    ("Party Pack", 1.60),
+    ("Family Pack", 1.60),
+    ("Value Pack", 1.50),
+    ("Sharing Pack", 1.35),
+    ("Multipack", 1.50),
+    ("Pack of 12", 1.80),
+    ("Pack of 6", 1.40),
+    ("12 Pack", 1.80),
+    ("6 Pack", 1.50),
+    ("4 Pack", 1.35),
+    ("2 Pack", 1.20),
+    ("Twin Pack", 1.20),
+    ("Combo Pack", 1.40),
+    ("Combo", 1.40),
+    ("Premium", 1.40),
+    ("Large", 1.35),
+    ("Medium", 1.00),
+    ("Small", 0.75),
+    ("Refill Pouch", 0.80),
+    ("Refill", 0.80),
+    ("Pouch", 0.85),
+    ("Tub", 1.10),
+    ("Loose", 0.70),
+    ("Single", 0.60),
+    ("Assorted", 1.25),
+    ("100 g", 0.60),
+    ("150 g", 0.70),
+    ("200 g", 0.80),
+    ("250 g", 0.85),
+    ("400 g", 1.05),
+    ("500 g", 1.00),
+    ("250 ml", 0.70),
+    ("500 ml", 0.90),
+    ("600 ml", 0.95),
+]
+
+
+def variant_price_factor(variant: str) -> float:
+    for token, factor in VARIANT_PRICE_FACTOR:
+        if token in variant:
+            return factor
+    return 1.0
+
+
+CATEGORY_CODES = {
+    "Fruits & Vegetables": "FNV",
+    "Atta, Rice & Dal": "STP",
+    "Dairy & Paneer": "DRY",
+    "Edible Oils & Ghee": "OIL",
+    "Masalas & Spices": "MSL",
+    "Snacks & Namkeen": "NMK",
+    "Biscuits & Bakery": "BSK",
+    "Ready to Cook": "RTC",
+    "Tea & Coffee": "TEA",
+    "Soft Drinks & Juices": "BEV",
+    "Sweets & Chocolates": "SWT",
+    "Home Care": "HMC",
+    "Detergents & Laundry": "DET",
+    "Paper & Disposables": "PPR",
+    "Personal Care": "PSC",
+    "Health & Wellness": "HLW",
+    "Baby Care": "BBY",
+    "Pooja & Festive": "POO",
+}
+
+# House-brand prefixes are invented. Real brand names do not belong in a
+# synthetic dataset in a public repository.
 NAME_PARTS = {
-    "Fresh Produce": (
-        ["Marsh Lane", "Orchard Row", "Green Acre", "Fieldgate"],
+    "Fruits & Vegetables": (
+        ["Sahyadri", "Krishi Bazaar", "Green Konkan", "Ratnagiri"],
         [
-            "Apples",
             "Bananas",
             "Tomatoes",
-            "Potatoes",
-            "Carrots",
-            "Salad Bag",
-            "Peppers",
             "Onions",
-            "Mushrooms",
-            "Berries",
+            "Potatoes",
+            "Okra",
+            "Cauliflower",
+            "Spinach",
+            "Green Chillies",
+            "Coriander",
+            "Alphonso Mangoes",
+            "Bottle Gourd",
+            "Lemons",
         ],
-        ["Loose", "Pack of 6", "Family Pack", "Class I", "Organic"],
+        ["Loose", "500 g Pack", "1 kg Pack", "Grade A", "Farm Fresh"],
     ),
-    "Bakery": (
-        ["Stonemill", "Old Harbour", "Baker's Row"],
+    "Atta, Rice & Dal": (
+        ["Annapurna", "Suvarna", "Godavari", "Panchali"],
         [
-            "White Loaf",
-            "Wholemeal Loaf",
-            "Sourdough",
-            "Bagels",
-            "Croissants",
-            "Muffins",
-            "Baguette",
-            "Crumpets",
-        ],
-        ["800g", "6 Pack", "4 Pack", "Sliced", "Thick Cut"],
-    ),
-    "Dairy & Eggs": (
-        ["Fern Valley", "Coldbrook", "Hillfoot"],
-        [
-            "Whole Milk",
-            "Semi-Skimmed Milk",
-            "Cheddar",
-            "Butter",
-            "Yoghurt",
-            "Free Range Eggs",
-            "Double Cream",
-            "Mozzarella",
-        ],
-        # Form-neutral: this category mixes litres, grams and boxes, and a
-        # cross product of nouns and units produces "Butter 2L".
-        ["Standard", "Large", "Family Pack", "Twin Pack", "Organic"],
-    ),
-    "Meat & Fish": (
-        ["Wold Farm", "Harbourside", "Longacre"],
-        [
-            "Chicken Breast",
-            "Beef Mince",
-            "Pork Sausages",
-            "Salmon Fillet",
-            "Bacon",
-            "Lamb Chops",
-            "Cod Fillet",
-            "Turkey Slices",
-        ],
-        ["400g", "500g", "2 Pack", "Value Pack", "Smoked"],
-    ),
-    "Frozen Foods": (
-        ["Northwind", "Frostgate", "Polar Row"],
-        [
-            "Garden Peas",
-            "Oven Chips",
-            "Fish Fingers",
-            "Pizza",
-            "Ice Cream",
-            "Mixed Vegetables",
-            "Yorkshire Puddings",
-        ],
-        ["Standard", "Family Size", "12 Pack", "Value Pack", "Sharing"],
-    ),
-    "Store Cupboard": (
-        ["Pantry Hill", "Saltway", "Millstone"],
-        [
-            "Pasta",
+            "Chakki Atta",
             "Basmati Rice",
-            "Chopped Tomatoes",
-            "Olive Oil",
-            "Baked Beans",
-            "Tuna Chunks",
-            "Plain Flour",
-            "Stock Cubes",
+            "Sona Masoori Rice",
+            "Toor Dal",
+            "Moong Dal",
+            "Chana Dal",
+            "Urad Dal",
+            "Rajma",
+            "Kabuli Chana",
+            "Poha",
+            "Rava",
+            "Besan",
         ],
-        ["Standard", "Large", "4 Pack", "Value Pack", "Multipack"],
+        ["1 kg", "5 kg", "10 kg", "Value Pack", "Premium"],
     ),
-    "Snacks & Confectionery": (
-        ["Crestwood", "Bramble & Co", "Tin Box"],
+    "Dairy & Paneer": (
+        ["Gokul", "Nandini Vale", "Chitale Wadi", "Amrit Dhara"],
         [
-            "Crisps",
-            "Milk Chocolate",
-            "Dark Chocolate",
-            "Salted Nuts",
-            "Biscuits",
-            "Popcorn",
-            "Cereal Bars",
-            "Wine Gums",
+            "Toned Milk",
+            "Full Cream Milk",
+            "Paneer",
+            "Dahi",
+            "Butter",
+            "Cheese Slices",
+            "Shrikhand",
+            "Lassi",
+            "Buttermilk",
         ],
-        ["Sharing Bag", "6 Pack", "Multipack", "100g", "200g"],
+        ["Standard", "Family Pack", "Pouch", "Tub", "Twin Pack"],
     ),
-    "Soft Drinks": (
-        ["Clearspring", "Fizzworks", "Bright Hollow"],
+    "Edible Oils & Ghee": (
+        ["Suvarna", "Deccan Gold", "Tulsi", "Konkan Pure"],
+        [
+            "Sunflower Oil",
+            "Groundnut Oil",
+            "Mustard Oil",
+            "Cow Ghee",
+            "Rice Bran Oil",
+            "Coconut Oil",
+            "Vanaspati",
+        ],
+        ["1 L", "5 L Jar", "500 ml", "1 kg Tin", "Refill Pouch"],
+    ),
+    "Masalas & Spices": (
+        ["Rasoi Rani", "Swad Sagar", "Malvani", "Kesari"],
+        [
+            "Turmeric Powder",
+            "Red Chilli Powder",
+            "Garam Masala",
+            "Coriander Powder",
+            "Cumin Seeds",
+            "Mustard Seeds",
+            "Pav Bhaji Masala",
+            "Goda Masala",
+            "Sambar Powder",
+            "Black Pepper",
+        ],
+        ["100 g", "200 g", "500 g", "Refill", "Value Pack"],
+    ),
+    "Snacks & Namkeen": (
+        ["Chivda Ghar", "Bhusari", "Nagpur Crisp", "Haldi Bazaar"],
+        [
+            "Aloo Bhujia",
+            "Chivda",
+            "Farsan",
+            "Potato Chips",
+            "Chakli",
+            "Mixture",
+            "Masala Peanuts",
+            "Banana Chips",
+            "Sev",
+        ],
+        ["Sharing Pack", "150 g", "400 g", "Multipack", "Party Pack"],
+    ),
+    "Biscuits & Bakery": (
+        ["Chandni", "Poona Bakers", "Golden Crust", "Malabar"],
+        [
+            "Glucose Biscuits",
+            "Marie Biscuits",
+            "Cream Biscuits",
+            "Khari",
+            "Nankhatai",
+            "Rusk",
+            "Bread Loaf",
+            "Pav",
+            "Cookies",
+        ],
+        ["Standard", "Family Pack", "Multipack", "Assorted", "Premium"],
+    ),
+    "Ready to Cook": (
+        ["Jhat Pat", "Rasoi Rani", "Mumbai Tiffin", "Instant Ghar"],
+        [
+            "Instant Noodles",
+            "Upma Mix",
+            "Dosa Batter",
+            "Idli Batter",
+            "Soup Mix",
+            "Pasta",
+            "Frozen Parathas",
+            "Gravy Base",
+        ],
+        ["Standard", "Family Pack", "4 Pack", "Multipack", "Value Pack"],
+    ),
+    "Tea & Coffee": (
+        ["Nilgiri Hills", "Assam Trail", "Coorg Roast", "Chai Adda"],
+        [
+            "CTC Tea",
+            "Green Tea",
+            "Masala Chai",
+            "Filter Coffee",
+            "Instant Coffee",
+            "Darjeeling Leaf Tea",
+            "Cardamom Tea",
+        ],
+        ["250 g", "500 g", "1 kg", "Refill", "Premium"],
+    ),
+    "Soft Drinks & Juices": (
+        ["Sharbat Co", "Fizz Bazaar", "Aamras", "Coolwave"],
         [
             "Cola",
-            "Lemonade",
+            "Lemon Soda",
+            "Mango Drink",
             "Orange Juice",
-            "Sparkling Water",
-            "Still Water",
+            "Nimbu Pani",
+            "Packaged Water",
             "Energy Drink",
-            "Iced Tea",
-            "Ginger Beer",
+            "Coconut Water",
+            "Jaljeera",
         ],
-        ["330ml", "1L", "2L", "6 Pack", "12 Pack"],
+        ["250 ml", "600 ml", "1.25 L", "2 L", "6 Pack"],
     ),
-    "Hot Drinks": (
-        ["Kiln Street", "Roastworks", "Copperpot"],
+    "Sweets & Chocolates": (
+        ["Mithas", "Chitale Wadi", "Kesari", "Cocoa Bazaar"],
         [
-            "Ground Coffee",
-            "Instant Coffee",
-            "Breakfast Tea",
-            "Green Tea",
-            "Hot Chocolate",
-            "Coffee Pods",
-            "Herbal Infusion",
+            "Soan Papdi",
+            "Kaju Katli",
+            "Motichoor Ladoo",
+            "Gulab Jamun Tin",
+            "Milk Chocolate",
+            "Dark Chocolate",
+            "Rasgulla Tin",
+            "Dry Fruit Box",
+            "Chikki",
         ],
-        ["Standard", "Large", "Refill Pack", "Decaf", "Rich Roast"],
+        ["250 g Box", "500 g Box", "Gift Box", "Assorted", "Family Pack"],
     ),
-    "Beer, Wine & Spirits": (
-        ["Anvil Brook", "Cask & Quay", "Southfield"],
+    "Home Care": (
+        ["Chamak", "Nirmal", "Safai Sathi", "Gharwala"],
         [
-            "Lager",
-            "Pale Ale",
-            "Red Wine",
-            "White Wine",
-            "Cider",
-            "Gin",
-            "Whisky",
-            "Prosecco",
-        ],
-        ["500ml", "750ml", "4 Pack", "70cl", "Case of 6"],
-    ),
-    "Household Cleaning": (
-        ["Brightwell", "Keenedge", "Larkspur"],
-        [
-            "Washing-Up Liquid",
-            "Surface Spray",
-            "Bleach",
+            "Dishwash Gel",
             "Floor Cleaner",
+            "Toilet Cleaner",
             "Glass Cleaner",
-            "Bin Liners",
-            "Sponges",
+            "Phenyl",
+            "Scrub Pads",
+            "Garbage Bags",
+            "Room Freshener",
         ],
-        ["Standard", "Large", "Refill", "Twin Pack", "Value Pack"],
+        ["500 ml", "1 L", "Refill", "Twin Pack", "Value Pack"],
     ),
-    "Laundry": (
-        ["Whitlow", "Softline", "Ashgrove"],
+    "Detergents & Laundry": (
+        ["Ujala Ghar", "Nirmal", "Shubhra", "Dhulai"],
         [
-            "Washing Powder",
-            "Laundry Liquid",
-            "Fabric Softener",
+            "Detergent Powder",
+            "Detergent Bar",
+            "Liquid Detergent",
+            "Fabric Conditioner",
             "Stain Remover",
-            "Colour Catchers",
-            "Dryer Sheets",
+            "Blue Whitener",
         ],
-        ["25 Wash", "40 Wash", "Large", "Twin Pack"],
+        ["1 kg", "2 kg", "500 ml", "Refill", "Value Pack"],
     ),
     "Paper & Disposables": (
-        ["Fold & Co", "Nettlebed", "Quiller"],
+        ["Softwrap", "Gharwala", "Panchali", "Neatfold"],
         [
-            "Kitchen Roll",
-            "Toilet Tissue",
+            "Kitchen Towel",
+            "Toilet Rolls",
             "Facial Tissues",
-            "Foil",
-            "Cling Film",
-            "Freezer Bags",
-            "Baking Parchment",
+            "Aluminium Foil",
+            "Cling Wrap",
+            "Paper Plates",
+            "Napkins",
         ],
-        ["4 Roll", "9 Roll", "2 Pack", "30m", "50 Bags"],
-    ),
-    "Health & Wellbeing": (
-        ["Wellspring", "Thornhill", "Beacon Lane"],
-        [
-            "Paracetamol",
-            "Ibuprofen",
-            "Multivitamins",
-            "Vitamin D",
-            "Plasters",
-            "Throat Lozenges",
-            "Antacid Tablets",
-        ],
-        ["16 Tablets", "32 Tablets", "60 Capsules", "20 Pack"],
+        ["Single", "2 Pack", "4 Pack", "Family Pack", "Value Pack"],
     ),
     "Personal Care": (
-        ["Merrow", "Silverbirch", "Duneside"],
+        ["Kesh Kanti", "Neem Vatika", "Chandan Bazaar", "Silverbirch"],
         [
             "Shampoo",
-            "Conditioner",
-            "Shower Gel",
+            "Hair Oil",
+            "Bathing Soap",
+            "Body Wash",
             "Toothpaste",
+            "Face Wash",
+            "Talc",
+            "Shaving Cream",
             "Deodorant",
-            "Hand Wash",
-            "Razor Blades",
-            "Moisturiser",
         ],
-        ["250ml", "400ml", "75ml", "4 Pack", "Twin Pack"],
+        ["Standard", "Large", "Combo Pack", "Refill", "Family Pack"],
     ),
-    "Baby & Child": (
-        ["Little Harbour", "Puddleduck", "Wren & Fox"],
+    "Health & Wellness": (
+        ["Ayur Bhandar", "Wellspring", "Tulsi", "Arogya"],
         [
-            "Nappies",
+            "Chyawanprash",
+            "Multivitamins",
+            "Pain Relief Balm",
+            "Antiseptic Liquid",
+            "Honey",
+            "Glucose Powder",
+            "Bandages",
+            "Digestive Tablets",
+        ],
+        ["Standard", "Large", "Value Pack", "Family Pack", "Combo"],
+    ),
+    "Baby Care": (
+        ["Nanhe Kadam", "Little Konkan", "Shishu", "Nazuk"],
+        [
+            "Diapers",
             "Baby Wipes",
-            "Infant Formula",
-            "Baby Food Pouch",
-            "Nappy Cream",
-            "Bath Wash",
+            "Baby Soap",
+            "Baby Oil",
+            "Infant Cereal",
+            "Baby Lotion",
+            "Feeding Bottle",
         ],
-        ["Standard", "Large", "Multipack", "Sensitive", "Value Pack"],
+        ["Small", "Medium", "Large", "Multipack", "Value Pack"],
     ),
-    "Pet Supplies": (
-        ["Redcollar", "Barnfield", "Two Paws"],
-        ["Dog Food", "Cat Food", "Cat Litter", "Dog Treats", "Bird Seed", "Puppy Food"],
-        ["Standard", "Large", "12 Pack", "Multipack", "Value Pack"],
-    ),
-    "Seasonal & Gifting": (
-        ["Winterlane", "Gilded Pine", "Marchmont"],
+    "Pooja & Festive": (
+        ["Deepmala", "Shubh Labh", "Kesari", "Utsav Ghar"],
         [
+            "Diya Set",
+            "Agarbatti",
+            "Camphor",
+            "Rangoli Colours",
+            "Puja Thali",
+            "Cotton Wicks",
             "Gift Wrap",
-            "Greeting Cards",
-            "Candles",
-            "Chocolate Box",
-            "Crackers",
-            "Fairy Lights",
-            "Gift Bags",
+            "Torans",
+            "LED String Lights",
+            "Dhoop Sticks",
         ],
-        ["Pack of 3", "Single", "Large", "Set of 12", "Assorted"],
+        ["Pack of 6", "Pack of 12", "Single", "Assorted", "Gift Set"],
     ),
 }
 
 SUPPLIER_DEFS = [
-    ("SUP-01", "Ashcombe Wholesale", ("Fresh Produce", "Bakery")),
-    ("SUP-02", "Pennine Fresh Foods", ("Fresh Produce", "Meat & Fish")),
-    ("SUP-03", "Calder Dairy Group", ("Dairy & Eggs",)),
-    ("SUP-04", "Northgate Frozen Ltd", ("Frozen Foods",)),
-    ("SUP-05", "Blackwater Provisions", ("Store Cupboard", "Snacks & Confectionery")),
-    ("SUP-06", "Verity Beverages", ("Soft Drinks", "Hot Drinks")),
-    ("SUP-07", "Harrowgate Wine & Spirits", ("Beer, Wine & Spirits",)),
-    ("SUP-08", "Meridian Household", ("Household Cleaning", "Laundry")),
-    ("SUP-09", "Fenwick Paper Co", ("Paper & Disposables",)),
-    ("SUP-10", "Loxley Health Supply", ("Health & Wellbeing", "Personal Care")),
-    ("SUP-11", "Bramford Baby & Pet", ("Baby & Child", "Pet Supplies")),
-    ("SUP-12", "Kestrel Seasonal Goods", ("Seasonal & Gifting",)),
+    ("SUP-01", "Sahyadri Agro Traders", ("Fruits & Vegetables",)),
+    ("SUP-02", "Godavari Grains & Pulses", ("Atta, Rice & Dal",)),
+    ("SUP-03", "Gokul Dairy Distributors", ("Dairy & Paneer",)),
+    ("SUP-04", "Deccan Oils & Provisions", ("Edible Oils & Ghee", "Masalas & Spices")),
+    ("SUP-05", "Bhusari Foods Pvt Ltd", ("Snacks & Namkeen", "Biscuits & Bakery")),
+    ("SUP-06", "Jhat Pat Foods", ("Ready to Cook",)),
+    ("SUP-07", "Nilgiri Beverage Company", ("Tea & Coffee", "Soft Drinks & Juices")),
+    ("SUP-08", "Mithas Confectioners", ("Sweets & Chocolates",)),
+    ("SUP-09", "Nirmal Home Products", ("Home Care", "Detergents & Laundry")),
+    ("SUP-10", "Softwrap Paper Mills", ("Paper & Disposables",)),
+    ("SUP-11", "Arogya Consumer Care", ("Personal Care", "Health & Wellness")),
+    ("SUP-12", "Deepmala Festive Supplies", ("Baby Care", "Pooja & Festive")),
 ]
 
 
@@ -878,10 +1176,19 @@ def build_products(
                 seen[name] = 1
 
             # Log-normal shelf price, snapped to a retail-looking ending.
-            raw_price = math.exp(rng.gauss(0.55, 0.62))
-            price = money(max(Decimal("0.45"), money(raw_price)))
-            pence = rng.choice([Decimal("0.99"), Decimal("0.49"), Decimal("0.95")])
-            price = money(Decimal(int(price)) + pence)
+            # Price: the category's typical shelf price, moved by pack size,
+            # with log-normal spread around it. Indian MRP is whole rupees
+            # ending in 0, 5 or 9 — no paise on a shelf edge.
+            raw_price = (
+                CATEGORY_PRICE_MEDIAN[category_name]
+                * variant_price_factor(variant)
+                * math.exp(rng.gauss(0.0, 0.34))
+            )
+            if raw_price < 25:
+                price = money(Decimal(max(5, round(raw_price / 5) * 5)))
+            else:
+                tens = max(1, round(raw_price / 10))
+                price = money(Decimal(tens * 10 - rng.choice([0, 0, 1, 5])))
 
             margin = cat.margin * rng.uniform(0.85, 1.15)
             cost = money(price * Decimal(str(1.0 - min(0.7, max(0.12, margin)))))
@@ -973,7 +1280,7 @@ def build_supplier_relationships(
             supplier_index,
             srng.choice([14, 30, 30, 45]),
             lead_time + srng.choice([0, 1, 2]),
-            str(money(srng.choice([150, 200, 250, 400]))),
+            str(money(srng.choice([8000, 12000, 15000, 25000]))),
             str(money(srng.choice([0, 0, 1.5, 2.5]))),
             srng.choice([14, 28, 30]),
             old_from.isoformat(),
@@ -990,7 +1297,7 @@ def build_supplier_relationships(
             supplier_index,
             srng.choice([30, 45, 45, 60]),
             lead_time,
-            str(money(srng.choice([200, 250, 300, 500]))),
+            str(money(srng.choice([10000, 15000, 20000, 30000]))),
             str(money(srng.choice([0, 1.0, 2.0, 3.0]))),
             srng.choice([14, 28, 30]),
             renegotiated.isoformat(),
@@ -1105,18 +1412,74 @@ def build_promotions(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def build_day_factors(window_start: date, window_end: date) -> dict[date, float]:
-    """Holiday collapse plus the ramp of trade in the days before it."""
+def festival_multiplier(festival: Festival, day: date) -> float | None:
+    """Where `day` sits on this festival's curve, or None if outside it.
+
+    Three regions: a ramp before, the day itself, and a tail after.
+
+    The ramp is `1 + (peak - 1) * progress ** shape`, where progress runs 0 at
+    the far edge to 1 the day before. With shape > 1 the early weeks stay
+    almost flat and the last few days climb hard, which is the shape a real
+    festive build has — and the reason a single-day multiplier or a sinusoid
+    cannot stand in for it.
+    """
+    delta = (day - festival.peak).days
+
+    if delta == 0:
+        return festival.day_factor
+
+    if delta < 0:
+        offset = -delta
+        if offset > festival.ramp_days:
+            return None
+        progress = (festival.ramp_days - offset + 1) / festival.ramp_days
+        return 1.0 + (festival.ramp_peak - 1.0) * progress**festival.ramp_shape
+
+    if delta > festival.tail_days:
+        return None
+    decay = 1.0 - (delta / (festival.tail_days + 1))
+    return 1.0 + (festival.tail_factor - 1.0) * decay
+
+
+def build_day_factors(
+    window_start: date, window_end: date, store_id: int
+) -> dict[date, float]:
+    """The festival factor for every day in the window, for one store.
+
+    Per store, because some festivals are regional. Overlapping festivals
+    combine by taking the strongest rather than by multiplying: through
+    September and October, Ganesh Chaturthi's tail, Navratri, Dussehra and the
+    Diwali ramp all overlap, and multiplying four ramps together produces a
+    number no shop has ever seen. Taking the max produces a sustained six-week
+    elevation with peaks on the individual days, which is what the season
+    actually looks like.
+
+    Days at or below 1.0 win outright — Holi morning is quiet regardless of
+    what else is ramping.
+    """
     factors: dict[date, float] = {}
-    for holiday, name, factor in HOLIDAY_DEFS:
-        factors[holiday] = factor
-        ramp = CHRISTMAS_RAMP if "Christmas" in name else PRE_HOLIDAY_RAMP
-        for offset, multiplier in ramp.items():
-            day = holiday - timedelta(days=offset)
-            if day in factors and factors[day] < 1.0:
-                continue
-            factors[day] = max(factors.get(day, 1.0), multiplier)
-    return {d: f for d, f in factors.items() if window_start <= d <= window_end}
+    for festival in FESTIVALS:
+        weight = REGIONAL_FESTIVAL_WEIGHT.get(festival.name, {}).get(store_id, 1.0)
+        span_start = festival.peak - timedelta(days=festival.ramp_days)
+        span_end = festival.peak + timedelta(days=festival.tail_days)
+        day = span_start
+        while day <= span_end:
+            if window_start <= day <= window_end:
+                raw = festival_multiplier(festival, day)
+                if raw is not None:
+                    # Regional weight scales the deviation from 1.0, not the
+                    # multiplier, so a weight of 0.9 damps the effect rather
+                    # than damping trade.
+                    value = 1.0 + (raw - 1.0) * weight
+                    current = factors.get(day)
+                    if current is None:
+                        factors[day] = value
+                    elif current <= 1.0 or value <= 1.0:
+                        factors[day] = min(current, value)
+                    else:
+                        factors[day] = max(current, value)
+            day += timedelta(days=1)
+    return factors
 
 
 def build_seasonality() -> dict[int, list[float]]:
@@ -1137,13 +1500,18 @@ def build_seasonality() -> dict[int, list[float]]:
 
 
 def build_dow_factors() -> dict[int, list[float]]:
-    """Weekday shape per category. Monday index 0, Sunday index 6."""
-    base = [0.85, 0.88, 0.94, 1.02, 1.22, 1.00, 1.00]
+    """Weekday shape per category. Monday index 0, Sunday index 6.
+
+    Sunday is the peak, not Saturday: Indian grocery weeks build to a Sunday
+    family shop, with Saturday second. Weekend_uplift on the category is the
+    Sunday figure and Saturday derives from it.
+    """
+    base = [0.86, 0.90, 0.95, 1.00, 1.08, 1.00, 1.00]
     table: dict[int, list[float]] = {}
     for index, cat in enumerate(CATEGORY_DEFS, start=1):
         row = list(base)
-        row[5] = cat.weekend_uplift
-        row[6] = 1.0 + (cat.weekend_uplift - 1.0) * 0.72
+        row[6] = cat.weekend_uplift
+        row[5] = 1.0 + (cat.weekend_uplift - 1.0) * 0.80
         table[index] = row
     return table
 
@@ -1169,13 +1537,16 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
 
     seasonality = build_seasonality()
     dow_factors = build_dow_factors()
-    day_factors = build_day_factors(window_start, window_end)
     dates = [window_start + timedelta(days=i) for i in range(spec.days)]
     trend = [1.0 + 0.12 * (i / max(1, spec.days - 1)) for i in range(spec.days)]
 
     by_id = {p.product_id: p for p in products}
-    tax_exempt = {
-        p.product_id: (p.department in TAX_EXEMPT_DEPARTMENTS) for p in products
+    gst_rate = {
+        p.product_id: Decimal(CATEGORY_DEFS[p.category_id - 1].gst_rate)
+        for p in products
+    }
+    festive_lift = {
+        p.product_id: CATEGORY_DEFS[p.category_id - 1].festive_lift for p in products
     }
 
     sale_id = 0
@@ -1186,6 +1557,8 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
 
     for store in stores:
         srng = substream("store-ops", store.store_id)
+        # Per store: some festivals are regional.
+        day_factors = build_day_factors(window_start, window_end, store.store_id)
         demand_rngs = {
             p.product_id: substream("demand", store.store_id, p.product_id)
             for p in products
@@ -1249,6 +1622,9 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
                 )
                 open_orders.pop(product_id, None)
 
+            # No Indian festival in FESTIVALS closes the store — trade drops
+            # sharply on Holi morning but does not stop. The guard stays for
+            # any calendar that does set a zero.
             if day_factor <= 0.0:
                 continue  # closed
 
@@ -1256,13 +1632,27 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
             sold_today: list[tuple[int, int, int | None, Decimal]] = []
             for product in products:
                 pid = product.product_id
+                # The festival factor is scaled per category before it is
+                # applied: a 2.4x Dhanteras is 2.4x for gift boxes and diyas
+                # and much less than that for toilet rolls.
+                #
+                # Only the UPLIFT is scaled. A quiet day — Holi morning, the
+                # slump after Diwali — hits every category equally, because
+                # what closes is the shop's footfall, not one aisle's appeal.
+                # Scaling downward by festive_lift would also drive lambda
+                # negative for the high-lift categories.
+                if day_factor >= 1.0:
+                    festival_factor = 1.0 + (day_factor - 1.0) * festive_lift[pid]
+                else:
+                    festival_factor = day_factor
+
                 lam = (
                     product.base_rate
                     * store.factor
                     * seasonality[product.category_id][doy]
                     * dow_factors[product.category_id][weekday]
                     * trend_factor
-                    * day_factor
+                    * festival_factor
                 )
 
                 promotion_id: int | None = None
@@ -1342,9 +1732,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
                     product = by_id[pid]
                     gross = money(unit_price * quantity)
                     discount = money((product.list_price - unit_price) * quantity)
-                    tax = (
-                        Decimal("0.00") if tax_exempt[pid] else money(gross * TAX_RATE)
-                    )
+                    tax = money(gross * gst_rate[pid])
                     subtotal += gross
                     discount_total += discount
                     tax_total += tax
@@ -1400,9 +1788,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
                     quantity = -brng.choice([1, 1, 2])
                     on_hand[pid] -= quantity
                     gross = money(unit_price * quantity)
-                    tax = (
-                        Decimal("0.00") if tax_exempt[pid] else money(gross * TAX_RATE)
-                    )
+                    tax = money(gross * gst_rate[pid])
                     sale_id += 1
                     sale_line_id += 1
                     sold_at = datetime(

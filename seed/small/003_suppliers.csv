@@ -1,13 +1,13 @@
 supplier_id,code,name,contact_email,is_active
-1,SUP-01,Ashcombe Wholesale,orders@sup01.example,true
-2,SUP-02,Pennine Fresh Foods,orders@sup02.example,true
-3,SUP-03,Calder Dairy Group,orders@sup03.example,true
-4,SUP-04,Northgate Frozen Ltd,orders@sup04.example,true
-5,SUP-05,Blackwater Provisions,orders@sup05.example,true
-6,SUP-06,Verity Beverages,orders@sup06.example,true
-7,SUP-07,Harrowgate Wine & Spirits,orders@sup07.example,true
-8,SUP-08,Meridian Household,orders@sup08.example,true
-9,SUP-09,Fenwick Paper Co,orders@sup09.example,true
-10,SUP-10,Loxley Health Supply,orders@sup10.example,true
-11,SUP-11,Bramford Baby & Pet,orders@sup11.example,true
-12,SUP-12,Kestrel Seasonal Goods,orders@sup12.example,true
+1,SUP-01,Sahyadri Agro Traders,orders@sup01.example,true
+2,SUP-02,Godavari Grains & Pulses,orders@sup02.example,true
+3,SUP-03,Gokul Dairy Distributors,orders@sup03.example,true
+4,SUP-04,Deccan Oils & Provisions,orders@sup04.example,true
+5,SUP-05,Bhusari Foods Pvt Ltd,orders@sup05.example,true
+6,SUP-06,Jhat Pat Foods,orders@sup06.example,true
+7,SUP-07,Nilgiri Beverage Company,orders@sup07.example,true
+8,SUP-08,Mithas Confectioners,orders@sup08.example,true
+9,SUP-09,Nirmal Home Products,orders@sup09.example,true
+10,SUP-10,Softwrap Paper Mills,orders@sup10.example,true
+11,SUP-11,Arogya Consumer Care,orders@sup11.example,true
+12,SUP-12,Deepmala Festive Supplies,orders@sup12.example,true

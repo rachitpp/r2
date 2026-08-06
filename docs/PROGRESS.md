@@ -27,38 +27,50 @@ Definition of done is in `docs/PLAN.md`.
 ## Last session
 
 _Date:_ 2026-08-06
-_What landed:_ All of Phase 0. The nine files, plus tests, plus the doc
-amendments agreed in the proposal. ADR directory nesting fixed (they were at
-`docs/adr/docs/adr/…`, so every ADR link in the README was dead) and the ADR-0008
-trailing-typo fixed. `uv` and `ruff` installed.
-_What didn't, and why:_ Nothing was cut. One item is blocked rather than
-skipped — see LOCALE below.
+_What landed:_ Phase 0 complete and pushed. Then the locale was resolved to
+**India** and the whole dataset regenerated: INR, Asia/Kolkata, a Maharashtra
+chain (Pune / Nashik / Nagpur), an Indian grocery catalogue, GST by category
+slab, and a real festival model. ADR-0004's reset budget amended to the
+measured numbers; CONVENTIONS gained the migration→`make schema-doc` rule.
+_What didn't, and why:_ Phase 1 has not started. The locale change had to land
+first and finish clean.
 _Anything half-finished someone would trip over:_ No.
-_Is the system in a working state?_ Yes. `make db` → `make test` is green:
-27 tests pass, `ruff check` and `ruff format --check` clean, seed verified
-byte-identical at both sizes.
+_Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tests,
+`ruff` clean, seed byte-identical at both sizes, `schema.md` current.
 
 ## Next session should
 
-1. **Answer the LOCALE question below** if the corpus is available, and
-   regenerate. Do this before writing any eval question.
-2. Start Phase 1: `business_context.md` first, before any prompt engineering
-   (ADR-0001). `schema.md` is already generated and committed.
-3. Build the LIMIT wrapper (named debt, below).
+1. Write `api/prompts/context/business_context.md` — first, before any prompt
+   engineering or eval questions (ADR-0001). **Propose it before writing the
+   eval set.** It must teach at minimum: `AS_OF_DATE` not `current_date`;
+   signed quantity; out-of-stock vs low-stock; restock defaults to
+   `on_hand <= reorder_point`; `business_date` not `sold_at`;
+   `valid_period @> DATE 'x'`; every `ORDER BY` needs a tiebreak.
+2. Then `evals/sql/questions.jsonl` — 30–50 questions with expected result sets
+   computed against `AS_OF_DATE`, each carrying `view_covered`.
+3. Then the LIMIT wrapper, then SQL generation, then the Next.js scaffold.
+   Design tokens get proposed before any component.
 
-## Blocked — needs a decision before Phase 1's eval set is written
+## Locale — resolved, India
 
-**LOCALE is a placeholder.** The rule agreed was that Phase 0's seed and Phase
-2's corpus share a world — currency, holiday calendar, store names and SKU
-conventions all derived from wherever the real invoices come from. `corpus/`
-is empty, so that was not derivable. The seed currently uses GBP /
-Europe/London / UK bank holidays, marked `PLACEHOLDER` in a single block at the
-top of `api/scripts/seed.py`.
+Currency INR, timezone Asia/Kolkata, modelled as a Maharashtra grocery chain
+(Kothrud/Pune, Gangapur Road/Nashik, Dharampeth/Nagpur). This is now final and
+the eval set can be written against it.
 
-Changing it: edit that block, `make seed-generate` at both sizes, commit
-`seed/small/` and `seed/CHECKSUMS.txt`. About two minutes. **But it must happen
-before the Phase 1 eval set exists**, because every expected result set is
-computed against this data, and regenerating afterwards invalidates all of them.
+**Two things still to check against the corpus when it lands**, both flagged in
+the LOCALE block of `api/scripts/seed.py`:
+
+- **Festival dates.** Solar ones are fixed; the lunisolar and lunar ones —
+  Diwali, Holi, Ganesh Chaturthi, and especially the two Eids — are marked
+  `APPROX` in the code. Wrong festival dates are visible to any Indian reviewer.
+- **GST slabs.** India simplified the slab structure during 2025, so the
+  per-category rates are indicative. Real invoices in the corpus carry the real
+  rates and those win.
+
+Correcting either means editing that block, `make seed-generate` at both sizes,
+and committing the regenerated `seed/small/` + `seed/CHECKSUMS.txt` — **which
+invalidates every eval expected result set written before it.** Do it before
+Phase 1's eval set if it is going to happen at all.
 
 ## Named debt carried into Phase 1
 
@@ -98,6 +110,27 @@ computed against this data, and regenerating afterwards invalidates all of them.
 - **`sale_lines.quantity` is signed** — negative on returns — so `SUM(quantity)`
   is net, not gross. `daily_product_sales` names `units_sold`, `return_units`
   and `net_units` separately. Good eval question; likely silent-wrong trap.
+- **The festive season is the strongest signal in the data.** Navratri →
+  Dussehra → Dhanteras → Diwali is one continuous six-week build, not four
+  spikes: ₹417k/day against a ₹267k/day baseline, peaking at 2.75x on 17 Oct
+  2025 (the day before Dhanteras) and collapsing to a 12-day slump afterwards.
+  Festivals are their own factor (`Festival` + `build_day_factors`), separate
+  from the category sinusoid, because a sinusoid is symmetric and slow and this
+  shape is neither. Overlapping festivals combine by **max, not product** —
+  multiplying four ramps produces a number no shop has seen.
+- **`full` contains exactly one Diwali (Oct 2025); `small` contains none**, since
+  `small` starts 2026-01-02 and Diwali 2026 is past `DATA_END_DATE`. Do not
+  write a Diwali eval question and test it on `small`.
+- **Ganesh Chaturthi and Gudi Padwa are weighted per store** — Pune indexes
+  above Nagpur. Everything else applies chain-wide.
+- **GST is per category, not a flat rate**: 0% fresh produce, 5% staples/dairy,
+  12% packaged foods, 18% household and personal care, 28% aerated drinks. So a
+  basket's effective rate is a blend, `sales.subtotal` is net of tax, and
+  `total = subtotal + tax_total`. "Revenue" normally means `subtotal`.
+- **Prices are category-banded, not free log-normal** (`CATEGORY_PRICE_MEDIAN`
+  × `variant_price_factor`). Without that the generator produced ₹225 bananas
+  beside a ₹78 five-litre oil jar — which loads cleanly, passes every
+  constraint, and makes any revenue question answer noise.
 - **Velocity divides by days the product was *available*,** not by 30.
   `stockout_days` exists because sales are capped by stock, so the products a
   restock question is about are exactly the ones whose sales understate demand.

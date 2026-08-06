@@ -53,6 +53,13 @@ How to work in this repo.
 - **Numbered SQL migrations. Never Alembic** (ADR-0004). `migrations/00N_name.sql`,
   applied in order by `make db`.
 - No down-migrations. The database is always droppable; `make db` resets.
+- **Every table and column gets a `COMMENT ON`, and any migration is followed by
+  `make schema-doc` in the same commit.** `api/prompts/context/schema.md` is
+  generated from those comments and is injected into every SQL prompt, so a
+  stale one feeds the model documentation that no longer matches the database —
+  which is the most productive source of confidently-wrong SQL there is. CI
+  fails when the committed copy is stale, but catching it at commit time is the
+  point. `business_context.md` next door is hand-written; nothing generates it.
 - **`ORDER BY` anywhere order matters.** Postgres guarantees nothing without it,
   and unstable ordering silently changes eval scores.
 - Seed generation happens in Python with `random.Random(42)`, writes CSVs, then

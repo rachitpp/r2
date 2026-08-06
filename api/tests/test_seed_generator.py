@@ -68,21 +68,71 @@ def test_every_table_has_a_column_list():
     assert set(seed.TABLE_ORDER) == set(seed.COLUMNS)
 
 
-def test_christmas_day_closes_the_store():
-    factors = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30))
-    assert factors[date(2025, 12, 25)] == 0.0
-    # Trade spikes in the run-up rather than simply stopping.
-    assert factors[date(2025, 12, 23)] > 1.5
+def test_diwali_is_a_multi_week_ramp_not_a_single_day_spike():
+    """The whole point of the Festival model.
+
+    A single-day multiplier or a sinusoid cannot produce this shape, so assert
+    the shape rather than any one value: elevated three weeks out, climbing
+    monotonically into Dhanteras, and a slump on the far side.
+    """
+    factors = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30), 1)
+
+    three_weeks_out = factors[date(2025, 9, 29)]
+    ten_days_out = factors[date(2025, 10, 8)]
+    peak = factors[date(2025, 10, 17)]  # day before Dhanteras
+    slump = factors[date(2025, 10, 25)]
+
+    assert three_weeks_out > 1.0
+    assert ten_days_out > three_weeks_out
+    assert peak > ten_days_out
+    assert peak > 2.5
+    assert slump < 0.9
+
+    # The build is genuinely weeks long, not a handful of days.
+    elevated = [d for d, f in factors.items() if f > 1.3 and d.month == 10]
+    assert len(elevated) >= 14
 
 
-def test_seasonality_opposes_for_hot_and_cold_drinks():
+def test_holi_is_quiet_on_the_day_and_busy_before_it():
+    factors = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30), 1)
+    assert factors[date(2026, 3, 4)] < 0.7
+    assert factors[date(2026, 3, 3)] > 1.4
+
+
+def test_regional_festivals_are_weighted_by_store():
+    """Ganesh Chaturthi is a Maharashtra event; Pune should out-index Nagpur."""
+    pune = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30), 1)
+    nagpur = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30), 3)
+    day = date(2025, 8, 26)
+    assert pune[day] > nagpur[day] > 1.0
+
+
+def test_overlapping_festivals_combine_by_max_not_by_product():
+    """Four overlapping ramps multiplied together produce a fantasy number."""
+    factors = seed.build_day_factors(date(2025, 1, 1), date(2026, 6, 30), 1)
+    assert max(factors.values()) < 3.0
+
+
+def test_seasonality_opposes_for_cold_and_hot_drinks():
     table = seed.build_seasonality()
     names = [c.name for c in seed.CATEGORY_DEFS]
-    soft = table[names.index("Soft Drinks") + 1]
-    hot = table[names.index("Hot Drinks") + 1]
-    midsummer, midwinter = 196, 15
-    assert soft[midsummer] > soft[midwinter]
-    assert hot[midwinter] > hot[midsummer]
+    cold = table[names.index("Soft Drinks & Juices") + 1]
+    hot = table[names.index("Tea & Coffee") + 1]
+    peak_summer, midwinter = 150, 15
+    assert cold[peak_summer] > cold[midwinter]
+    assert hot[midwinter] > hot[peak_summer]
+
+
+def test_sunday_outsells_saturday():
+    table = seed.build_dow_factors()
+    for row in table.values():
+        assert row[6] >= row[5], "Sunday is the peak grocery day in this market"
+
+
+def test_gst_rates_are_valid_slabs():
+    slabs = {"0.00", "0.05", "0.12", "0.18", "0.28"}
+    for cat in seed.CATEGORY_DEFS:
+        assert cat.gst_rate in slabs, f"{cat.name} has slab {cat.gst_rate}"
 
 
 def test_no_user_display_name_looks_like_a_person(tmp_path):

@@ -1,19 +1,19 @@
 category_id,name,department
-1,Fresh Produce,Grocery
-2,Bakery,Bakery
-3,Dairy & Eggs,Grocery
-4,Meat & Fish,Grocery
-5,Frozen Foods,Grocery
-6,Store Cupboard,Grocery
-7,Snacks & Confectionery,Grocery
-8,Soft Drinks,Beverages
-9,Hot Drinks,Beverages
-10,"Beer, Wine & Spirits",Beverages
-11,Household Cleaning,Household
-12,Laundry,Household
-13,Paper & Disposables,Household
-14,Health & Wellbeing,Health & Beauty
+1,Fruits & Vegetables,Fresh
+2,"Atta, Rice & Dal",Staples
+3,Dairy & Paneer,Fresh
+4,Edible Oils & Ghee,Staples
+5,Masalas & Spices,Staples
+6,Snacks & Namkeen,Packaged Foods
+7,Biscuits & Bakery,Packaged Foods
+8,Ready to Cook,Packaged Foods
+9,Tea & Coffee,Beverages
+10,Soft Drinks & Juices,Beverages
+11,Sweets & Chocolates,Packaged Foods
+12,Home Care,Household
+13,Detergents & Laundry,Household
+14,Paper & Disposables,Household
 15,Personal Care,Health & Beauty
-16,Baby & Child,Health & Beauty
-17,Pet Supplies,General Merchandise
-18,Seasonal & Gifting,General Merchandise
+16,Health & Wellness,Health & Beauty
+17,Baby Care,Health & Beauty
+18,Pooja & Festive,General Merchandise

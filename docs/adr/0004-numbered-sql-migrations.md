@@ -42,9 +42,26 @@ Alembic.
 ## Known cost
 
 `agent_runs` and `proposed_actions` will change shape repeatedly during Phase 4,
-and with no down-migrations that means `make db` each time. Mitigation: keep a
-full reset under ~15 seconds, with `SEED_SIZE=small` for development and `full`
-for the demo build.
+and with no down-migrations that means rebuilding each time.
+
+**Mitigation, measured in Phase 0.** The rebuild is split in two, which is also
+the test-isolation mechanism ADR-0005 asks for:
+
+| | What it does | `small` | `full` |
+|---|---|---|---|
+| `make db` | migrations, `COPY`, refresh, mark template | 13s | 60s |
+| `make reset` | `CREATE DATABASE … TEMPLATE` — a file copy | 1.8s | 5.6s |
+
+The original target was a full reset under ~15 seconds. `make db` at `full`
+misses that at 60s, and it does not matter: `make db` only runs when the schema
+or the seed changes. The loop that runs constantly — after every migration edit
+in Phase 4, and once per test that needs isolation — is `make reset`, which is
+seconds at any size because Postgres copies the template's files rather than
+replaying the load. Sizing the seed is therefore not constrained by reset speed.
+
+`SEED_SIZE=small` remains the development default and `full` the demo build.
+They are independent datasets, not subset and superset; every eval runs against
+`full`.
 
 ## What would flip it
 

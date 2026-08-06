@@ -59,7 +59,7 @@ The product catalogue. Chain-wide: a product is the same product in every store.
 | `category_id` | smallint NOT NULL | FK → categories |  |
 | `unit_of_measure` | text NOT NULL |  |  |
 | `pack_size` | integer NOT NULL |  |  |
-| `list_price` | numeric(12,2) NOT NULL |  | Shelf price before any promotion. The price actually charged is on sale_lines.unit_price, which may be lower during a promotion. |
+| `list_price` | numeric(12,2) NOT NULL |  | Shelf price (MRP) before any promotion, net of tax, in the currency on supplier_prices.currency. The price actually charged is on sale_lines.unit_price, which may be lower during a promotion. |
 | `is_active` | boolean NOT NULL |  |  |
 | `discontinued_on` | date |  |  |
 
@@ -157,10 +157,10 @@ Transaction headers — one row per basket. A refund is a separate row with sale
 | `business_date` | date NOT NULL |  | The store's trading day in its own timezone. This is the correct column for every daily, weekly, monthly or year-on-year aggregation. It is not always equal to the UTC date of sold_at. |
 | `sale_type` | text NOT NULL |  |  |
 | `tender_type` | text NOT NULL |  |  |
-| `subtotal` | numeric(12,2) NOT NULL |  |  |
-| `discount_total` | numeric(12,2) NOT NULL |  |  |
-| `tax_total` | numeric(12,2) NOT NULL |  |  |
-| `total` | numeric(12,2) NOT NULL |  |  |
+| `subtotal` | numeric(12,2) NOT NULL |  | Sum of the line totals, NET of tax. Equals sum(sale_lines.line_total) for this sale. |
+| `discount_total` | numeric(12,2) NOT NULL |  | Total promotional discount given on this sale, as a positive number. It has already been taken off subtotal — do not subtract it again. |
+| `tax_total` | numeric(12,2) NOT NULL |  | GST charged, summed per line at the rate for that product's category. Rates vary by category: staples and fresh produce are 0% or 5%, packaged foods 12%, most household and personal care 18%, aerated drinks 28%. So the effective rate on a basket is a blend and cannot be assumed. |
+| `total` | numeric(12,2) NOT NULL |  | What the customer paid: subtotal + tax_total. Revenue questions normally mean subtotal (net of tax); cash-collected questions mean total. |
 
 ## `stockout_days`
 
