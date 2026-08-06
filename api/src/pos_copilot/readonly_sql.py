@@ -89,6 +89,9 @@ class GuardedQuery:
     sql: str
     max_rows: int
     original: str = field(repr=False)
+    #: The validated inner query, without the bounding wrapper. Used to count
+    #: the true number of matching rows when the cap truncates the answer.
+    original_body: str = field(repr=False, default="")
 
 
 def strip_sql(sql: str) -> str:
@@ -198,8 +201,15 @@ def guard(sql: str, max_rows: int = DEFAULT_MAX_ROWS) -> GuardedQuery:
     # The bounding subquery caps rows regardless of what the inner query says.
     # An inner LIMIT larger than ours is overridden; a smaller one still wins,
     # which is correct — the model asking for fewer rows is not a problem.
-    wrapped = f"SELECT * FROM (\n{body}\n) AS _guarded LIMIT {max_rows}"
-    return GuardedQuery(sql=wrapped, max_rows=max_rows, original=sql)
+    # LIMIT is max_rows + 1, not max_rows. The extra row is a probe and is
+    # never returned to anyone: it is the only way to distinguish "exactly
+    # max_rows matched" from "more matched and the rest were cut off". Without
+    # it a full page is ambiguous, and a truncated answer goes out silently.
+    # The enforced cap on returned data is still max_rows.
+    wrapped = f"SELECT * FROM (\n{body}\n) AS _guarded LIMIT {max_rows + 1}"
+    return GuardedQuery(
+        sql=wrapped, max_rows=max_rows, original=sql, original_body=body
+    )
 
 
 class ScopeViolation(RuntimeError):
@@ -261,14 +271,35 @@ def execute(
     with conn.cursor(name="guarded_read") as cur:
         cur.itersize = min(guarded.max_rows, 200)
         cur.execute(guarded.sql)
-        rows = cur.fetchmany(guarded.max_rows)
+        # The wrapper selected max_rows + 1; getting all of them means there
+        # was more, as a fact rather than an inference from a full page.
+        rows = cur.fetchmany(guarded.max_rows + 1)
         columns = [d.name for d in cur.description] if cur.description else []
+
+    truncated = len(rows) > guarded.max_rows
+    rows = rows[: guarded.max_rows]
+
+    total = len(rows)
+    if truncated:
+        # A silently truncated answer is a production silent-wrong: 100
+        # plausible rows, no error, and the rest missing with nothing to say
+        # so. Costing one extra COUNT here buys an honest "440 matched,
+        # showing the first 100" instead.
+        with conn.cursor() as counter:
+            counter.execute(f"SELECT count(*) FROM ({guarded.original_body}) _n")
+            total = counter.fetchone()[0]
 
     result = {
         "columns": columns,
         "rows": [list(row) for row in rows],
         "row_count": len(rows),
-        "truncated": len(rows) >= guarded.max_rows,
+        "total_row_count": total,
+        "truncated": truncated,
+        "notice": (
+            f"{total} rows matched; showing the first {len(rows)}."
+            if truncated
+            else None
+        ),
         "executed_sql": guarded.sql,
     }
     check_scope(result, visible_store_ids)

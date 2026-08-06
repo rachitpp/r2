@@ -97,9 +97,42 @@ def rows_of(result: dict) -> list[tuple[str, ...]]:
     return [tuple(normalise(v) for v in row) for row in result.get("rows", [])]
 
 
-def compare(expected: dict, actual: dict) -> Judgement:
-    """Ordered result-set comparison, with order treated as its own failure."""
+#: What a question's text actually determines about its answer.
+#:
+#: The first eval run scored 0/4 because every reference carried an arbitrary
+#: LIMIT the question never asked for — the model returned the right rows and
+#: was marked wrong for not guessing the cutoff. A question that does not
+#: determine its own answer cannot score one. See evals/README.md.
+ORDERED_SHAPES = frozenset({"top_n", "ranked_all", "scalar"})
+UNORDERED_SHAPES = frozenset({"all_matching"})
+
+
+def compare(expected: dict, actual: dict, shape: str = "top_n") -> Judgement:
+    """Compare result sets according to what the question determines.
+
+    - `top_n` / `ranked_all` / `scalar` — the question fixes both the rows and
+      their order, so comparison is an ordered exact match.
+    - `all_matching` — the question fixes the rows but not their order, so
+      comparison is **multiset equality against the whole true result**.
+
+    Multiset equality, not containment. Over-fetching fails, because a loose
+    predicate adds rows the reference does not have. Under-fetching fails too —
+    a model capping at 20 rows where 30 match gives a different set, and an
+    incomplete answer is a wrong answer. Ignoring the model's LIMIT means not
+    penalising the *clause*; it never means not penalising its *effect*.
+    """
     want, got = rows_of(expected), rows_of(actual)
+
+    if shape in UNORDERED_SHAPES:
+        if sorted(want) == sorted(got):
+            return Judgement(Outcome.CORRECT)
+        missing = len([r for r in want if r not in got])
+        extra = len([r for r in got if r not in want])
+        return Judgement(
+            Outcome.WRONG_ROWS,
+            f"set differs: {missing} expected rows missing, {extra} unexpected "
+            f"(expected {len(want)}, got {len(got)})",
+        )
 
     if want == got:
         return Judgement(Outcome.CORRECT)
@@ -172,7 +205,20 @@ def judge(
             f"expected no rows, got {execution['row_count']}",
         )
 
-    return compare(question["expected"], execution)
+    # A truncated result cannot be compared honestly — the missing rows are
+    # unknowable from here. Surfacing it as its own failure keeps it from being
+    # scored as a wrong answer when it is really a question that outgrew the cap.
+    if execution.get("truncated"):
+        return Judgement(
+            Outcome.EXECUTION_ERROR,
+            f"result truncated at {execution['row_count']} rows "
+            f"({execution.get('total_row_count', 'unknown')} matched) — the "
+            "question needs narrowing, or the cap raising",
+        )
+
+    return compare(
+        question["expected"], execution, question.get("result_shape") or "top_n"
+    )
 
 
 def summarise(judgements: list[tuple[dict, Judgement]]) -> dict:

@@ -29,13 +29,19 @@ SAFE = "SELECT sku, on_hand FROM inventory ORDER BY sku"
 
 
 def test_a_limit_is_added_when_the_model_omits_one():
-    assert "LIMIT 100" in guard(SAFE).sql
+    assert "LIMIT 101" in guard(SAFE).sql
+    assert guard(SAFE).max_rows == 100
 
 
 def test_our_limit_binds_even_when_the_model_asks_for_more():
-    """The wrapper caps the outer result regardless of the inner LIMIT."""
+    """The wrapper caps the outer result regardless of the inner LIMIT.
+
+    The wrapper selects max_rows + 1; the extra row is a truncation probe and
+    is never returned. The enforced cap on returned data is still max_rows.
+    """
     guarded = guard("SELECT * FROM sale_lines LIMIT 500000", max_rows=25)
-    assert guarded.sql.endswith("LIMIT 25")
+    assert guarded.sql.endswith("LIMIT 26")
+    assert guarded.max_rows == 25
     assert "LIMIT 500000" in guarded.sql  # inner query untouched, outer caps it
 
 

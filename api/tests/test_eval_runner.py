@@ -261,3 +261,45 @@ def test_the_stub_needs_no_key_and_records_what_it_was_asked():
     assert stub.generate("what are we low on") == "SELECT 1"
     assert stub.generate("something else").startswith("-- INSUFFICIENT SCHEMA")
     assert len(stub.calls) == 2
+
+
+# ── Shape-aware comparison ───────────────────────────────────────────────────
+
+
+def test_all_matching_ignores_row_order():
+    verdict = compare({"rows": [[1], [2]]}, {"rows": [[2], [1]]}, "all_matching")
+    assert verdict.outcome is Outcome.CORRECT
+
+
+def test_all_matching_fails_on_over_fetching():
+    """A loose predicate adds rows the reference does not have."""
+    verdict = compare({"rows": [[1], [2]]}, {"rows": [[1], [2], [3]]}, "all_matching")
+    assert verdict.outcome is Outcome.WRONG_ROWS
+    assert "1 unexpected" in verdict.detail
+
+
+def test_all_matching_fails_on_under_fetching():
+    """An incomplete answer is a wrong answer, LIMIT clause or not."""
+    verdict = compare({"rows": [[1], [2], [3]]}, {"rows": [[1], [2]]}, "all_matching")
+    assert verdict.outcome is Outcome.WRONG_ROWS
+    assert "1 expected rows missing" in verdict.detail
+
+
+def test_ordered_shapes_still_care_about_order():
+    for shape in ("top_n", "ranked_all", "scalar"):
+        verdict = compare({"rows": [[1], [2]]}, {"rows": [[2], [1]]}, shape)
+        assert verdict.outcome is Outcome.WRONG_ORDER, shape
+
+
+def test_a_truncated_result_is_not_scored_as_a_wrong_answer():
+    """The missing rows are unknowable, so comparison would be dishonest."""
+    q = {"expects": "rows", "result_shape": "all_matching", "expected": {"rows": [[1]]}}
+    execution = {
+        "rows": [[1]],
+        "row_count": 100,
+        "truncated": True,
+        "total_row_count": 440,
+    }
+    verdict = judge(q, "SELECT 1", execution, None)
+    assert verdict.outcome is Outcome.EXECUTION_ERROR
+    assert "440 matched" in verdict.detail

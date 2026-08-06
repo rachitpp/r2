@@ -168,6 +168,32 @@ transitions are themselves a tell.
 - **pytest asserts. Evals measure. They are different things** (ADR-0005).
 - Evals are `make eval-extraction` and `make eval-sql`, run at phase boundaries.
   **Never in pytest, never in CI** — they cost quota.
+
+### Stage 1 is a permanent gate, not a one-time ramp
+
+**Before any full eval run: five questions, one run, and read every failure by
+hand.** Only then the full set at one run, only then three.
+
+    make eval-sql EVAL_ARGS="--limit 5 --runs 1"
+
+This is not caution about spend. **An eval set cannot be validated by
+inspection, only by use.** The first staged run of the SQL set scored 0/4, and
+none of it was the model: every reference query carried an arbitrary `LIMIT`
+the question had never asked for, and one contradicted the generation prompt's
+own rule about store scope. All 45 questions had been read, reviewed and
+cross-checked against second queries beforehand. They still looked fine on the
+page. Seven model calls found what no amount of rereading had.
+
+Two rules that follow:
+
+- **Re-run stage 1 on questions that were not in the previous stage 1.**
+  Re-testing the ones just diagnosed proves only that those were fixed.
+- **A staged run that fails is not a result.** Do not write it to
+  `evals/results/`, and do not quote the number. Diagnose first; a published
+  0% that turns out to be an instrument bug is worse than no number.
+
+Defects found this way go in `evals/README.md`, which plays the same role for
+the eval set that `corpus/KNOWN_ISSUES.md` plays for the corpus.
 - pytest covers pure functions (date resolution, chunk boundaries, scoring) and DB
   integration via `CREATE DATABASE test_x TEMPLATE seeded_template`.
 - `ruff` for lint and format. mypy optional, does not gate CI.

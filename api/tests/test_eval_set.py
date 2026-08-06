@@ -214,3 +214,58 @@ def test_every_ordered_reference_query_has_a_total_order(questions):
             f"{q['id']} sorts on one non-unique key with no tiebreak: "
             f"{order_clause.strip()}"
         )
+
+
+VALID_SHAPES = {"top_n", "ranked_all", "all_matching", "scalar"}
+
+
+def test_every_answerable_question_declares_a_result_shape(questions):
+    """A question that does not determine its own answer cannot score one."""
+    for q in questions:
+        if q["expects"] in ("refusal", "out_of_scope", "disambiguation"):
+            assert q.get("result_shape") is None, q["id"]
+            continue
+        assert q.get("result_shape") in VALID_SHAPES, (
+            f"{q['id']}: {q.get('result_shape')}"
+        )
+
+
+def test_unordered_references_carry_no_arbitrary_limit(questions):
+    """all_matching is set equality against the WHOLE true result.
+
+    A LIMIT on the reference would make the expectation an arbitrary prefix
+    again — the exact defect recorded in evals/README.md.
+    """
+    import re
+
+    for q in questions:
+        if q.get("result_shape") != "all_matching":
+            continue
+        sql = q["reference_sql"] or ""
+        assert not re.search(r"\bLIMIT\s+\d+\s*$", sql.strip(), re.I | re.M), (
+            f"{q['id']} is all_matching but its reference caps rows"
+        )
+
+
+def test_top_n_questions_state_their_count(questions):
+    """If the answer is a shortlist, the question has to say how long."""
+    import re
+
+    for q in questions:
+        if q.get("result_shape") != "top_n":
+            continue
+        assert re.search(r"\b(\d+|five|ten|fifteen|twenty)\b", q["question"], re.I), (
+            f"{q['id']} is top_n but its question names no count: {q['question']!r}"
+        )
+
+
+def test_no_expectation_hits_the_row_cap(questions):
+    """At the cap the model's answer is truncated and cannot be compared."""
+    for q in questions:
+        if not q.get("expected"):
+            continue
+        assert q["expected"]["row_count"] <= 100, (
+            f"{q['id']} expects {q['expected']['row_count']} rows; the wrapper "
+            "would truncate the model's answer. Narrow the question."
+        )
+        assert not q["expected"]["truncated"], q["id"]

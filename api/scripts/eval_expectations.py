@@ -33,9 +33,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 QUESTIONS = REPO_ROOT / "evals" / "sql" / "questions.jsonl"
 SEED_CHECKSUMS = REPO_ROOT / "seed" / "CHECKSUMS.txt"
 
-# Result sets are committed, so they have to stay readable in a diff. Reference
-# queries carry their own LIMIT; this is a backstop.
-MAX_ROWS = 30
+# all_matching questions are scored by set equality against the WHOLE true
+# result, so the expectation has to hold every row. The ceiling is therefore
+# SQL_MAX_ROWS: a question whose true result exceeds it cannot be scored,
+# because the wrapper would truncate the model's answer. Such a question needs
+# narrowing — see evals/README.md.
+MAX_ROWS = 100
 
 
 def seed_fingerprint() -> str:
@@ -151,6 +154,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(empty)} reference queries returned NO ROWS: {', '.join(empty)}")
         print("An empty expectation scores every wrong answer as correct.")
         print('If empty is the correct answer, set expects="empty".')
+        return 1
+
+    oversized = [
+        q["id"] for q in updated if q.get("expected") and q["expected"]["truncated"]
+    ]
+    if oversized:
+        print(f"reference results exceed {MAX_ROWS} rows: {', '.join(oversized)}")
+        print("The wrapper would truncate the model's answer, so these cannot")
+        print("be scored. Narrow the question.")
         return 1
 
     wrongly_populated = [
