@@ -112,6 +112,10 @@ verify-seed: ## Regenerate into a temp dir and assert it matches seed/CHECKSUMS.
 	@$(PY_RUN) python api/scripts/seed.py --size $(SEED_SIZE) \
 	  --out /tmp/verify-$(SEED_SIZE) --verify
 
+eval-expectations: ## Recompute expected result sets in evals/sql/questions.jsonl
+	@cd api && $(UV) run python scripts/eval_expectations.py \
+	  --database-url "$${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/$(POSTGRES_DB)}"
+
 schema-doc: ## Regenerate api/prompts/context/schema.md from the database COMMENTs
 	@mkdir -p api/prompts/context
 	@{ \

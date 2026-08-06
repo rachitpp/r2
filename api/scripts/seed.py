@@ -165,9 +165,16 @@ FESTIVALS = [
 # Ganesh Chaturthi and Gudi Padwa are weighted by store because they are
 # regional events, not national ones. Pune is the Maharashtra stronghold.
 # Any festival not listed applies equally at every store.
+# The spread has to be wide enough to survive Poisson noise at a single store
+# over a two-week window, or the effect is real in the generator and invisible
+# in the data — which is worse than not modelling it, because a question about
+# it then has an answer that contradicts its own premise. At 1.00/0.94/0.88 the
+# Pune-to-Nagpur gap came out at roughly 2%, and Nashik out-indexed Pune on
+# noise. Pune is the Ganeshotsav epicentre and Nagpur is Vidarbha, where it is
+# a smaller event, so a wider spread is also the more accurate one.
 REGIONAL_FESTIVAL_WEIGHT = {
-    "Ganesh Chaturthi": {1: 1.00, 2: 0.94, 3: 0.88},
-    "Gudi Padwa": {1: 1.00, 2: 0.96, 3: 0.90},
+    "Ganesh Chaturthi": {1: 1.00, 2: 0.88, 3: 0.72},
+    "Gudi Padwa": {1: 1.00, 2: 0.92, 3: 0.82},
 }
 
 OPEN_HOUR, CLOSE_HOUR = 8, 22

@@ -40,16 +40,30 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
 
 ## Next session should
 
-1. Write `api/prompts/context/business_context.md` — first, before any prompt
-   engineering or eval questions (ADR-0001). **Propose it before writing the
-   eval set.** It must teach at minimum: `AS_OF_DATE` not `current_date`;
-   signed quantity; out-of-stock vs low-stock; restock defaults to
-   `on_hand <= reorder_point`; `business_date` not `sold_at`;
-   `valid_period @> DATE 'x'`; every `ORDER BY` needs a tiebreak.
-2. Then `evals/sql/questions.jsonl` — 30–50 questions with expected result sets
-   computed against `AS_OF_DATE`, each carrying `view_covered`.
-3. Then the LIMIT wrapper, then SQL generation, then the Next.js scaffold.
-   Design tokens get proposed before any component.
+1. **The LIMIT wrapper** — the named debt below. Reject anything that is not a
+   single `SELECT`, wrap as `SELECT * FROM (<sql>) _q LIMIT :n`, fetch through
+   a capped server-side cursor.
+2. **SQL generation** against `sql_generate.md`, then the first eval run:
+   `make eval-sql`, 41 questions × 3 runs. Report execution accuracy three
+   ways — overall, view-covered, not-view-covered — and read the ADR-0001
+   thresholds off the **not-view-covered** number.
+3. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
+   before any component is written (CONVENTIONS → Frontend).
+
+## Phase 1 so far
+
+- `api/prompts/context/business_context.md` — written first, before any prompt
+  work or eval question, per ADR-0001. Every factual claim in it was checked
+  against the built database rather than the draft.
+- `evals/sql/questions.jsonl` — 41 questions, expected result sets **generated**
+  by executing hand-written reference SQL (`make eval-expectations`), never
+  typed. Pinned to the seed by `seed_fingerprint`; a pytest fails when they
+  drift apart. `evals/sql/README.md` documents the schema and the trap coverage.
+- Four expectation kinds: `rows` (35), `empty` (1), `refusal` (3),
+  `disambiguation` (2). `empty` is a distinct kind on purpose — an empty
+  expectation filed under `rows` scores every wrong query as correct, and
+  `eval_expectations.py` treats that as a broken question rather than a result.
+- **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
 ## Locale — resolved, India
 
@@ -123,10 +137,22 @@ Phase 1's eval set if it is going to happen at all.
   write a Diwali eval question and test it on `small`.
 - **Ganesh Chaturthi and Gudi Padwa are weighted per store** — Pune indexes
   above Nagpur. Everything else applies chain-wide.
-- **GST is per category, not a flat rate**: 0% fresh produce, 5% staples/dairy,
-  12% packaged foods, 18% household and personal care, 28% aerated drinks. So a
-  basket's effective rate is a blend, `sales.subtotal` is net of tax, and
-  `total = subtotal + tax_total`. "Revenue" normally means `subtotal`.
+- **GST is per category AND per date.** The 22 September 2025 reform is inside
+  the window: slabs went 0/5/12/18/28 → 0/5/18/40, aerated drinks 28→40,
+  dairy/snacks/ready-to-cook/personal care/health/baby/pooja 12→5. Rates live
+  in `gst_rates` with the same `valid_period @> date` pattern as
+  `supplier_terms`. Effective rate measured at 8.42% before and 6.68% after;
+  the naive blend across the boundary is 7.52%, **true of no period**.
+  `sales.subtotal` is net of tax and `total = subtotal + tax_total`; "revenue"
+  normally means `subtotal`.
+- **Regional festival weighting exists but is NOT measurable at store level.**
+  Ganesh Chaturthi and Gudi Padwa are weighted per store (Pune 1.00, Nashik
+  0.88, Nagpur 0.72), but the `max` combination with unweighted national
+  festivals in the same window dilutes it below Poisson noise. An eval question
+  about it had an expected answer that contradicted its own premise, and was
+  replaced (q027 is now about store size confounding a comparison, which the
+  data does support). **Do not write an eval question about regional festival
+  differences** without first widening the spread and re-measuring.
 - **Prices are category-banded, not free log-normal** (`CATEGORY_PRICE_MEDIAN`
   × `variant_price_factor`). Without that the generator produced ₹225 bananas
   beside a ₹78 five-litre oil jar — which loads cleanly, passes every

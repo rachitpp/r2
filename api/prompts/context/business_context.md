@@ -35,9 +35,13 @@ no symbol, no formatting.
 **The data ends on a fixed date, and that date is what "now" means.** The
 system supplies it as `as_of_date`. Every relative period resolves against it:
 
-- "last month" is the calendar month before `as_of_date`
-- "the last 30 days" is the 30 days ending on `as_of_date`
+- **"last month" is the calendar month before the month containing
+  `as_of_date`.** `as_of_date` happens to be the last day of a month, so the
+  month containing it is complete — but "last month" still means the one
+  before it. Call the current one "this month" or name it.
+- "the last 30 days" is the 30 days ending on `as_of_date`, inclusive
 - "this year" is the calendar year containing `as_of_date`
+- "year to date" runs from 1 January of that year to `as_of_date`
 
 **Never use `current_date`, `now()`, `CURRENT_TIMESTAMP` or `CURRENT_DATE` in a
 query.** Real wall-clock time has moved past the end of the data, so a query
