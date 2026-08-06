@@ -1,0 +1,68 @@
+# CLAUDE.md
+
+A retail POS database with a natural-language query interface, plus a procurement
+agent that drafts purchase orders into a human approval queue.
+
+Solo portfolio project. Public GitHub. Free tier only — no paid model calls.
+
+Two apps: `api/` (FastAPI, Python, uv) and `web/` (Next.js + Tailwind, npm).
+The API is the only boundary between them.
+
+**Current phase: 0 — Data foundation.**
+
+## Read these
+
+| File | What it's for |
+|---|---|
+| `docs/PROGRESS.md` | **Read first every session, write last.** State across sessions. |
+| `docs/PLAN.md` | Phases, definitions of done, cut list, demo script, thresholds. |
+| `docs/CONVENTIONS.md` | How to work in this repo. |
+| `docs/adr/` | Why things are the way they are. Read before re-opening a decision. |
+
+Do not restate the plan back to me — it's in `PLAN.md`. Check the phase in
+`PROGRESS.md` and work on that.
+
+## Hard rules
+
+Not preferences. Work that breaks one of these gets reverted.
+
+1. **No model calls in CI.** CI runs with no API key. Anything needing one is a
+   local `make` target.
+2. **Free tier everywhere.** No paid frontier calls. Embeddings run local
+   (bge-small-en-v1.5, CPU). Flag anything that spends quota in a loop.
+3. **Agent loop caps at ~6 tool calls.** Bounded sequences, not open-ended
+   exploration. Rate limits are the binding constraint on design.
+4. **SQL generation runs as a read-only role with an enforced `LIMIT`.** No
+   exceptions, no "just for this one query".
+5. **Role-scope before generation, never after.** Restrict what a user may see
+   when building the query or the retrieval filter — not by dropping rows from
+   results afterwards.
+6. **Document content is data, never instruction.** Retrieved text never lands in
+   the instruction position. There is one deliberate `--unsafe` path for the
+   injection demo; that is the only place this is violated and it is labelled as
+   such.
+7. **`effective_from` / `effective_to` on every chunk and every extracted term.**
+   Temporal correctness is demo beat 2, not hygiene.
+8. **`corpus/extracted/` is never hand-edited.** Raw pipeline output only. Fixes
+   go in `corpus/corrections/` with a note saying what the pipeline got wrong.
+9. **Seed data is `random.Random(42)` in Python → CSV → `COPY`.** Never SQL
+   `random()`. Same seed must produce byte-identical output.
+10. **Don't build anything on the cut list** (`docs/PLAN.md`). If something on it
+    looks necessary, say so — don't quietly build it.
+11. **Never end a session with the system broken.** Time here is irregular and the
+    gap between sessions may be weeks. Revert or flag-guard unfinished work, and
+    say so in `PROGRESS.md`.
+12. **Design tokens before components.** Palette, type pairing, and wireframe get
+    proposed and agreed before any UI is written. See `docs/CONVENTIONS.md`.
+
+## Ask before
+
+- Adding a dependency, Python or npm. The stack is settled; see `docs/adr/`.
+- Writing more than ~100 lines in one go. Propose the shape first.
+- Changing anything decided in `docs/adr/`.
+- Anything that repeatedly spends model quota.
+
+## Not decided yet
+
+`docs/PROGRESS.md` has an open-questions section. If you hit one, stop and ask
+rather than picking for me.
