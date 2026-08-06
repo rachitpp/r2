@@ -79,6 +79,18 @@ jobs:
           git diff --exit-code -- api/prompts/context/schema.md \
             || { echo "::error::schema.md is stale. Run 'make schema-doc' and commit."; exit 1; }
 
+      # Not an eval run — no model, no quota (ADR-0005). This re-executes the
+      # hand-written reference SQL and checks the committed expected result
+      # sets still match. Catches a reference query edited without
+      # regenerating, which the seed fingerprint alone would not.
+      - name: Committed eval expectations match their reference SQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pos
+        run: |
+          make eval-expectations
+          git diff --exit-code -- evals/sql/questions.jsonl \
+            || { echo "::error::eval expectations are stale. Run 'make eval-expectations' and commit."; exit 1; }
+
       - name: pytest
         working-directory: api
         env:
