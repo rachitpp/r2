@@ -23,9 +23,12 @@ How to work in this repo.
 ## Where files go
 
     api/             FastAPI app, agent loop, ingestion, tools
+      prompts/       Prompt files — see ADR-0008. Never inline a prompt.
+        context/     business_context.md, schema.md — injected, not duplicated
       pyproject.toml  uv.lock  .python-version
-      tests/          pytest only
-      scripts/        Seed generator, scoring, eval runners
+      src/           Application code — layout decided by proposal
+      tests/         pytest only
+      scripts/       Seed generator, scoring, eval runners
     web/             Next.js + Tailwind, TypeScript
       package.json  package-lock.json
     corpus/          Real documents and pipeline output. See CLAUDE.md rule 8.
@@ -35,10 +38,15 @@ How to work in this repo.
       corrections/   Hand-fixed deltas, one note per fix
       gold/          Hand-labeled ground truth
       injection/     Specimens + full traces, one dir per specimen
-      MANIFEST.csv  TIMELINE.md  KNOWN_ISSUES.md  CHECKSUMS.txt  PIPELINE.json
+      README.md  MANIFEST.csv  TIMELINE.md  KNOWN_ISSUES.md
+      CHECKSUMS.txt  PIPELINE.json
+    evals/           Question sets and results — committed
+      sql/questions.jsonl       30-50 questions + expected result sets
+      results/                  Dated JSON, one per run, with prompt hashes
     migrations/      001_*.sql, 002_*.sql — numbered, applied in order
     demo/            trajectories/ — cached runs for DEMO_MODE
     docs/            PLAN.md CONVENTIONS.md PROGRESS.md adr/
+    README.md        Top-level. Results block stays current.
 
 ## Database
 
@@ -71,6 +79,27 @@ How to work in this repo.
   replayed.
 - Generate `web/src/lib/api-types.ts` from the FastAPI OpenAPI schema rather than
   hand-writing types twice.
+
+## Prompts
+
+**Prompts are files in `api/prompts/`, never strings in Python** (ADR-0008). No
+f-string prompt construction at call sites, ever. If a prompt needs a new input,
+add a placeholder and document it in `api/prompts/README.md`.
+
+- Substitution is `str.format()` with named placeholders. No templating library.
+- Literal braces in prompt body text must be doubled.
+- Domain documentation goes in `api/prompts/context/` and is injected as a
+  placeholder — never copy-pasted into multiple prompts.
+- **Untrusted content goes below all instructions, inside a delimited block**, and
+  the prompt states that the block is data. `retrieval_answer.md` is the reference
+  structure; copy it rather than inventing a variant.
+- Write `context/business_context.md` before any prompt engineering. It is the
+  highest-return work in Phase 1 (ADR-0001).
+
+**Eval results record prompt hashes.** Every `make eval-*` run writes the SHA-256
+of each prompt file it used into `evals/results/<date>-<suite>.json` alongside the
+scores. Changing a prompt without re-running the relevant eval leaves a stale
+number in the README — re-run it, or mark it stale in `PROGRESS.md`.
 
 ## Frontend
 
