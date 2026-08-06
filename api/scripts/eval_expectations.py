@@ -112,10 +112,13 @@ def main(argv: list[str] | None = None) -> int:
         for item in questions:
             fresh = dict(item)
             sql = item.get("reference_sql")
-            if item["expects"] in ("refusal", "disambiguation") or not sql:
-                # Refusals and disambiguations have no single correct result
-                # set. They are scored on the shape of the answer, and the
-                # scorer needs to know that rather than guess it.
+            if (
+                item["expects"] in ("refusal", "disambiguation", "out_of_scope")
+                or not sql
+            ):
+                # Refusals, scope rejections and disambiguations have no single
+                # correct result set. They are scored on the shape of the
+                # answer, and the scorer needs to know that rather than guess.
                 fresh["expected"] = None
                 fresh["seed_fingerprint"] = fingerprint
                 updated.append(fresh)

@@ -38,6 +38,8 @@ dependency.
     {as_of_date}        Date the query is scoped to
     {tool_schemas}      JSON tool definitions
     {user_role}         Role the request runs under
+    {store_scope}       Stores this user may see: "all stores", or a single
+                        store named as "store_id = 3 (Dharampeth, Nagpur)"
 
 Every literal brace in prompt body text must be doubled: `{{` and `}}`.
 
@@ -57,6 +59,19 @@ where it belongs.
 
 Eval expected result sets are computed against the same anchor. One written
 against wall-clock rots within 30 days.
+
+## Two refusal sentinels, and they are not interchangeable
+
+    -- INSUFFICIENT SCHEMA: <what is missing>
+    -- OUT OF SCOPE: this user can only see <scope>
+
+The first means the database cannot answer the question for anyone. The second
+means it can, but not for this user.
+
+They are scored as separate categories in `evals/sql/questions.jsonl`. Folding
+them together would make one number measure two unrelated capabilities —
+knowing the limits of the schema, and honouring an authorization boundary — and
+a model could then look competent at one by being good at the other.
 
 ## `context/schema.md` is generated, not written
 

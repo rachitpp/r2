@@ -202,12 +202,59 @@ def guard(sql: str, max_rows: int = DEFAULT_MAX_ROWS) -> GuardedQuery:
     return GuardedQuery(sql=wrapped, max_rows=max_rows, original=sql)
 
 
-def execute(conn: Any, sql: str, max_rows: int = DEFAULT_MAX_ROWS) -> dict:
+class ScopeViolation(RuntimeError):
+    """A result set contained a store the requesting user may not see.
+
+    This is a bug being caught, not a filter being applied. Reaching it means
+    the generated SQL was missing its scope predicate, so the query itself was
+    wrong — CLAUDE.md rule 5 requires the restriction to be in the WHERE
+    clause, and this exists to prove it was.
+    """
+
+
+def check_scope(result: dict, visible_store_ids: set[int] | None) -> None:
+    """Post-execution tripwire on the rows that came back.
+
+    Rule 5 says restrict when building the query, never by dropping rows
+    afterwards, and this does not drop anything — it refuses the whole result
+    and raises. Filtering here would hide the defect; failing here surfaces it.
+
+    Only fires when the result actually carries a store_id. A correctly scoped
+    aggregate with no store_id column cannot be checked this way, which is a
+    real limit of the tripwire and the reason it is a backstop rather than the
+    mechanism.
+    """
+    if visible_store_ids is None:
+        return
+    try:
+        index = result["columns"].index("store_id")
+    except ValueError:
+        return
+
+    seen = {row[index] for row in result["rows"] if row[index] is not None}
+    escaped = sorted(seen - visible_store_ids)
+    if escaped:
+        raise ScopeViolation(
+            f"result contained store_id {escaped}, outside this user's scope "
+            f"{sorted(visible_store_ids)}. The generated SQL was missing its "
+            "scope predicate; the query is wrong, not just the output."
+        )
+
+
+def execute(
+    conn: Any,
+    sql: str,
+    max_rows: int = DEFAULT_MAX_ROWS,
+    visible_store_ids: set[int] | None = None,
+) -> dict:
     """Run generated SQL under every guard and return columns plus rows.
 
     `conn` is a psycopg connection that should already be authenticated as the
     read-only role. Uses a named cursor so rows arrive in bounded batches
     rather than all at once.
+
+    `visible_store_ids` enables the post-execution scope tripwire. Leave it
+    None for an unscoped user (owner, or a manager with chain-wide access).
     """
     guarded = guard(sql, max_rows)
 
@@ -217,10 +264,12 @@ def execute(conn: Any, sql: str, max_rows: int = DEFAULT_MAX_ROWS) -> dict:
         rows = cur.fetchmany(guarded.max_rows)
         columns = [d.name for d in cur.description] if cur.description else []
 
-    return {
+    result = {
         "columns": columns,
         "rows": [list(row) for row in rows],
         "row_count": len(rows),
         "truncated": len(rows) >= guarded.max_rows,
         "executed_sql": guarded.sql,
     }
+    check_scope(result, visible_store_ids)
+    return result

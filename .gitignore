@@ -23,3 +23,7 @@ seed/full/
 # Local scratch
 *.tmp
 .DS_Store
+
+# Eval response cache — keyed on prompt fingerprint, regenerable, and it would
+# otherwise grow a file per question per run per prompt revision.
+evals/.cache/

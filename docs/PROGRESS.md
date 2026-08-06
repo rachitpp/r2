@@ -107,8 +107,13 @@ should be guessed from blogs:
 
 | Model | RPM | TPM | RPD |
 |---|---|---|---|
-| Flash (`gemini-?.?-flash`) | __ | __ | __ |
-| Flash-Lite | __ | __ | __ |
+| `gemini-3.6-flash` (PLAN) | __ | __ | __ |
+| `gemini-3.5-flash-lite` (CLASSIFY) | __ | __ | __ |
+
+⚠️ **Also confirm `gemini-3.6-flash` is free-tier eligible in YOUR project.**
+It is two weeks old (GA 2026-07-21) and appearing on the public pricing page is
+not the same as being enabled for a given project. If it is not, fall back to
+`gemini-3.5-flash` and record the change.
 
 Third-party figures circulating for the free tier — 10 RPM / 250 RPD for Flash,
 15 RPM / 1000 RPD for Flash-Lite, 250k TPM — are **unverified blog numbers and
@@ -123,6 +128,17 @@ is the accuracy level of those tables.
 exactly; never a floating alias.
 
 **Budget:** a GCP budget alert must exist before the first Vertex call.
+
+### Sampling parameters are gone
+
+`temperature`, `top_p` and `top_k` are **deprecated and ignored** on both chosen
+models, and return HTTP 400 on future generations (Gemini release notes,
+2026-07-21). ADR-0006 is amended: extraction reproducibility is now **measured
+empirically**, not asserted from a sampling parameter, and nothing in this
+project should send those fields. Consequence for ADR-0001 threshold 3: it now
+measures the model's inherent nondeterminism rather than prompt instability —
+still the right thing to measure, but do not read it as a prompt-quality
+metric.
 
 ## Locale — resolved, India
 

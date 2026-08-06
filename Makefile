@@ -6,7 +6,8 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
-        test lint fmt psql verify-corpus verify-parse db-roles
+        test lint fmt psql verify-corpus verify-parse db-roles \
+        eval-sql eval-sql-stub eval-expectations seed-if-missing
 
 -include .env
 
@@ -111,6 +112,12 @@ seed-generate: ## Regenerate the seed CSVs for SEED_SIZE and update CHECKSUMS.tx
 verify-seed: ## Regenerate into a temp dir and assert it matches seed/CHECKSUMS.txt
 	@$(PY_RUN) python api/scripts/seed.py --size $(SEED_SIZE) \
 	  --out /tmp/verify-$(SEED_SIZE) --verify
+
+eval-sql: ## Run the SQL eval set (COSTS QUOTA — never in CI, ADR-0005)
+	@cd api && $(UV) run python scripts/eval_sql.py $(EVAL_ARGS)
+
+eval-sql-stub: ## Same runner against a stub — no key, no quota, no network
+	@cd api && $(UV) run python scripts/eval_sql.py --provider stub $(EVAL_ARGS)
 
 eval-expectations: ## Recompute expected result sets in evals/sql/questions.jsonl
 	@cd api && $(UV) run python scripts/eval_expectations.py \

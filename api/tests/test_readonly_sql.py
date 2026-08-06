@@ -195,3 +195,66 @@ def test_the_role_cannot_read_staff_identities(readonly_conn):
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             readonly_conn.execute(f"SELECT * FROM {table} LIMIT 1")
         readonly_conn.rollback()
+
+
+# ── The scope tripwire ───────────────────────────────────────────────────────
+
+
+def test_the_tripwire_catches_a_result_leaking_another_store():
+    """Reaching this means the generated SQL was missing its scope predicate."""
+    from pos_copilot.readonly_sql import ScopeViolation, check_scope
+
+    result = {"columns": ["store_id", "sku"], "rows": [[1, "a"], [3, "b"]]}
+    with pytest.raises(ScopeViolation, match=r"store_id \[3\]"):
+        check_scope(result, {1})
+
+
+def test_the_tripwire_passes_a_correctly_scoped_result():
+    from pos_copilot.readonly_sql import check_scope
+
+    check_scope({"columns": ["store_id", "sku"], "rows": [[1, "a"], [1, "b"]]}, {1})
+
+
+def test_the_tripwire_does_not_filter_it_refuses():
+    """Dropping the offending rows would hide the defect. Rule 5 forbids it."""
+    from pos_copilot.readonly_sql import ScopeViolation, check_scope
+
+    result = {"columns": ["store_id"], "rows": [[1], [2]]}
+    with pytest.raises(ScopeViolation):
+        check_scope(result, {1})
+    assert result["rows"] == [[1], [2]], "rows must be left untouched"
+
+
+def test_the_tripwire_is_inert_for_an_unscoped_user():
+    from pos_copilot.readonly_sql import check_scope
+
+    check_scope({"columns": ["store_id"], "rows": [[1], [2], [3]]}, None)
+
+
+def test_the_tripwire_cannot_check_a_result_with_no_store_id():
+    """A known limit: an aggregate that drops store_id is unverifiable here.
+
+    That is why this is a backstop and the WHERE clause is the mechanism.
+    """
+    from pos_copilot.readonly_sql import check_scope
+
+    check_scope({"columns": ["total"], "rows": [[42]]}, {1})
+
+
+@pytest.mark.db
+def test_the_tripwire_fires_against_the_real_database(readonly_conn):
+    from pos_copilot.readonly_sql import ScopeViolation
+
+    execute(
+        readonly_conn,
+        "SELECT store_id, product_id FROM inventory WHERE store_id = 1",
+        max_rows=5,
+        visible_store_ids={1},
+    )
+    with pytest.raises(ScopeViolation):
+        execute(
+            readonly_conn,
+            "SELECT store_id, product_id FROM inventory ORDER BY store_id DESC",
+            max_rows=5,
+            visible_store_ids={1},
+        )

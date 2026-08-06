@@ -83,6 +83,25 @@ question, rather than more questions in general, which mostly does not.
 `api/scripts/wilson.py` computes the interval, so the published figure is
 derived rather than asserted, and a test pins the 25/30 case.
 
+### A failing question is a diagnostic, not a thing to patch
+
+The few-shot pairs in `sql_generate.md` are deliberately **not** drawn from the
+eval set, and one omission is worth recording because it will look like an
+oversight later.
+
+There is no few-shot pair demonstrating how to split a tax figure at the
+22 September 2025 GST reform. One was drafted and dropped. Whether
+`business_context.md` alone is enough to teach that split **is the measurement
+this ADR exists to take**, and q018 is the instrument that takes it. A few-shot
+pair showing the answer would destroy the instrument while appearing to improve
+the score.
+
+**So: if q018 fails, the fix is improving `business_context.md` — not adding a
+few-shot pair.** The same holds for any question that fails. Converting a
+diagnostic into a patch is the failure mode this whole approach is meant to
+avoid: it raises the number and teaches you nothing, and the next unseen
+question fails the same way with no warning left in the instrument.
+
 **This applies to the Phase 2 extraction numbers too.** Header-field accuracy,
 line-item F1, hallucination and miss rates all get n and an interval, every
 time they are reported. A hallucination rate of "2%" over 50 documents is one

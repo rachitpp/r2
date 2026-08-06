@@ -14,7 +14,11 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 QUESTIONS = REPO_ROOT / "evals" / "sql" / "questions.jsonl"
-VALID_EXPECTS = {"rows", "empty", "refusal", "disambiguation"}
+# out_of_scope is scored separately from refusal: one measures knowing the
+# limits of the schema, the other measures honouring an authorization
+# boundary. A single category would let a model look competent at one by
+# being good at the other.
+VALID_EXPECTS = {"rows", "empty", "refusal", "out_of_scope", "disambiguation"}
 
 
 @pytest.fixture(scope="module")
@@ -73,7 +77,7 @@ def test_empty_questions_really_are_empty(questions):
 
 def test_refusals_and_disambiguations_carry_a_rubric_not_a_result_set(questions):
     for q in questions:
-        if q["expects"] not in ("refusal", "disambiguation"):
+        if q["expects"] not in ("refusal", "out_of_scope", "disambiguation"):
             continue
         assert q["expected"] is None, f"{q['id']} should not have a result set"
         assert len(q["intent"]) > 60, (
@@ -122,8 +126,13 @@ def test_every_refusal_has_an_answerable_twin(questions):
     answers about baskets.
     """
     by_id = {q["id"]: q for q in questions}
-    refusals = [q for q in questions if q["expects"] == "refusal"]
+    refusals = [q for q in questions if q["expects"] in ("refusal", "out_of_scope")]
     assert refusals, "the set has no refusal questions"
+    kinds = {q["expects"] for q in refusals}
+    assert kinds == {"refusal", "out_of_scope"}, (
+        "a schema gap and a permission boundary are different failures and "
+        "must both be represented, scored apart"
+    )
 
     for q in refusals:
         twin_id = q.get("twin")
