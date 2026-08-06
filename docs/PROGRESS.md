@@ -65,6 +65,65 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
+## Model providers and live limits
+
+Decided 2026-08-06. Reasoning in **ADR-0009** — the split is on **data terms**,
+not rate limits.
+
+| Role | Provider | Tier | Model |
+|---|---|---|---|
+| `PLAN` | Gemini API | Free | Flash, pinned version string |
+| `CLASSIFY` | Gemini API, or local Ollama if RAM allows | Free | Flash-Lite |
+| `EXTRACT` | Vertex AI, service account | **Paid** | Phase 2 only |
+
+**Mistral: fallback, documented, deliberately not wired.**
+
+### Terms — verified 2026-08-06, re-check before Phase 2
+
+- **Free tier trains on your data.** [ai.google.dev/gemini-api/terms](https://ai.google.dev/gemini-api/terms)
+  (effective 2026-03-23, updated 2026-04-28): Google "uses the content you
+  submit ... to provide, improve, and develop Google products and services",
+  and "human reviewers may read, annotate, and process your API input and
+  output." The page says outright: do not submit personal information to the
+  unpaid services.
+- **Paid tier does not.** Same page: Google "doesn't use your prompts ... or
+  responses to improve our products".
+- **Vertex** states customer data stays out of the foundation model training
+  corpus — but ⚠️ **this was confirmed from Google Cloud documentation, not the
+  canonical Service Specific Terms, which would not load.** Read those directly
+  before the first extraction run over real documents. If they disagree,
+  ADR-0009 is void.
+
+### Rate limits — NOT YET VERIFIED, and only you can
+
+Google's rate-limit page no longer publishes a table. It says limits "can be
+viewed in Google AI Studio" and links
+`https://aistudio.google.com/rate-limit?timeRange=last-28-days`. That view is
+behind your login, so **these numbers have to come from you**, per project
+behind the key.
+
+Fill in before the first eval run — they set iteration speed and nothing else
+should be guessed from blogs:
+
+| Model | RPM | TPM | RPD |
+|---|---|---|---|
+| Flash (`gemini-?.?-flash`) | __ | __ | __ |
+| Flash-Lite | __ | __ | __ |
+
+Third-party figures circulating for the free tier — 10 RPM / 250 RPD for Flash,
+15 RPM / 1000 RPD for Flash-Lite, 250k TPM — are **unverified blog numbers and
+should not be relied on.** One of the same sources claimed Pro was removed from
+the free tier in April 2026, which Google's own pricing page (updated
+2026-08-05) contradicts: `gemini-2.5-pro` is listed as free-tier eligible. That
+is the accuracy level of those tables.
+
+**Free-tier eligible Flash models**, from the official pricing page
+(2026-08-05): `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`,
+`gemini-3.1-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`. Pin one
+exactly; never a floating alias.
+
+**Budget:** a GCP budget alert must exist before the first Vertex call.
+
 ## Locale — resolved, India
 
 Currency INR, timezone Asia/Kolkata, modelled as a Maharashtra grocery chain
