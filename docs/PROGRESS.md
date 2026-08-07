@@ -135,9 +135,13 @@ same role.
    re-measure once.** Do not bundle 12 with the rest: it voids the fingerprint
    and would throw away the free re-score, which is the only measurement that
    isolates instrument change from model change.
-4. **Run the predicate-to-words trace across all 47 references.** It is the new
-   stopping rule and has never been run prospectively — only retrospectively,
-   against the eight defects that produced it, which is a floor not a proof.
+4. ~~Run the predicate-to-words trace across all 47 references.~~ **Done.** It
+   found **five references whose `LIMIT` cut falls inside a tie** (four new;
+   q042 has 5 of 10 slots contested among 13), a stale `traps` tag on q024, a
+   hardcoded festive window in q026, and four inert unstated predicates. It
+   **overturned q039's "sound" verdict** and added a second defect to q011 and
+   q042. Three clauses were added to the rule as a result. Items 14–18 in
+   `evals/FIX-LIST-v2.md`.
 5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
    before any component is written (CONVENTIONS → Frontend).
 

@@ -402,10 +402,24 @@ two to stop looking.
 
 ### The rule that replaces it
 
-> **A reference is verified when every predicate in it traces to specific words
-> in the question, every number the question names appears in it, and the
-> question, the reference and the `intent` all describe the same thing. Model
-> agreement is not verification and does not discharge this.**
+> **A reference is verified when every predicate *and its grain* traces to
+> specific words in the question, every number the question names appears in it,
+> no `LIMIT` cut falls inside a tie, and the question, the reference, the
+> `intent` and the `traps` all describe the same thing. Model agreement is not
+> verification and does not discharge this.**
+
+**Three of those clauses were added by running it.** The first prospective run
+found five references whose `LIMIT` falls inside a tie — where the tiebreak
+decides membership rather than order — of which four were new, one overturned a
+"sound" verdict from the pass audit, and the worst (q042) has **5 of its 10
+slots contested among 13 tied products**. It also found `GROUP BY` grain
+invisible to a predicate-only trace (q035), and a stale `traps` tag (q024)
+invisible to a three-field check. See `DIAGNOSIS-2026-08-07.md` → *First
+prospective run*.
+
+**Exemption:** `ORDER BY` under `all_matching` is unscored and owes no trace.
+Demanding one generates flags that are always benign, which trains the reader to
+skip flags — the exact failure this rule exists to prevent.
 
 Run it as a **predicate-to-words trace**: list each predicate in the reference
 and name the words requiring it. A predicate that traces to nothing is removed,

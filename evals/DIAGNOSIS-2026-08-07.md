@@ -535,6 +535,89 @@ was written to prevent.
 
 ---
 
+## First prospective run of the predicate trace
+
+The trace was recorded as the new stopping rule with an explicit caveat: its
+validation was retrospective, against the eight defects that produced it, so
+eight was **a floor, not a demonstration**, and the real test would be the first
+defect it caught that nobody had already found.
+
+**Run across all 47 references. It caught four, plus four smaller ones, and
+overturned one of this file's own verdicts.**
+
+### The find: the LIMIT cut falls inside a tie
+
+The rule implies a check nothing was performing. For a `top_n` question, the
+reference's tiebreak — almost always `sku` — makes the query *deterministic*,
+which is not the same as making the question *determinate*. If the ranking value
+at position *n* equals the value at position *n+1*, then the tiebreak is
+deciding **which rows are in the answer**, and the question never named it.
+
+Checked mechanically on all 12 `top_n` references by stripping the tiebreak and
+comparing rows *n* and *n+1*:
+
+| id | LIMIT | boundary | contested | status |
+|---|---|---|---|---|
+| **q042** | 10 | `units_lost = 6` | **5 slots among 13 tied** | **NEW** |
+| **q008** | 10 | `returned = 13` | 2 slots among 11 | **NEW** |
+| **q011** | 15 | `stockout_days_30d = 8` | 2 slots among 5 | **NEW** |
+| **q039** | 15 | `units_6m = 20` | 2 slots among 3 | **NEW** |
+| q012 | 10 | `stockout_days_30d = 5` | 4 slots among 5 | already known |
+
+**q042 is the worst in the set: half its answer is arbitrary.** Thirteen
+products tie at 6 units lost, and five of the ten slots go to whichever sort
+first by `sku`.
+
+**q039 overturns a verdict in this file.** The pass audit recorded it as sound.
+It is not: it passes only because the model happened to pick the same arbitrary
+`sku` tiebreak as the reference. Change either and it fails while remaining
+equally correct. q008 passes the same way. **q011 and q042 each gain a second,
+independent defect** on top of the one already diagnosed.
+
+This is the class the whole eval already knew about — q012 — and it had been
+treated as a single question rather than as a property to test for. **One
+question is an anecdote; five is a check nobody was running.**
+
+### Four smaller finds
+
+- **q024's `traps` tag is stale**: `impossible-yoy` against its own intent
+  saying "**POSSIBLE** — Holi occurs twice in the window". The tag belongs to
+  q023. That is a **fourth coupled field** — the intent sweep checked three.
+- **q026 hardcodes the festive window** (`2025-09-25`…`2025-10-20`, `/26.0`,
+  `/92.0`) where q024 and q025 read it from the `festivals` table.
+- **q030's intent declares its own question ambiguous** while it is scored
+  `ranked_all` against one fixed answer.
+- **Four inert unstated predicates** — q047, q020, q014, q032. None changed an
+  answer; all four traced to nothing. Listed because *inert* is not *traced*.
+
+### What the run revealed about the rule itself
+
+Running it prospectively exposed two gaps in its own formulation — which is the
+point of running it rather than asserting it.
+
+1. **It extracts predicates, and grain is not a predicate.** q035's defect is
+   `GROUP BY pr.name` conflating distinct promotions. The trace did not surface
+   it, because there is no `WHERE` clause to interrogate. **The rule must cover
+   `GROUP BY` grain**, not only filtering.
+2. **ORDER BY under `all_matching` owes no trace.** The shape makes it unscored,
+   so demanding it trace generates noise that trains the reader to skip flags —
+   the failure mode the rule exists to prevent. Stated as an exemption.
+
+Also, tooling rather than rule: the conjunct splitter mis-parsed
+`FILTER (WHERE …)` clauses in q026 and q047, so those two were traced by hand.
+
+### Verdict on the rule
+
+It found a defect class in references that had survived diagnosis, a pass audit,
+and an intent sweep — and it corrected one of this file's own conclusions. That
+is the prospective evidence the retrospective validation could not supply.
+
+It is not sufficient on its own: `is_active` remains invisible to it, and grain
+had to be added after the fact. **Adopted, with its limits documented rather
+than discovered later.**
+
+---
+
 ## PENDING DECISION: declare instrument v2 and drop the cap
 
 **Recorded, not acted on.** Per the rule that a ruling is taken in a separate

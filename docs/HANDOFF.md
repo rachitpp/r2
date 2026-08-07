@@ -74,13 +74,21 @@ against it* — **was satisfied**, and **8 of the 14 failing references had neve
 been revised**. Agreement was being consumed as a positive result when it is a
 null one.
 
-> **New rule: a reference is verified when every predicate in it traces to
-> specific words in the question, every number the question names appears in it,
-> and question, reference and `intent` agree. Model agreement does not discharge
-> this.**
+> **New rule: a reference is verified when every predicate *and its grain*
+> traces to specific words in the question, every number the question names
+> appears in it, no `LIMIT` cut falls inside a tie, and question, reference,
+> `intent` and `traps` agree. Model agreement does not discharge this.**
+
+**It has been run once, prospectively, and it worked.** Across all 47 references
+it found **five whose `LIMIT` falls inside a tie** — the tiebreak deciding
+membership rather than order — four of them new, in references that had already
+survived diagnosis and a pass audit. It overturned a "sound" verdict (q039) and
+gave q011 and q042 a second defect each. **q042 has 5 of its 10 slots contested
+among 13 tied products.** Three clauses of the rule above were added *because*
+the run exposed them.
 
 Its limits are stated in `evals/README.md` and matter — see the `is_active`
-blind spot below for what it cannot see.
+blind spot below for what it still cannot see.
 
 ### 4. q004 is `context`, not `ambiguous`
 

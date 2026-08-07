@@ -64,6 +64,24 @@ sequencing.
 |---|---|---|---|
 | 12 | Context gap | q004 | Does not say whether an explicit cover threshold **replaces** the reorder-point default or **adds** to it, nor whether a reorder question covers lines already at zero. |
 
+### FREE — found by the first prospective predicate trace (2026-08-07)
+
+The trace was run across all 47 references **after** this list was thought
+complete. It found defects in references that had already passed diagnosis *and*
+the pass audit. Details in `DIAGNOSIS-2026-08-07.md` → *First prospective run*.
+
+| # | defect | questions | what's wrong |
+|---|---|---|---|
+| 14 | **LIMIT cut falls inside a tie** | q008, q011, q012, q039, q042 | The ranking value at position *n* equals position *n+1*, so the reference's `sku` tiebreak decides **membership**, not order. Severity: **q042 — 5 of 10 slots contested among 13 tied products**; q008 2 of 10 among 11; q012 4 of 10 among 5; q011 2 of 15 among 5; q039 2 of 15 among 3. q012 was already known; **the other four are new.** |
+| 15 | Stale `traps` tag | q024 | Tagged `impossible-yoy` while its own intent says "**POSSIBLE** — Holi occurs twice in the window" and it expects rows. The tag belongs to q023. A **fourth** coupled field. |
+| 16 | Hardcoded window where a table exists | q026 | Festive season hardcoded as `2025-09-25`…`2025-10-20` with `/26.0` and `/92.0` divisors, while q024 and q025 read the window from the `festivals` table. Traces to nothing in the question and is inconsistent with its siblings. |
+| 17 | Question is ambiguous by its own intent | q030 | Intent says "**Ambiguous** between absolute revenue and per-day or per-line efficiency", yet it is scored `ranked_all` against one fixed answer. Either the intent is wrong or the question is `disambiguation`. |
+| 18 | Unstated predicates, currently inert | q047, q020, q014, q032 | q047 `HAVING … FILTER(promotion_id IS NOT NULL) > 0` (zero-share rows cannot reach a top-10 by share anyway); q020 does not scope to the named September 2025 reform (only one exists in the window); q014 picks `2025-03-15` for "March 2025" (the term period spans the month); q032 `current_unit_cost IS NOT NULL` (NULLs do not contribute to `SUM`). **All four are inert on this data and none changed an answer** — listed because inert is not the same as traced. |
+
+**Item 14 is the significant one**, and it changes a verdict: **q039 was recorded
+as a sound pass in the pass audit and is not.** It passes only because the model
+happened to choose the same arbitrary `sku` tiebreak as the reference.
+
 ### NOT FIXED — recorded and gated
 
 | # | item | why not |
