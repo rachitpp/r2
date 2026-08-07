@@ -9,9 +9,10 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. In progress, at the diagnosis stage.** The 47×1 run
-is measured and every failure is now diagnosed; instrument fixes are unblocked
-but deliberately not yet applied. See `evals/DIAGNOSIS-2026-08-07.md`.
+**Phase 1 — Structured Q&A. Enumeration complete; awaiting the instrument v2
+decision.** The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
+audited and all 47 `intent` fields checked. **No fixes applied.** Decide from
+`evals/FIX-LIST-v2.md`; state and corrections in `docs/HANDOFF.md`.
 
 Definition of done is in `docs/PLAN.md`.
 
@@ -20,7 +21,7 @@ Definition of done is in `docs/PLAN.md`.
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget; PLAN.md updated |
-| 1 Structured Q&A | **in progress** | LIMIT wrapper done; eval runner built; 47×1 measured; failure diagnosis complete; fixes pending, then runs 1–2; UI not started |
+| 1 Structured Q&A | **in progress** | LIMIT wrapper done; eval runner built; 47×1 measured; **enumeration complete** (14 failures diagnosed, 30 passes audited, 47 intents checked); fixes batched pending the v2 decision; UI not started |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -64,26 +65,33 @@ over every reference edit found it to be one occurrence, not a class. What it
 found instead: **8 of 14 failing references were never revised at all.** The
 rotation gap is reach, not depth. Agreement is not verification.
 
-_What didn't, and why:_ No fixes applied. The disambiguation ruling is
-**recorded and restated on the corrected axis** — identity is not signal, so a
-reading is read off the predicate — and deliberately not implemented.
-**A pending decision is recorded for next sitting: declare instrument v2 and
-drop the fix cap**, on the ground that q004's context fix voids the fingerprint
-regardless, so the cap now protects no comparison.
-_Anything half-finished someone would trip over:_ The 21 unaudited passes. 1 of
-the 9 sampled was unsound, so expect ~2 more to be hiding something. Also
-unchecked: whether any **other** reference borrows a predicate from a
-neighbouring definition, as q045 did.
-_Is the system in a working state?_ Yes. Nothing executable changed — only
-`evals/DIAGNOSIS-2026-08-07.md` and this file. 158 passed, 25 skipped.
-Credential history verified clean; `make hooks` now active.
+Finally **all 21 remaining passes were audited, and all 47 `intent` fields** —
+enumeration is now complete. 19 of 21 passes sound. **q008**'s reference carries
+an unstated `HAVING sum(units_sold) > 200` (inert; lowest nearby is 1,713), and
+**q005**'s `intent` is stale — `e68f950` updated its question and reference in
+lockstep and left `intent` behind, the q045 half-fix one field over. The intent
+sweep found **q005 is the only one of 47**. Also found: **`is_active = true` is
+a structural no-op** (all 600 products active), invisible to every check.
 
-## Corrections that must reach any pasted handoff
+_What didn't, and why:_ No fixes applied — enumeration is the gate and it has
+only just closed. The disambiguation ruling is **recorded and restated on the
+corrected axis** (identity is not signal; a reading is read off the predicate),
+not implemented. **Pending decision for next sitting: declare instrument v2 and
+replace the cap with an enumerate-then-fix gate** — "drop the cap" was proposed
+and **withdrawn**, because the cap's working effect was discipline rather than
+comparability. Single decision page: `evals/FIX-LIST-v2.md`.
+_Anything half-finished someone would trip over:_ No. Enumeration is complete
+and nothing is part-applied. The one live hazard is the **`is_active` gate** —
+see `docs/HANDOFF.md` — which fires only if the seed generator changes.
+_Is the system in a working state?_ Yes. Nothing executable changed — docs only.
+158 passed, 25 skipped. Credential history verified clean; `make hooks` active.
 
-**There is no handoff document in this repo.** The state doc pasted into new
-sessions is maintained outside it, so these corrections cannot be applied here —
-apply them by hand, or the next session starts from falsified premises. This
-project has already lost one session to a stale state doc.
+## The handoff now lives in the repo — `docs/HANDOFF.md`
+
+**Resolved 2026-08-07.** It was maintained outside version control and was
+falsified in five places while still reading as authoritative. Paste from
+`docs/HANDOFF.md` now; it carries all five corrections and the `is_active` gate.
+The corrections are summarised below and stated in full there.
 
 1. **The seven-axis table is wrong.** It publishes "free-text labels the query
    invents" with a `'Before Sep 22, 2025'` example. The real axis is **row
@@ -107,8 +115,9 @@ project has already lost one session to a stale state doc.
    cap with an enumerate-then-fix gate. See the end of
    `evals/DIAGNOSIS-2026-08-07.md`.
 
-`docs/prompts/phase-1-structured-qa.md` exists and is **0 bytes**. If the
-handoff should live in the repo, that is where it belongs — not decided.
+`docs/prompts/phase-1-structured-qa.md` was a 0-byte placeholder superseded by
+`docs/HANDOFF.md`; deleted rather than left as a second empty candidate for the
+same role.
 
 ## Next session should
 
@@ -118,15 +127,17 @@ handoff should live in the repo, that is where it belongs — not decided.
    `HAVING sum(units_sold) > 200`. Note `is_active = true` is a structural
    no-op — all 600 products are active — so the many generated queries adding
    it are unstated predicates the eval cannot detect.
-2. **Apply the reference fixes** — the numbered list at the end of
-   `evals/DIAGNOSIS-2026-08-07.md`. Eight reference-level defects, at the 10-fix
-   cap. Item 9 (disambiguation) is already ruled and needs implementing in
-   `scoring.py`, not deciding.
-3. **Keep the q004 context edit separate and last.** It is the one fix that
-   touches `business_context.md`, which **voids the prompt fingerprint and all
-   47 cached responses** — another $0.99. Reference fixes re-score for free;
-   bundling the context edit with them throws that away.
-4. **Then re-score, then buy runs 1 and 2.**
+2. **Take the instrument v2 decision** — `evals/FIX-LIST-v2.md` is the single
+   page to decide from. Enumeration is complete and pushed the list past the
+   10-fix cap on its own, so the run is void **by enumeration, not by budget** —
+   the deliberate case the rule contemplates.
+3. **Apply items 1–11 together, re-score free, then apply item 12 (q004) and
+   re-measure once.** Do not bundle 12 with the rest: it voids the fingerprint
+   and would throw away the free re-score, which is the only measurement that
+   isolates instrument change from model change.
+4. **Run the predicate-to-words trace across all 47 references.** It is the new
+   stopping rule and has never been run prospectively — only retrospectively,
+   against the eight defects that produced it, which is a floor not a proof.
 5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
    before any component is written (CONVENTIONS → Frontend).
 

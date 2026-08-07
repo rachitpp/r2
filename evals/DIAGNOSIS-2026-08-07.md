@@ -403,10 +403,19 @@ has been checked against its own question and reference.**
   q019 entry failed. q009's 54,759 / 54,594 is the sole match and is legitimate
   — that question *is* the source of the figure the tolerance docstring quotes,
   and it was re-executed rather than assumed.
-- **"Never revised" does not predict unsoundness.** 13 of the 21 were never
-  revised and 12 of those are sound. Agreement-without-revision is not evidence
-  of a *bad* reference — but nothing about it is evidence of a good one either,
-  which is exactly the null-result problem the stopping rule has.
+- **"Never revised" does NOT predict unsoundness — correcting an overstatement
+  made earlier in this file.** From "8 of 14 failing references were never
+  revised" it was inferred that revision status was diagnostic. The pass audit
+  disarms that: **13 of the 21 passes were also never revised, and 12 of those
+  are sound.** Revision status separates nothing; the base rate of never-revised
+  is simply high on both sides.
+
+  The claim that survives is narrower and is the one the stopping rule now
+  rests on: **agreement licenses nothing.** A reference the model agreed with is
+  *unverified* — not *suspect*. Those are different, and only the weaker one is
+  supported. Recorded in its corrected form rather than carrying the stronger
+  version, because the stronger version is exactly the kind of plausible,
+  unexamined, load-bearing claim this round was spent removing.
 
 ---
 

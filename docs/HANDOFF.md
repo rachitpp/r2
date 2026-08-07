@@ -1,0 +1,162 @@
+# HANDOFF — canonical state
+
+**This file is the state document pasted into new sessions. It lives in the repo
+on purpose.**
+
+The previous handoff was maintained outside version control, and by 2026-08-07
+it was falsified in five places while still reading as authoritative — the
+document with the highest blast radius in the project was the only one with no
+review, no history, and no agent able to correct it. A session receiving both it
+and `PROGRESS.md` would have believed the wrong one, because the pasted copy
+arrives first. That is the project's recurring defect class one level up, and
+moving this file into the repo is the fix.
+
+Read alongside: `docs/PROGRESS.md` (session state), `evals/README.md` (how the
+instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
+`evals/FIX-LIST-v2.md` (the decision artifact).
+
+---
+
+## Where the project is
+
+**Phase 1 — Structured Q&A, at the end of enumeration.** Phase 0 is complete.
+
+The 47×1 SQL eval has been measured, fully diagnosed, and **all 30 passes
+audited**. Raw not-view-covered accuracy was **69.7% (23/33)**. That number was
+reported and deliberately **never acted on**, and diagnosis is why: **11 of the
+14 failures are instrument defects, not model errors.**
+
+**No fixes have been applied.** Enumeration is complete; the batch waits for the
+instrument v2 sitting.
+
+---
+
+## Five corrections to anything you were told earlier
+
+If you are working from an older handoff, these five claims in it are wrong.
+
+### 1. The seventh axis is row identity, not "free-text labels"
+
+It was first written up as *"free-text labels the query invents"*, illustrated
+with q019 returning `'Before Sep 22, 2025'` against the reference's `'before'`
+with **identical numbers**.
+
+**That illustration is false.** q019 returned **8.30 / 7.08**, not the
+reference's 8.23 / 6.73 — and 8.23 / 6.73 are the constants
+`business_context.md` publishes as the true effective rates. The expected values
+had been transcribed into the observed slot and a hand-verification asserted
+over them. Re-checked, the axis was wrong in **3 of its 4 questions**.
+
+The real axis: **the question does not determine which column identifies a row.**
+`stores.code` (`ST-01`) and `stores.name` (`Kothrud`) both name it — two real
+data columns, so q042 was never a "label" case at all. Two further axes exist:
+
+| axis | what it is |
+|---|---|
+| **7 — row identity** | Which column names a row is under-determined |
+| **8 — ratio magnitude** | "Share" does not fix `0.05` vs `5.0` |
+| **9 — disambiguation was unscoreable** | Scored on stated reasoning that `sql_generate.md` line 6 forbids the model from writing |
+
+### 2. q043 is a model failure; its reference was never wrong
+
+`evals/README.md` listed it among four reference-author errors. Its
+`reference_sql` was **never edited**. Rotation 4 fixed its *question*, which had
+not named the period the reference already filtered on.
+
+It now fails for an unrelated reason and the failure is **the model's**: it used
+`subtotal` where `business_context.md` says plainly to use `total` for *what a
+customer paid*. Second unambiguous model failure, after q026.
+
+### 3. The stopping rule was falsified and is replaced
+
+The old rule — *every question must be model-tested and the instrument corrected
+against it* — **was satisfied**, and **8 of the 14 failing references had never
+been revised**. Agreement was being consumed as a positive result when it is a
+null one.
+
+> **New rule: a reference is verified when every predicate in it traces to
+> specific words in the question, every number the question names appears in it,
+> and question, reference and `intent` agree. Model agreement does not discharge
+> this.**
+
+Its limits are stated in `evals/README.md` and matter — see the `is_active`
+blind spot below for what it cannot see.
+
+### 4. q004 is `context`, not `ambiguous`
+
+Re-bucketed against the favourable direction. `ambiguous` should mean two
+readings *no context document could settle*; this one settles in a sentence
+(does an explicit cover threshold replace the reorder-point default or add to
+it?). It therefore means **`business_context.md` is incomplete**.
+
+**Consequence that drives sequencing:** its fix edits `business_context.md`,
+which changes the prompt fingerprint and **voids all 47 cached responses**.
+
+### 5. Instrument v2 is a pending decision, not a settled one
+
+See `evals/FIX-LIST-v2.md`. Recommendation recorded, **to be decided in a
+sitting separate from the evidence that prompted it.**
+
+---
+
+## The `is_active` blind spot — GATED, do not fix
+
+**All 600 products have `is_active = true`.** Generated SQL frequently adds
+`AND p.is_active = true` — an unstated predicate the question never asks for. It
+**cannot change any answer under the current seed**, so the instrument is
+structurally unable to detect it, and it passes every check including the new
+predicate-trace rule.
+
+**It becomes live the moment the seed contains an inactive product**, and it
+would then silently move several answers at once.
+
+It is **not being fixed**, deliberately. The seed is `random.Random(42)` with
+derived substreams, so changing it invalidates every expected result set in the
+eval. The cost of fixing the blind spot exceeds the cost of the blind spot,
+under this seed.
+
+> **GATE: if the seed generator is ever changed, re-check every reference and
+> every cached generated query for `is_active`, before regenerating
+> expectations.** This is the flag; it is deliberate, and it is the kind of
+> thing a later phase trips over.
+
+---
+
+## What the instrument is and how it fails
+
+The eval measures execution accuracy over 47 natural-language questions against
+a Postgres retail schema, scored by deterministic result-set comparison — no
+LLM-as-judge. Reported three ways: overall, view-covered, not-view-covered, with
+thresholds read off the **not-view-covered** number.
+
+**Its dominant failure mode is not the model.** Nine axes of instrument defect
+have been found, and the direction never once scatters: **every reference error
+has favoured the reference and run against the model.** The cause is structural
+— the author knows what they meant, so the reference looks obviously right in
+retrospect. Inverted authoring is the preventive fix; the predicate trace is the
+verification one.
+
+**The recurring defect class, six instances and counting:** *a check that is not
+running, wearing the label of a check that is.* Found in code (silent
+truncation), in prose (q019's "verified by hand"), and in a process rule (the
+old stopping rule) — the last being worst, because it licensed the other two to
+stop looking.
+
+---
+
+## Hard constraints that do not relax
+
+- **No model calls in CI.** Anything needing a key is a local `make` target.
+- **Free tier is 20 requests/day/model**, measured. `PLAN`, `CLASSIFY` and
+  `EXTRACT` route through Vertex (ADR-0009, ADR-0010). Vertex serves from
+  `location=global` only.
+- **Every eval runs against `full`**, never `small` — they are independent
+  datasets, not subset and superset.
+- **Re-scoring is free; re-running is not.** Every response is cached under
+  prompt fingerprint `de60dd5e3dde7787`. Reference fixes re-score at zero cost.
+  **Any edit to `business_context.md` or the prompt voids all 47** — roughly
+  $0.99 and ~2.3 days at 20 RPD.
+- **`AS_OF_DATE = 2026-06-30`, never wall-clock.** `current_date` is forbidden
+  in generated SQL.
+- **Credentials never enter the repo.** `make hooks` installs a pre-commit
+  content scan; history has been verified clean.

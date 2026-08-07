@@ -403,13 +403,41 @@ two to stop looking.
 ### The rule that replaces it
 
 > **A reference is verified when every predicate in it traces to specific words
-> in the question, and every number the question names appears in it. Model
+> in the question, every number the question names appears in it, and the
+> question, the reference and the `intent` all describe the same thing. Model
 > agreement is not verification and does not discharge this.**
 
 Run it as a **predicate-to-words trace**: list each predicate in the reference
 and name the words requiring it. A predicate that traces to nothing is removed,
 or the question gains the words. The trace runs in both directions, because both
 failed in practice.
+
+**Three coupled fields, not two.** q005 had its question *and* its reference
+updated in lockstep — "under 5 units" → "down to 2 units or fewer", `<= 5` →
+`<= 2` — and its `intent` left saying `on_hand <= 5`. Two of three updated, the
+third stale. Since the disambiguation ruling makes `intent` the field a human
+reads when hand-scoring, **a stale `intent` is a stale scoring criterion**, so
+it is part of the unit rather than commentary beside it. All 47 have since been
+checked; q005 was the only one.
+
+### What this rule cannot see
+
+Stating the limits, so nobody later reads it as total coverage.
+
+- **It is reference-side.** It traces question → reference → intent, and is
+  blind to an **unstated predicate on the model's side** that returns identical
+  rows. `is_active = true` is the worked example: generated SQL adds it, no
+  question asks for it, and it changes nothing because all 600 products are
+  active — so it passes this rule, passes the scorer, and passes the pass audit.
+  A model-side trace would be a different instrument and does not exist.
+- **Its validation is retrospective and partly circular.** It was derived from
+  the eight defects it is credited with catching — q001, q004, q008, q012, q015,
+  q019, q035, q045. **Treat eight as a floor, not a demonstration.** The real
+  test is the first defect it catches that nobody had already found, and it has
+  not yet been run prospectively against anything.
+- **It does not catch defects of omission** — a predicate the reference *should*
+  have and does not is invisible to a trace that only asks what each existing
+  predicate is doing there.
 
 **Why this mechanism and not the two obvious alternatives.** A second
 independently-authored query is expensive and shares the author's bias — the
