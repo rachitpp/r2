@@ -65,6 +65,41 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
+## KEY ROTATION PENDING — do not use the current credential
+
+The service account JSON arrived in the repo working tree, untracked and
+un-ignored, while every commit used `git add -A`. Not committed and not in
+history — verified — but its disposition is not fully accountable, so it is
+being **rotated**: new key in the console, old one deleted, replacement never
+placed inside the repo directory.
+
+Two layers now guard this, because ignore patterns only catch anticipated
+filenames:
+
+1. `.gitignore` carries broad credential patterns, not just the one filename.
+2. `.githooks/pre-commit` greps STAGED CONTENT for the markers a service
+   account JSON and a PEM private key always carry, plus the AI Studio key
+   shape. The patterns live in the hook; they are deliberately not reproduced
+   here, because a document quoting them literally trips the hook — which is
+   how this paragraph got written. Enable with `make hooks`. Verified to block
+   the real key and to pass a normal commit.
+
+## Vertex: verified working, one surprise
+
+- Token mints from the service account; `gemini-3.6-flash` answers.
+- **It serves from `location=global` ONLY** — 404 in us-central1 and
+  asia-south1. Model string and serving location are independent variables and
+  only the string was being pinned. `corpus/PIPELINE.json` now records both,
+  and ADR-0006's claim is amended to "pinned model string AND serving
+  location".
+- For Phase 2, `location=global` needs a data-residency decision before real
+  documents are sent.
+
+**Still unverified: who pays.** The Cloud Billing API is not enabled on the
+project, so credit coverage, balance and expiry cannot be read from here.
+Calls succeed, which proves access and quota — not that credit is being drawn
+rather than a card.
+
 ## BLOCKED: no GCP credential exists in this environment
 
 ADR-0010 routes every model call through Vertex. **It cannot be executed yet.**

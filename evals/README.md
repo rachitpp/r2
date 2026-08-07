@@ -118,6 +118,19 @@ reference filtered to `store_id = 1` — 139 rows against the correct 440 — so
 That one is worth keeping in view: a reference query is not ground truth simply
 because a human wrote it, and it can disagree with the rest of the system.
 
+**And it happened twice.** Rotation 4 found q043 the same way: the question
+asked for a daily average with no period, the reference quietly filtered to
+April onwards, and the model — which used all history — was marked wrong.
+
+> **Twice now a reference has been wrong in the direction of penalising correct
+> model behaviour. Two instances is a pattern, and the pattern has a cause: the
+> reference author knows what they meant and encodes it without noticing they
+> did not say it.**
+
+That is the failure mode to watch for, and it is not fixable by being more
+careful — being careful is what produced both. It is fixable only by making a
+model answer the question and reading what it did.
+
 **Fixed by:** the `result_shape` taxonomy above; putting the count into the
 question text wherever the answer is a shortlist; regenerating `all_matching`
 references without a `LIMIT`; rewriting q001 to name Pune; narrowing q004,
@@ -246,6 +259,35 @@ figures, so a model answering 1200 where the truth is 1234.56 still fails.
 trap and asserts each gap clears its tolerance by more than an order of
 magnitude. **If a tolerance is ever loosened to within 10x of a trap gap, that
 test fails** — the trap would otherwise stop being a trap silently.
+
+## When to stop rotating
+
+"One more rotation" has no natural end, so the rule is:
+
+> **Stop when a rotation finds no new defect CLASS.** Not no failures —
+> failures are the measurement. A rotation scoring 3/5 where all three are
+> genuine model errors in categories already covered is **clean**. A rotation
+> scoring 4/5 where the single failure reveals a new axis is **not**.
+
+If a rotation finds a sixth axis, run another — and start asking whether the
+eval set has a systematic design gap rather than a series of individual ones.
+
+### Fresh-question ledger
+
+A rotation run on a question the model has already been tuned against measures
+nothing, so questions are spent once. **20 of 46 spent, 26 left — five rounds
+at five a round.**
+
+| Rotation | Questions | New defect class found |
+|---|---|---|
+| 1 | q001 q002 q003 q004 q005 | Arbitrary `LIMIT`; reference contradicting the prompt's store rule |
+| 2 | q010 q014 q019 q024 q033 | Column selection, order, rounding; festival window unknowable |
+| 3 | q007 q020 q029 q040 q046 | Singular-vs-ranked reading; unasked-for column demanded |
+| 4 | q013 q021 q031 q035 q043 | **Predicate axis** — unstated period, threshold, join rule |
+| 5 | — | pending |
+
+Unspent: q006 q008 q009 q011 q012 q015 q016 q017 q018 q022 q023 q025 q026 q027
+q028 q030 q032 q034 q036 q037 q038 q039 q041 q042 q044 q045.
 
 ## Running it
 

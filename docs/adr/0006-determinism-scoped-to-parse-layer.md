@@ -64,8 +64,24 @@ exactly the kind of thing a reviewer is right to distrust.
 
 **The claim is restated as:**
 
-> Pinned stable model string; extraction reproducibility **measured empirically**
-> rather than asserted from a sampling parameter.
+> Pinned stable model string **and serving location**; extraction
+> reproducibility **measured empirically** rather than asserted from a sampling
+> parameter.
+
+### Amended again 2026-08-07: location is part of the pin
+
+The model string alone does not identify what answers. Measured on Vertex:
+`gemini-3.6-flash` serves from `location=global` and returns **404** in both
+`us-central1` and `asia-south1`. String and location are independent variables,
+and only one of them was being recorded.
+
+That 404 is the *loud* failure and cost nothing. The dangerous version is a
+region serving a different build behind the same string: it would surface as
+unexplained model drift, look like nondeterminism, and be untraceable — because
+the thing that changed was never written down.
+
+So `corpus/PIPELINE.json` records `location` alongside `model` for every role,
+and a result file that does not name both describes less than it appears to.
 
 Nothing about the layer split changes. What changes is that "reproducible" stops
 being a configuration claim and becomes a measurement: run `make ingest-verify`,

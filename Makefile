@@ -7,7 +7,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
-        eval-sql eval-sql-stub eval-expectations seed-if-missing
+        eval-sql eval-sql-stub eval-expectations seed-if-missing hooks
 
 -include .env
 
@@ -139,6 +139,10 @@ schema-doc: ## Regenerate api/prompts/context/schema.md from the database COMMEN
 	  $(PSQL) -d $(POSTGRES_DB) -X -q -t -A -F '' -f - < api/scripts/schema_doc.sql; \
 	} > api/prompts/context/schema.md
 	@echo "==> wrote api/prompts/context/schema.md"
+
+hooks: ## Enable the repo's git hooks (credential scan on commit)
+	@git config core.hooksPath .githooks
+	@echo "==> core.hooksPath = .githooks; pre-commit credential scan active"
 
 psql: ## Interactive psql against the working database
 	@docker compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)

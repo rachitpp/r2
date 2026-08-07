@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Refuse to commit credential material.
+#
+# This is the SECOND layer. .gitignore is the first, and it failed once already:
+# a service account key sat untracked and un-ignored in this repo's working
+# tree while every commit used `git add -A`. Ignore patterns only catch files
+# somebody anticipated naming. This catches content.
+#
+# Enable with:  make hooks     (sets core.hooksPath)
+#
+# Bypassable with --no-verify, deliberately. A hook that cannot be bypassed
+# gets disabled wholesale the first time it is wrong.
+
+set -euo pipefail
+
+# Markers, not filenames. A key is a key whatever it is called.
+PATTERNS=(
+  '"type"[[:space:]]*:[[:space:]]*"service_account"'
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+  '"private_key"[[:space:]]*:'
+  'AIza[0-9A-Za-z_-]\{35\}'
+)
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+found=0
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+  # Only text; a binary blob would produce noise rather than a finding.
+  git show ":$file" 2>/dev/null | file - 2>/dev/null | grep -qi 'text' || continue
+  for pattern in "${PATTERNS[@]}"; do
+    if git show ":$file" 2>/dev/null | grep -qE -- "$pattern"; then
+      if [ "$found" -eq 0 ]; then
+        echo
+        echo "COMMIT BLOCKED — credential material in staged content:"
+        echo
+      fi
+      echo "  $file"
+      echo "      matches: $pattern"
+      found=1
+    fi
+  done
+done <<< "$staged"
+
+if [ "$found" -ne 0 ]; then
+  cat <<'MSG'
+
+This repository is public. A key pushed here is live until it is revoked, and
+revoking it is the only real fix — deleting the commit is not, because the
+object stays reachable and may already have been fetched.
+
+  git restore --staged <file>     unstage it
+  add it to .gitignore            so this cannot recur
+  keep credentials outside the repository entirely
+
+If this is a false positive — a fixture, a doc example — commit with
+--no-verify and consider making the example unmistakably fake.
+
+MSG
+  exit 1
+fi
+exit 0
