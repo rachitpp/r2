@@ -56,6 +56,41 @@ answer and the missing rows are unknowable. Four questions were narrowed for
 this reason. `make eval-expectations` refuses to write an expectation that hits
 the ceiling.
 
+## What four staged runs cost, and what they bought
+
+Three defects. **Every one was found by rotating the questions, not by reading
+them.** Every one would have published a confidently wrong number.
+
+| Run | Questions | Score | What it actually found |
+|---|---|---|---|
+| 1 | q001–q005 | 0/4 | Arbitrary `LIMIT` in every reference; q001's reference contradicting the generation prompt's own store rule |
+| 2 | q010, q014, q019, q024, q033 | 0/5 | Column selection, column order and rounding all under-determined; the festival window unknowable from context |
+| 3 | q007, q020, q029, q040, q046 | 3/5 | q029 readable as singular; q040's reference demanding a column never asked for |
+| 4 | — | pending | The first run whose number can be believed |
+
+Two things are worth sitting with.
+
+**The set had already been reviewed.** All 45 questions were written
+deliberately, read back, and cross-checked against independently written second
+queries before run 1. Runs 1 and 2 still scored zero. Not one of those defects
+was visible on the page; every one needed a model to answer the question before
+it appeared. **An eval set cannot be validated by inspection, only by use.**
+
+**Each defect would have produced a confidently wrong number, in the direction
+that flatters nobody and misleads everyone.** Run 1's 0/4 read as "the model
+cannot write SQL". It was published-quality wrong: had the full 138-call run
+gone ahead, ADR-0001's thresholds would have fired, the query catalog would
+have been built, and the text-to-SQL approach abandoned on the strength of an
+arbitrary `LIMIT 20` in a file nobody would have reread. That is the specific
+failure the staging gate exists to prevent, and it happened on the first
+attempt.
+
+The rotation rule earned itself immediately: run 2 was chosen to avoid the
+questions run 1 had diagnosed, and found a defect class run 1 could not have.
+Re-testing what you just fixed proves only that you fixed it.
+
+Total cost of finding all three: **about 20 model calls.**
+
 ## Defects found in the instrument
 
 ### 1. The reference queries answered questions the questions had not asked

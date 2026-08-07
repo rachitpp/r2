@@ -303,3 +303,40 @@ def test_a_truncated_result_is_not_scored_as_a_wrong_answer():
     verdict = judge(q, "SELECT 1", execution, None)
     assert verdict.outcome is Outcome.EXECUTION_ERROR
     assert "440 matched" in verdict.detail
+
+
+# ── The prompt freeze ────────────────────────────────────────────────────────
+
+
+def test_the_prompt_matches_its_freeze_record():
+    """The prompt is frozen for the duration of a measurement run.
+
+    Editing any prompt or context file changes the fingerprint, invalidates
+    every cached response, and restarts the measurement — at 20 requests per
+    day that is days of elapsed time, not minutes. This test makes the freeze
+    structural instead of a promise.
+
+    Unfreezing is deliberate: edit the prompt, regenerate
+    evals/PROMPT_FREEZE.json, and accept that the runs start over.
+    """
+    import json
+    from pathlib import Path
+
+    record = json.loads(
+        (
+            Path(__file__).resolve().parents[2] / "evals" / "PROMPT_FREEZE.json"
+        ).read_text(encoding="utf-8")
+    )
+    bundle = load_sql_prompt()
+    actual = bundle_fingerprint(bundle.hashes)
+
+    changed = sorted(
+        name
+        for name, digest in bundle.hashes.items()
+        if record["hashes"].get(name) != digest
+    )
+    assert actual == record["fingerprint"], (
+        f"prompt changed since the freeze on {record['frozen_on']}: "
+        f"{changed}. Every cached response is now invalid and the measurement "
+        "restarts. If that is intended, regenerate evals/PROMPT_FREEZE.json."
+    )

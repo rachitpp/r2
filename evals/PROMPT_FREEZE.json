@@ -1,0 +1,10 @@
+{
+  "fingerprint": "e59ed22136bdc703",
+  "frozen_on": "2026-08-07",
+  "hashes": {
+    "context/business_context.md": "e68f1fd854c5f2f748cf036a87757dfe623ca00bc89d40a7c3fa39ca090195e7",
+    "context/schema.md": "1b00185cecba62158e77ff5052ad13062ae32018800007deef8f4906e00ecc15",
+    "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9"
+  },
+  "reason": "Frozen for the 46x1 and 46x3 measurement runs. Every prompt edit changes the fingerprint, invalidates every cached response, and restarts the measurement. Unfreezing is deliberate: change the prompt, re-run this to update the record, and accept that the full runs start over."
+}

@@ -65,6 +65,34 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
+## RPD MEASURED: 20 per day. This changes the plan.
+
+Not from a blog and not from AI Studio — from the `429` body itself, which
+names the quota:
+
+    metric  generativelanguage.googleapis.com/generate_content_free_tier_requests
+    id      GenerateRequestsPerDayPerProjectPerModel-FreeTier
+    value   20
+    model   gemini-3.6-flash
+
+**Twenty requests per day**, scoped per project PER MODEL. The arithmetic:
+
+| | calls | at 20/day |
+|---|---|---|
+| rotation 5x1 | 5 | 0.2 days |
+| 46 x 1 | 46 | 2.3 days |
+| 46 x 3 | 138 | 6.9 days |
+| **total** | **189** | **9.4 days** |
+
+The prompt is ~11,600 tokens (schema.md and business_context.md dominate), so
+the whole measurement is 2.19M input tokens. At the paid Flash rate of $1.50/M
+in and $7.50/M out that is **about $3.70 for the entire thing**.
+
+So the choice is roughly: **$3.70, or nine days.** Needs a ruling — see the
+options in the session report. Note the quota is per MODEL, so a different free
+model carries its own 20/day, but measuring across two models measures two
+models.
+
 ## Free-tier daily quota EXHAUSTED 2026-08-07
 
 A re-score hit `429` and six backoff attempts spanning roughly two minutes did
