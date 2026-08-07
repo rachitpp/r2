@@ -376,19 +376,60 @@ would name 264 of 600 products.
 
 ## When to stop rotating
 
-"One more rotation" has no natural end, so the rule is:
+"One more rotation" has no natural end, so there is a rule. **The previous one
+was falsified by the 47×1 run and is replaced below.**
 
-> **Every question must be model-tested, and the instrument corrected against
-> it, before measurement** — by rotation, by inverted authoring, or by any
-> mechanism that puts a model's disagreement in front of the author before the
-> reference hardens.
+### The rule that failed, and why
 
-The earlier form of this rule was "stop when a rotation finds no new defect
-class", which is the same rule stated by its symptom. Coverage is the point;
-rotation was only ever the means.
+> ~~Every question must be model-tested, and the instrument corrected against
+> it, before measurement.~~
 
-So a rotation with nothing left to draw on is **coverage complete, not a gap**.
-Do not manufacture questions to satisfy a rule whose purpose is already served.
+That rule **was satisfied**. And **8 of the 14 failing references had never been
+revised** — model-tested, model agreed, reference still wrong.
+
+The defect is that **agreement was being consumed as a positive result when it
+is a null one.** A question whose model answer agreed has had a check pointed at
+it that returns "fine" without having examined anything: the model answered, the
+harness scored, both genuinely ran — and the *reference* was never inspected by
+any of it. The surrounding machinery working is what made the missing check look
+like a passing one.
+
+That is **instance six of this project's recurring defect class** — a check that
+is not running, wearing the label of a check that is. It has now been found in
+code (truncation, silent), in prose (q019's "verified by hand"), and here **in a
+process rule**, which is the worst of the three because it licensed the other
+two to stop looking.
+
+### The rule that replaces it
+
+> **A reference is verified when every predicate in it traces to specific words
+> in the question, and every number the question names appears in it. Model
+> agreement is not verification and does not discharge this.**
+
+Run it as a **predicate-to-words trace**: list each predicate in the reference
+and name the words requiring it. A predicate that traces to nothing is removed,
+or the question gains the words. The trace runs in both directions, because both
+failed in practice.
+
+**Why this mechanism and not the two obvious alternatives.** A second
+independently-authored query is expensive and shares the author's bias — the
+same person writing twice makes the same assumption twice, and it catches
+transcription slips rather than intent misreadings. "Execute the reference and
+read its rows" is cheap and does work — this session's 21-pass audit is the
+existence proof — but it is still the author reading their own reference, which
+is the bias the whole apparatus exists to fight.
+
+The predicate trace is preferred because it is **mechanical rather than
+judgemental**: "which words require `below_reorder_point`?" has an answer that
+does not depend on what the author meant. And it is validated against the
+evidence — it would have caught **q001, q004, q008, q012, q015, q019, q035 and
+q045**, which is nearly every reference defect this round found, including the
+two that survived a rotation and the one that survived nine months of agreement.
+
+So a rotation with nothing left to draw on is **not** coverage complete.
+Coverage is complete when every reference has been traced. Rotation finds
+defects the trace cannot — it is still worth running — but it can no longer end
+the process on its own.
 
 While a rotation is still the mechanism: a rotation scoring 3/5 where all three
 are genuine model errors in covered categories is clean; 4/5 where the single

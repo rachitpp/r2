@@ -47,11 +47,22 @@ responses and compared to the recorded outcomes.
 | q026 model runs in 1.59s | **NOT REPRODUCED — 5.33s.** Timings are machine- and cache-dependent, so this is a soft discrepancy, not a falsification. The conclusion **strengthens**: it exceeds the 5s `statement_timeout` outright rather than "compounding past" it. |
 | — | **New:** run without that timeout, q026 returns `wrong_rows`. It is **wrong as well as slow**, so "semantically plausible, operationally unusable" was too generous. |
 
-**Wholesale control: 46 of 47 cached responses reproduce their recorded outcome
-exactly.** The single divergence is q026, and it is an artifact of the re-run
-connecting as a role without the 5s timeout — which is itself the confirmation
-above. **The run record is sound.** The defect was in this file's prose, not in
-the measurement.
+**Wholesale control: 46 of 47 cached responses reproduce their recorded
+OUTCOME** — `correct` / `wrong_rows` / `execution_error`, not their values. The
+single divergence is q026, an artifact of the re-run connecting as a role
+without the 5s timeout, which is itself the confirmation above.
+
+**Read what that control does and does not cover.** It vindicates **the
+scoring**: the harness, applied to the cached responses, still lands where it
+landed. It does **not** vindicate **the audit trail**, and it structurally
+cannot. The q019 defect was a wrong *value* inside a *correct outcome* — the
+bucket was `instrument` before and after — so outcome-reproduction was never
+capable of detecting it, and would not have flagged it however many times it
+ran. Only the per-claim re-execution in the table above reaches that class.
+
+Stated plainly: **the measurement is sound; the prose describing it was not, and
+it took a different check to find that out.** Two checks, two scopes; the
+stronger-sounding number is the weaker of the two.
 
 ### What the q019 entry actually was
 
@@ -343,11 +354,59 @@ model's, not the reference's.
 | q001 | `instrument` | **Passed by an unsound route.** Model omitted `below_reorder_point`; ordering by ascending cover and taking 10 happens to surface the same rows. Shift the data and the answers diverge. Also reveals a fifth reference-author error: the question never mentions the reorder point, so the reference encoded an unstated assumption. **A pass hiding a defect in both directions.** |
 | q007, q013, q016, q020, q021, q030, q040, q046 | `sound` | Read by eye. Correct answers by defensible routes. q020 joins `gst_rates` twice at either side of the reform date rather than walking the supersedes chain — different from the reference and arguably better. |
 
-## Passes — unaudited
+## Passes — the remaining 21, audited
 
-**21 of 30 passes have not been read.** At the observed rate — 1 unsound in 9
-sampled — roughly 2 more are expected to be hiding something. Not extrapolated
-into any number; stated so the gap is visible.
+**All 30 passes have now been read.** Both queries executed, rows read against
+the question's exact words, zero model calls. The prediction from the 1-in-9
+sample was "roughly 2 more hiding something"; the actual count is **2**, though
+neither is the failure mode that was expected.
+
+**19 of 21 are sound**, several impressively so: q023 refused a Diwali-over-
+Diwali comparison and *verified the impossibility from the data* ("only covers
+January 2025 to June 2026 … only one Diwali"), which is the real coverage window;
+q044 used the `OUT OF SCOPE` sentinel rather than conflating it with a schema
+gap; q034 read the timezone from `stores.timezone` where the reference hardcoded
+`Asia/Kolkata`, which is the more robust route and identical here; q017 — the
+reference rotation 5 fully re-derived — matched on both sides of a
+`valid_period @> po.ordered_on` join.
+
+### The two findings
+
+| id | verdict | detail |
+|---|---|---|
+| **q005** | **stale `intent`** | Passes soundly — predicates are byte-identical. But its `intent` still reads "Explicit threshold overrides the reorder point: **`on_hand <= 5`**" while both the question ("2 units or fewer") and the reference say `<= 2`. |
+| **q008** | **latent reference defect** | Model correct and rows identical. The *reference* carries `HAVING sum(units_sold) > 200` — a volume floor the question never mentions. Currently inert: the lowest `units_sold` anywhere near the answer is **1,713** against a floor of 200. Never revised. Same family as q001 — an unstated choice sitting in a reference nobody revisited. |
+
+### q005 is a second instance of the half-fix — in the record, not the predicate
+
+The predicate half-fix hypothesis was withdrawn on the evidence, correctly: one
+instance. But `e68f950` changed q005's **question** ("under 5 units" → "down to
+2 units or fewer") **and** its **reference** (`<= 5` → `<= 2`) in lockstep, and
+left `intent` describing the superseded threshold. Two of three coupled fields
+updated; the third stale.
+
+**That is the q045 shape one field over**, and it lands somewhere that now
+matters more than it used to: the disambiguation ruling above makes `intent` the
+field a human reads when hand-scoring q003, q018 and q027. A stale `intent` is a
+stale scoring criterion. q005's is demonstrably stale; **no other `intent` field
+has been checked against its own question and reference.**
+
+### Class-level findings
+
+- **`is_active = true` is a structural no-op — all 600 products are active.** It
+  appears in many generated queries (q002, q008, q011, q012, q031, q039 …) and
+  cannot change any answer in this dataset. Harmless today, invisible to the
+  instrument, and it would silently move several answers the moment the seed
+  introduces an inactive product. An unstated predicate the eval is structurally
+  unable to detect.
+- **No pass echoes a published constant.** Checked specifically, given how the
+  q019 entry failed. q009's 54,759 / 54,594 is the sole match and is legitimate
+  — that question *is* the source of the figure the tolerance docstring quotes,
+  and it was re-executed rather than assumed.
+- **"Never revised" does not predict unsoundness.** 13 of the 21 were never
+  revised and 12 of those are sound. Agreement-without-revision is not evidence
+  of a *bad* reference — but nothing about it is evidence of a good one either,
+  which is exactly the null-result problem the stopping rule has.
 
 ---
 
@@ -514,16 +573,41 @@ and work continues regardless.
 4. **Batch every fix**: references, the scoring contract, the context edit.
 5. **Re-measure once, against v2.** One $0.99 run, not two.
 
-### The argument against, stated fairly
+### REVISED — "drop the cap" is withdrawn; the gate replaces it
 
-Dropping the cap removes the mechanism that forces defects to be *enumerated
-before being fixed* — which is what produced this file. The cap's stated purpose
-was comparability, but its **working** effect was discipline: it made "fix it
-and see" expensive. Item 4 should preserve that effect by some other means —
-enumerate-then-fix as an explicit rule — or v2 will be tuned by iteration, which
-is the failure mode the whole apparatus was built against.
+The counter-argument was accepted: the cap's **stated** purpose was
+comparability, but its **working** effect was discipline — it made "fix it and
+see" expensive, and that is what produced this file rather than a pile of
+retuned references.
 
-**This is the decision to take next sitting.** Nothing here is implemented.
+So v2 does not drop the cap, it **replaces it with an enumerate-then-fix gate**:
+
+> **No fix is applied until enumeration is complete. Then all fixes land in one
+> batch.**
+
+This keeps the expensive-to-guess property that was doing the real work, and
+drops only the arbitrary number that no longer protects a comparison. It also
+scales, which the cap did not: a round finding twelve defects is not forced to
+either stop at ten or void itself.
+
+The gate has now been demonstrated twice in this file — failures were enumerated
+before any fix, and the 21 passes were enumerated before any proposal — both
+times finding defects that a fix-as-you-go pass would have buried under its own
+edits.
+
+**Recommendation as it stands for next sitting:**
+
+1. Declare **instrument v2**; mark the 47×1 as v1 — measured, diagnosed,
+   superseded. It keeps its value as the run that found the defects.
+2. Replace the fix cap with the **enumerate-then-fix gate**.
+3. Apply the **predicate-to-words trace** to all 47 references (see
+   `README.md` → *When to stop rotating*). It is the new stopping rule and it
+   has not yet been run against anything except retrospectively.
+4. Batch every fix: references, the scoring contract, the context edit.
+5. Re-measure once against v2.
+
+**Nothing here is implemented.** Decision to be taken in a separate sitting from
+the evidence that prompted it.
 
 ## Note on runs 1 and 2
 

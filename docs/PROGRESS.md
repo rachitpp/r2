@@ -78,11 +78,46 @@ _Is the system in a working state?_ Yes. Nothing executable changed — only
 `evals/DIAGNOSIS-2026-08-07.md` and this file. 158 passed, 25 skipped.
 Credential history verified clean; `make hooks` now active.
 
+## Corrections that must reach any pasted handoff
+
+**There is no handoff document in this repo.** The state doc pasted into new
+sessions is maintained outside it, so these corrections cannot be applied here —
+apply them by hand, or the next session starts from falsified premises. This
+project has already lost one session to a stale state doc.
+
+1. **The seven-axis table is wrong.** It publishes "free-text labels the query
+   invents" with a `'Before Sep 22, 2025'` example. The real axis is **row
+   identity** — which column names a row (`stores.code` vs `stores.name`) — and
+   the example is worse than wrong: **q019 did not return the reference's
+   numbers.** It returned 8.30 / 7.08 against 8.23 / 6.73. There are also two
+   further axes: **ratio magnitude** (fraction vs percent) and
+   **disambiguation was unscoreable** against a criterion the prompt forbids.
+2. **q043 is not a reference-author error.** Its `reference_sql` was never
+   edited. Rotation 4 fixed its *question*, which had not named the period the
+   reference already filtered on. It is now diagnosed **`model`** — it used
+   `subtotal` where the context says to use `total` for what a customer paid.
+3. **The stopping rule is falsified.** "Every question model-tested and the
+   instrument corrected against it" was satisfied, and 8 of 14 failing
+   references were never revised. Replaced by the **predicate-to-words trace** —
+   see `evals/README.md` → *When to stop rotating*. Agreement is a null result.
+4. **q004 is `context`, not `ambiguous`** — so its fix edits
+   `business_context.md` and voids the prompt fingerprint and all 47 cached
+   responses.
+5. **A pending decision is recorded**: declare instrument v2 and replace the fix
+   cap with an enumerate-then-fix gate. See the end of
+   `evals/DIAGNOSIS-2026-08-07.md`.
+
+`docs/prompts/phase-1-structured-qa.md` exists and is **0 bytes**. If the
+handoff should live in the repo, that is where it belongs — not decided.
+
 ## Next session should
 
-1. **Audit the 21 unaudited passes.** Before any fix, not after. A pass that
-   passed by an unsound route (q001 did) is a defect that a corrected reference
-   would otherwise bury.
+1. ~~Audit the 21 unaudited passes.~~ **Done — all 30 passes now read.** 19 of
+   21 sound; **q005** carries a stale `intent` (says `on_hand <= 5`; question
+   and reference say `<= 2`) and **q008**'s reference carries an unstated
+   `HAVING sum(units_sold) > 200`. Note `is_active = true` is a structural
+   no-op — all 600 products are active — so the many generated queries adding
+   it are unstated predicates the eval cannot detect.
 2. **Apply the reference fixes** — the numbered list at the end of
    `evals/DIAGNOSIS-2026-08-07.md`. Eight reference-level defects, at the 10-fix
    cap. Item 9 (disambiguation) is already ruled and needs implementing in
