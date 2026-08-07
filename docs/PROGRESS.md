@@ -9,7 +9,9 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 0 — Data foundation. Complete.** Next up is Phase 1, structured Q&A.
+**Phase 1 — Structured Q&A. In progress, at the diagnosis stage.** The 47×1 run
+is measured and every failure is now diagnosed; instrument fixes are unblocked
+but deliberately not yet applied. See `evals/DIAGNOSIS-2026-08-07.md`.
 
 Definition of done is in `docs/PLAN.md`.
 
@@ -18,7 +20,7 @@ Definition of done is in `docs/PLAN.md`.
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget; PLAN.md updated |
-| 1 Structured Q&A | not started | |
+| 1 Structured Q&A | **in progress** | LIMIT wrapper done; eval runner built; 47×1 measured; failure diagnosis complete; fixes pending, then runs 1–2; UI not started |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -26,28 +28,54 @@ Definition of done is in `docs/PLAN.md`.
 
 ## Last session
 
-_Date:_ 2026-08-06
-_What landed:_ Phase 0 complete and pushed. Then the locale was resolved to
-**India** and the whole dataset regenerated: INR, Asia/Kolkata, a Maharashtra
-chain (Pune / Nashik / Nagpur), an Indian grocery catalogue, GST by category
-slab, and a real festival model. ADR-0004's reset budget amended to the
-measured numbers; CONVENTIONS gained the migration→`make schema-doc` rule.
-_What didn't, and why:_ Phase 1 has not started. The locale change had to land
-first and finish clean.
-_Anything half-finished someone would trip over:_ No.
-_Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tests,
-`ruff` clean, seed byte-identical at both sizes, `schema.md` current.
+_Date:_ 2026-08-07
+_What landed:_ Failure diagnosis completed and **the previous diagnosis audited**
+— model SQL and reference executed and compared field by field, **zero model
+calls**, every response already cached. All 14 failures now bucketed: 11
+instrument, 2 model, 1 context.
+
+Four findings that were not just new diagnoses:
+
+- **The seventh axis was mis-stated and its evidence wrong in 3 of 4 questions.**
+  q019 was recorded as "numbers identical, label text only, verified by hand" —
+  it is **8.30 vs 8.23 and 7.08 vs 6.73**. The real axis is **row identity**
+  (`ST-01` vs `Kothrud`), and q019 belongs with q045 instead.
+- **q004 re-bucketed `ambiguous` → `context`**, against the favourable
+  direction. `ambiguous` should mean no context document could settle it; this
+  one settles in a sentence.
+- **The rotation process half-fixed a known defect.** Rotation 5 edited q045's
+  cover threshold with the definition open and left `below_reorder_point` — a
+  predicate belonging to a *different* published phrase — in place.
+- **q043 is a bucket flip, not a fresh finding**, and it moves model failures
+  1 → 2.
+
+_What didn't, and why:_ No fixes applied. Fixing mid-audit voids the comparison,
+and 21 passes are still unaudited. The disambiguation ruling is **recorded and
+deliberately not implemented** — labels are not signal, so a reading is read off
+the predicate. No prompt change, so the freeze and the $0.99 run both hold.
+_Anything half-finished someone would trip over:_ The 21 unaudited passes. 1 of
+the 9 sampled was unsound, so expect ~2 more to be hiding something. Also
+unchecked: whether any **other** reference borrows a predicate from a
+neighbouring definition, as q045 did.
+_Is the system in a working state?_ Yes. Nothing executable changed — only
+`evals/DIAGNOSIS-2026-08-07.md` and this file. 158 passed, 25 skipped.
+Credential history verified clean; `make hooks` now active.
 
 ## Next session should
 
-1. **The LIMIT wrapper** — the named debt below. Reject anything that is not a
-   single `SELECT`, wrap as `SELECT * FROM (<sql>) _q LIMIT :n`, fetch through
-   a capped server-side cursor.
-2. **SQL generation** against `sql_generate.md`, then the first eval run:
-   `make eval-sql`, 41 questions × 3 runs. Report execution accuracy three
-   ways — overall, view-covered, not-view-covered — and read the ADR-0001
-   thresholds off the **not-view-covered** number.
-3. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
+1. **Audit the 21 unaudited passes.** Before any fix, not after. A pass that
+   passed by an unsound route (q001 did) is a defect that a corrected reference
+   would otherwise bury.
+2. **Apply the reference fixes** — the numbered list at the end of
+   `evals/DIAGNOSIS-2026-08-07.md`. Eight reference-level defects, at the 10-fix
+   cap. Item 9 (disambiguation) is already ruled and needs implementing in
+   `scoring.py`, not deciding.
+3. **Keep the q004 context edit separate and last.** It is the one fix that
+   touches `business_context.md`, which **voids the prompt fingerprint and all
+   47 cached responses** — another $0.99. Reference fixes re-score for free;
+   bundling the context edit with them throws that away.
+4. **Then re-score, then buy runs 1 and 2.**
+5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
    before any component is written (CONVENTIONS → Frontend).
 
 ## Phase 1 so far
@@ -302,13 +330,12 @@ Phase 1's eval set if it is going to happen at all.
 
 ## Named debt carried into Phase 1
 
-- **The `LIMIT` wrapper.** Postgres has no max-rows setting, so the read-only
-  role cannot enforce a row cap — CLAUDE.md rule 4 has been amended to say so.
-  Phase 0 ships `pos_readonly` with `default_transaction_read_only`, a 5s
-  `statement_timeout`, and no grant on `users` or `sale_operators`. Phase 1
-  owes: reject anything that is not a single `SELECT`, wrap as
-  `SELECT * FROM (<sql>) _q LIMIT :n`, fetch through a capped server-side
-  cursor. Also recorded in `docs/PLAN.md` under Phase 1.
+- ~~**The `LIMIT` wrapper.**~~ **Discharged.** `api/src/pos_copilot/readonly_sql.py`
+  ships all four layers — single-`SELECT` check over a scanner that understands
+  literals, dollar-quoting and comments; write/DDL rejection including inside a
+  CTE; the bounding subquery at `max_rows + 1` so truncation is a fact rather
+  than an inference; and a named server-side cursor with a capped itersize.
+  Plus the scope tripwire, which refuses rather than filters (rule 5).
 - **`view_covered` on every eval question.** Already written into ADR-0001.
   `v_stock_status` and friends make some questions near-trivial; the threshold-2
   decision is evaluated against the not-view-covered number, or the measurement
@@ -317,8 +344,11 @@ Phase 1's eval set if it is going to happen at all.
   in `seed.py` and is what makes byte-identity possible. `sql_generate.md` now
   has the `{as_of_date}` placeholder and forbids `current_date`;
   `business_context.md` must teach the same thing when it is written.
-- **`api/prompts/context/business_context.md` does not exist yet**, and the
-  top-level README already links to it. Dead link until Phase 1 writes it.
+- ~~**`business_context.md` does not exist yet.**~~ **Discharged.** Written, and
+  it now carries the working definitions ("fast-moving", "about to run out",
+  "a top seller") with the number behind each. Note that q045 caught a reference
+  contradicting one of those published definitions — the document is now
+  authoritative enough that references have to be checked against it.
 
 ## Facts about the data someone will otherwise rediscover the hard way
 
