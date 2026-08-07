@@ -205,6 +205,121 @@ class GeminiProvider:
         raise RateLimited("retry budget exhausted")
 
 
+@dataclass
+class VertexProvider:
+    """Gemini through Vertex (now "Gemini Enterprise Agent Platform").
+
+    ADR-0010. Every role routes here: the AI Studio free tier is 20 requests
+    per day per model, which cannot carry a 189-call measurement, and enabling
+    billing on that key charges a card while Google Cloud credit sits unused —
+    Gemini API is explicitly excluded from the Free Trial credit.
+
+    **Location is `global`, not a region.** `gemini-3.6-flash` returns 404 in
+    us-central1 and asia-south1; only the global endpoint serves it. Pinning a
+    regional endpoint would fail outright, which is the good case — the bad
+    case would have been a region silently serving a different model version.
+
+    No sampling parameters, for the reason in ADR-0006.
+    """
+
+    model: str
+    credentials_path: str
+    project: str = ""
+    location: str = "global"
+    pacer: Pacer = field(default_factory=Pacer)
+    name: str = "vertex"
+    _token: str = field(default="", init=False, repr=False)
+    _token_expiry: float = field(default=0.0, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if not self.project:
+            with open(self.credentials_path) as handle:
+                self.project = json.load(handle)["project_id"]
+
+    def _access_token(self) -> str:
+        """Mint an OAuth2 token from the service account.
+
+        Uses google-auth only for the RSA signing, which stdlib cannot do, and
+        plain urllib for the exchange — so the dependency stays at one package
+        rather than dragging in a second HTTP stack.
+        """
+        if self._token and time.time() < self._token_expiry - 60:
+            return self._token
+
+        import urllib.parse
+        import urllib.request
+
+        from google.oauth2 import service_account
+
+        creds = service_account.Credentials.from_service_account_file(
+            self.credentials_path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        assertion = creds._make_authorization_grant_assertion()
+        body = urllib.parse.urlencode(
+            {
+                "assertion": assertion,
+                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            }
+        ).encode()
+        request = urllib.request.Request(
+            creds._token_uri,
+            data=body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read())
+        self._token = payload["access_token"]
+        self._token_expiry = time.time() + int(payload.get("expires_in", 3600))
+        return self._token
+
+    @property
+    def endpoint(self) -> str:
+        host = (
+            "aiplatform.googleapis.com"
+            if self.location == "global"
+            else f"{self.location}-aiplatform.googleapis.com"
+        )
+        return (
+            f"https://{host}/v1/projects/{self.project}"
+            f"/locations/{self.location}/publishers/google/models"
+        )
+
+    def generate(self, prompt: str) -> str:
+        import urllib.error
+        import urllib.request
+
+        url = f"{self.endpoint}/{self.model}:generateContent"
+        body = json.dumps(
+            {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+        ).encode("utf-8")
+
+        for attempt in range(self.pacer.max_attempts):
+            self.pacer.wait_turn()
+            request = urllib.request.Request(
+                url,
+                data=body,
+                headers={
+                    "Authorization": f"Bearer {self._access_token()}",
+                    "Content-Type": "application/json",
+                },
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    return _first_text(json.loads(response.read()))
+            except urllib.error.HTTPError as exc:
+                if exc.code not in (429, 500, 502, 503, 504):
+                    raise RuntimeError(
+                        f"Vertex {exc.code}: {exc.read().decode()[:300]}"
+                    ) from exc
+                if attempt == self.pacer.max_attempts - 1:
+                    raise RateLimited(
+                        f"{exc.code} after {self.pacer.max_attempts} attempts"
+                    ) from exc
+                time.sleep(self.pacer.backoff_delay(attempt))
+        raise RateLimited("retry budget exhausted")
+
+
 def _first_text(payload: dict) -> str:
     try:
         return payload["candidates"][0]["content"]["parts"][0]["text"]
@@ -279,13 +394,26 @@ def resolve_provider(role: str = "PLAN") -> Provider:
             f"MODEL_{role} is not set. Pin an exact model string — never a "
             "floating alias — so a result file describes a specific model."
         )
+    rpm = int(os.environ.get("VERTEX_RPM", os.environ.get("GEMINI_RPM", "10")))
+
+    # Vertex first (ADR-0010). AI Studio is the documented fallback and is
+    # capped at 20 requests per day per model, which no measurement survives.
+    credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if credentials and Path(credentials).exists():
+        return VertexProvider(
+            model=model,
+            credentials_path=credentials,
+            location=os.environ.get("VERTEX_LOCATION", "global"),
+            pacer=Pacer(rpm=rpm),
+        )
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "GEMINI_API_KEY is not set. Evals cost quota and never run in CI "
-            "(ADR-0005); this is a local target."
+            "No credential. Set GOOGLE_APPLICATION_CREDENTIALS to the service "
+            "account JSON (preferred, ADR-0010), or GEMINI_API_KEY to fall "
+            "back to AI Studio at 20 requests/day."
         )
-    rpm = int(os.environ.get("GEMINI_RPM", "10"))
     return GeminiProvider(model=model, api_key=api_key, pacer=Pacer(rpm=rpm))
 
 

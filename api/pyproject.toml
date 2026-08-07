@@ -10,7 +10,12 @@ requires-python = ">=3.12,<3.13"
 # project whose reproducibility can be asserted end-to-end with no model call
 # and no API key, and every dependency added here is another thing that can
 # move underneath that claim. FastAPI and friends arrive in Phase 1.
-dependencies = []
+# google-auth is the one runtime dependency, and only for RSA-signing a JWT to
+# mint a Vertex access token — stdlib cannot do RSA. The HTTP call itself uses
+# urllib, so this does not drag in a second HTTP stack. See ADR-0010.
+dependencies = [
+    "google-auth>=2.35",
+]
 
 [dependency-groups]
 dev = [

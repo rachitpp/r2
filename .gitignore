@@ -27,3 +27,15 @@ seed/full/
 # Eval response cache — keyed on prompt fingerprint, regenerable, and it would
 # otherwise grow a file per question per run per prompt revision.
 evals/.cache/
+
+# Service-account keys and other credentials. NEVER commit these — this repo is
+# public, and a leaked key is a live key until it is revoked. Broad patterns on
+# purpose: a credential named something unanticipated is the one that gets
+# committed.
+Project_*.json
+*service*account*.json
+*-sa.json
+gcp-*.json
+*credentials*.json
+*.pem
+*.p12

@@ -198,6 +198,29 @@ family was enumerated on paper — no model calls — and closed at once.
 The last two are clean right now and guarded rather than fixed, because they
 are properties of the seeded data and could reappear when it changes.
 
+### A third axis, found in rotation 4: the predicate itself
+
+The table above is all *presentation* — how the same rows are counted, ordered,
+projected and rendered. Rotation 4 found the family has another axis, and it is
+worse, because loosening comparison cannot fix it.
+
+**A time window, a threshold or a join rule that the question does not state is
+a choice the model has to guess, and it changes which rows exist.**
+
+- q043 asked "how many transactions on an average day" with no period. The
+  reference quietly filtered to April onwards; the model used all history. The
+  model was arguably more right.
+- q031 asked for the worst-margin lines "that still sell well". The reference
+  defined that as `HAVING sum(net_units) > 500`. Nothing in the question does.
+- q035 asked "did our promotions lift sales". The reference inner-joined, so
+  only the 32 promotions with sales appeared; the model included all 46.
+
+**These can only be fixed in the question.** Six questions were reworded to
+state their period or threshold outright — "since the start of April", "among
+those that have sold more than 500 units", "that had any sales". A question
+that does not determine its own answer cannot score one, and a predicate is
+part of determining it.
+
 ## Tolerance
 
 **Absolute, never relative.** The returns trap is a 0.3% gap — 54,759 gross
