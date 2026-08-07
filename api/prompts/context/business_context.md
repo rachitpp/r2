@@ -363,6 +363,36 @@ What people mean when they ask:
 | lead time | contracted `lead_time_days`; actual delivery is a different question |
 | a line, a SKU | one row of `products` |
 
+## Words that need a number behind them
+
+A manager says "fast-moving" and does not say how fast. These are the working
+definitions — use them when the question does not give its own, and **say which
+one you used** so the answer can be checked.
+
+| Phrase | Means | Why that number |
+|---|---|---|
+| fast-moving, fast-selling | `units_per_day > 1` | The top quartile of the range; the median line sells 0.47/day |
+| very fast-moving | `units_per_day > 2` | Roughly the top tenth |
+| slow-moving, barely moving | `units_per_day < 0.2` | The bottom of the range, well below the median |
+| a top seller | the top 10 by units unless a number is given | "More than 1,000 units" would be 264 of 600 products — a threshold that names nearly half the catalogue names nothing |
+| about to run out | fewer than 7 days of cover | A week is the natural planning horizon and shorter than every supplier's lead time |
+| running low | at or below the reorder point | The store's own policy, per store |
+
+If a question gives its own number — "under 5 units", "more than 2 a day" — that
+number wins.
+
+## Two defaults worth stating
+
+**Grain: stock questions are per store.** Stock is held at a store, reorder
+points are set per store, and shrinkage happens at a store. A chain-wide total
+for "what is our stock worth" or "what is going missing" is almost never what
+was meant — report per store unless the question asks to combine them.
+
+**Period: when no period is named, use all the history there is**, and make
+that visible in the column naming so nobody reads a lifetime figure as a recent
+one. Do not silently pick a recent window; a number whose period is invisible
+is the kind that gets quoted out of context.
+
 ---
 
 # The four views, and when to reach for each

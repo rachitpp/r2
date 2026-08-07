@@ -320,8 +320,12 @@ Applied 2026-08-07 to the 21 questions rotation had not yet spent, plus q047.
 only then trust the reference.** Zero added cost: the calls would have been
 spent on rotation anyway.
 
-22 calls. 12 agreed outright. Of the 9 disagreements, **8 were the question,
-not the model** — "fast-moving" never defined, no period stated on a GST
+22 calls. **Not a measurement** — the references were in flux during the pass,
+so no accuracy figure from it is recorded anywhere. A number in a file becomes a
+baseline somebody compares against later.
+
+12 agreed outright. Of the 9 disagreements, **8 were the question, not the
+model** — "fast-moving" never defined, no period stated on a GST
 comparison, no grain stated on a stock valuation, "top sellers" left open.
 Six questions were sharpened, one reference corrected (q012 invented a
 `stockout_days >= 3` filter the question never mentioned), and q027 became a
@@ -333,17 +337,43 @@ That ratio is the argument for the inversion. Eight defects that would each
 have surfaced one rotation at a time, five calls apart, were found in a single
 pass — and found *before* the reference hardened around them.
 
+### The sharpened questions went into the context document, not just the eval
+
+Sharpening a question fixes the measurement and can leave the *product*
+ambiguous — the ambiguity moves out of the eval and into the gap between eval
+and reality. A manager in the demo will say "fast-moving" and will not say
+"selling more than 2 a day".
+
+So every definition introduced by sharpening was also added to
+`business_context.md`: what fast-moving, slow-moving, top seller, about to run
+out and running low mean, with the number and why that number; plus two
+defaults, that stock questions are per store and that an unstated period means
+all available history, named. Thresholds are anchored to the seeded
+distribution rather than invented — "more than 1 a day" is the top quartile,
+and a "more than 1,000 units" definition of top seller was rejected because it
+would name 264 of 600 products.
+
 ## When to stop rotating
 
 "One more rotation" has no natural end, so the rule is:
 
-> **Stop when a rotation finds no new defect CLASS.** Not no failures —
-> failures are the measurement. A rotation scoring 3/5 where all three are
-> genuine model errors in categories already covered is **clean**. A rotation
-> scoring 4/5 where the single failure reveals a new axis is **not**.
+> **Every question must be model-tested, and the instrument corrected against
+> it, before measurement** — by rotation, by inverted authoring, or by any
+> mechanism that puts a model's disagreement in front of the author before the
+> reference hardens.
 
-If a rotation finds a sixth axis, run another — and start asking whether the
-eval set has a systematic design gap rather than a series of individual ones.
+The earlier form of this rule was "stop when a rotation finds no new defect
+class", which is the same rule stated by its symptom. Coverage is the point;
+rotation was only ever the means.
+
+So a rotation with nothing left to draw on is **coverage complete, not a gap**.
+Do not manufacture questions to satisfy a rule whose purpose is already served.
+
+While a rotation is still the mechanism: a rotation scoring 3/5 where all three
+are genuine model errors in covered categories is clean; 4/5 where the single
+failure reveals a new axis is not. A sixth axis means asking whether the set has
+a systematic design gap rather than a series of individual ones — which is what
+happened, and what the inversion answers.
 
 ### Fresh-question ledger
 
