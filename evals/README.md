@@ -260,6 +260,47 @@ trap and asserts each gap clears its tolerance by more than an order of
 magnitude. **If a tolerance is ever loosened to within 10x of a trap gap, that
 test fails** — the trap would otherwise stop being a trap silently.
 
+### A sixth axis, found in rotation 5: questions that ask for what data cannot hold
+
+q036 asked which top sellers "were only top sellers **because** they were
+discounted". The model refused:
+
+> `-- INSUFFICIENT SCHEMA: baseline demand model or counterfactual sales data`
+> `to determine if a product's top-seller status was caused by promotional`
+> `discounting`
+
+That refusal is correct. The question asks for causation; the data supports
+correlation. The reference quietly answered a **proxy** — share of units sold
+on promotion — and passed it off as the answer, so the model was scored wrong
+for noticing the substitution.
+
+This is not the predicate axis. The predicate axis is a question that does not
+say *enough*. This is a question that asks for something the data cannot hold
+at all, where the reference substitutes something it can and does not say so.
+Reworded to ask what the data actually supports.
+
+### The systematic gap behind all six
+
+Six axes is no longer a series of individual oversights, and the common cause
+is structural rather than careless:
+
+> **Every question and its reference were written by the same person, in the
+> same sitting, with the intended answer already in mind.** The reference
+> therefore encodes the author's private reading of the question, and the only
+> check on it was that same author — who shares the reading, so cannot see it
+> is missing from the words.
+
+Being more careful cannot fix this, because care is what produced it. The
+authoring path itself is wrong. What works is exactly what rotation does: put
+the question to something that does not already know the intended answer, and
+treat disagreement as evidence about the *question*.
+
+The proposal that follows is to invert the order for any future question —
+**question, then model answer, then sharpen the question, and only then write
+the reference.** Rotation currently applies that test five at a time, after the
+fact. Applied at authoring time it is the same test, run before the reference
+can absorb the assumption.
+
 ## When to stop rotating
 
 "One more rotation" has no natural end, so the rule is:
@@ -284,10 +325,13 @@ at five a round.**
 | 2 | q010 q014 q019 q024 q033 | Column selection, order, rounding; festival window unknowable |
 | 3 | q007 q020 q029 q040 q046 | Singular-vs-ranked reading; unasked-for column demanded |
 | 4 | q013 q021 q031 q035 q043 | **Predicate axis** — unstated period, threshold, join rule |
-| 5 | — | pending |
+| 5 | q009 q017 q026 q036 q045 | **Causal-question axis** — question asks what the data cannot hold; reference substitutes a proxy |
+| 6 | — | pending |
 
-Unspent: q006 q008 q009 q011 q012 q015 q016 q017 q018 q022 q023 q025 q026 q027
-q028 q030 q032 q034 q036 q037 q038 q039 q041 q042 q044 q045.
+Unspent (21): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025 q027 q028 q030
+q032 q034 q037 q038 q039 q041 q042 q044.
+
+**25 of 46 spent.** Five rotations, six defect classes, ~30 model calls.
 
 ## Running it
 
