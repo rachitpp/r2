@@ -83,6 +83,10 @@ comparability. Single decision page: `evals/FIX-LIST-v2.md`.
 _Anything half-finished someone would trip over:_ No. Enumeration is complete
 and nothing is part-applied. The one live hazard is the **`is_active` gate** —
 see `docs/HANDOFF.md` — which fires only if the seed generator changes.
+**No accuracy number exists.** The raw figure is retired: it is wrong in both
+directions — 11 instrument defects deflate it, q039 and q008 inflate it by
+passing on an arbitrary tiebreak — with neither magnitude known. Do not quote a
+number anywhere until the v2 re-measure.
 _Is the system in a working state?_ Yes. Nothing executable changed — docs only.
 158 passed, 25 skipped. Credential history verified clean; `make hooks` active.
 
@@ -135,13 +139,13 @@ same role.
    re-measure once.** Do not bundle 12 with the rest: it voids the fingerprint
    and would throw away the free re-score, which is the only measurement that
    isolates instrument change from model change.
-4. ~~Run the predicate-to-words trace across all 47 references.~~ **Done.** It
-   found **five references whose `LIMIT` cut falls inside a tie** (four new;
-   q042 has 5 of 10 slots contested among 13), a stale `traps` tag on q024, a
-   hardcoded festive window in q026, and four inert unstated predicates. It
-   **overturned q039's "sound" verdict** and added a second defect to q011 and
-   q042. Three clauses were added to the rule as a result. Items 14–18 in
-   `evals/FIX-LIST-v2.md`.
+4. ~~Run the predicate-to-words trace across all 47 references.~~ **Done, and
+   run to stationarity — three iterations.** Found **five references whose
+   `LIMIT` cut falls inside a tie** (four new; q042 has 5 of 10 slots contested
+   among 13) and **q033 ranking on a rounded column**; **overturned q039's
+   "sound" verdict**; and **retracted** the q024 `traps` finding, which follows
+   the set's universal twin convention. Grain and `ranked_all` ties swept clean.
+   Items 14–20 in `evals/FIX-LIST-v2.md`.
 5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
    before any component is written (CONVENTIONS → Frontend).
 

@@ -417,9 +417,51 @@ invisible to a predicate-only trace (q035), and a stale `traps` tag (q024)
 invisible to a three-field check. See `DIAGNOSIS-2026-08-07.md` → *First
 prospective run*.
 
-**Exemption:** `ORDER BY` under `all_matching` is unscored and owes no trace.
-Demanding one generates flags that are always benign, which trains the reader to
-skip flags — the exact failure this rule exists to prevent.
+### Which shapes owe a tie check, and why
+
+A tie in the ranking column is only a defect where the **score depends on
+position**:
+
+| shape | owes a tie check? | reasoning |
+|---|---|---|
+| `top_n` | **yes** | A tie spanning the cut lets the tiebreak decide **membership** |
+| `ranked_all` | **yes** | No cut, but order *is* scored, so a tie makes **position** arbitrary |
+| `all_matching` | no | The set is scored, order is not — a tie changes nothing |
+| `scalar` | no | One row; there is nothing to order |
+
+`ranked_all` was added after the first run checked only `top_n`. Run against
+q029, q030, q033 and q034: **all four fully distinct, no ties.** A clean result
+from a check that had never been run is still a result.
+
+**Exemption:** `ORDER BY` under `all_matching` owes no trace at all. Demanding
+one generates flags that are always benign, which trains the reader to skip
+flags — the exact failure this rule exists to prevent.
+
+### When enumeration terminates
+
+The first prospective run **amended this rule twice** — grain, and `traps` as a
+fourth coupled field — and neither amendment had been executed against the set.
+A rule that rewrites itself has not finished running. So:
+
+> **Enumeration is complete when a full run adds no new clauses and no new
+> findings.**
+
+It took **three iterations** to reach that. The rule stabilised after the first;
+the tooling needed three passes, each removing false positives. Record the
+iteration count — a rule that needs many is a rule still being discovered.
+
+### Build these probes with a known-positive
+
+Two probes failed **silently** in one session: the clause extractor took the
+first textual `WHERE`, which inside `FILTER (WHERE …)` is the wrong one, and the
+rounded-column check used a regex that could not survive nested parentheses and
+missed both known instances. Each produced a clean-looking result over a subset.
+
+Both were caught only because their output disagreed with something already
+known. **A probe with no known-positive to check itself against cannot be
+trusted** — it has no way to distinguish "found nothing" from "looked at
+nothing". Every probe here now round-trips its parse or is validated against a
+defect already confirmed by hand.
 
 Run it as a **predicate-to-words trace**: list each predicate in the reference
 and name the words requiring it. A predicate that traces to nothing is removed,

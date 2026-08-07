@@ -22,9 +22,20 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 **Phase 1 — Structured Q&A, at the end of enumeration.** Phase 0 is complete.
 
 The 47×1 SQL eval has been measured, fully diagnosed, and **all 30 passes
-audited**. Raw not-view-covered accuracy was **69.7% (23/33)**. That number was
-reported and deliberately **never acted on**, and diagnosis is why: **11 of the
-14 failures are instrument defects, not model errors.**
+audited**.
+
+> ### THERE IS NO HEADLINE NUMBER. Do not quote one.
+>
+> The raw figure from the 47×1 run is **retired** and deliberately not repeated
+> here. It is wrong in **both directions and by unknown amounts**: at least
+> **11 instrument defects deflate it**, while **q039 and q008 inflate it** —
+> they pass only because the model happened to match an arbitrary `sku`
+> tiebreak. Neither direction dominates and neither magnitude is known.
+>
+> That is the asymmetric-matcher risk the eval design warned about, actually
+> realised. **No accuracy number exists for this project until the v2
+> re-measure.** It must not appear in a commit message, the README, or any
+> portfolio text before then.
 
 **No fixes have been applied.** Enumeration is complete; the batch waits for the
 instrument v2 sitting.

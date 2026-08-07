@@ -3,8 +3,12 @@
 Prompt `de60dd5e3dde7787`. Seed `206fb7a8e55164f9`. Zero model calls: every
 response was already cached.
 
-**Raw:** 69.7% not-view-covered (23/33, 95% CI 53–83%). That figure is **not a
-verdict** and is not reported anywhere without this file beside it.
+**The raw figure is RETIRED and is not repeated here.** It was reported once,
+never acted on, and is now known to be wrong **in both directions**: at least 11
+instrument defects deflate it, while q039 and q008 inflate it — they pass only
+because the model matched an arbitrary `sku` tiebreak. Neither direction
+dominates and neither magnitude is known. **No accuracy number exists for this
+project until the v2 re-measure.**
 
 ## Rules this file follows
 
@@ -487,17 +491,18 @@ survives; one of its supports did not.
 ### What this does to the number — a projection, not a result
 
 Of the **10** not-view-covered failures, **8 are instrument** and 2 are model
-(q026, q043). Correcting them would move not-view-covered from 23/33 to **31/33**.
+(q026, q043).
 
-That figure is **not reported anywhere and is not a measurement.** It is what
-the arithmetic implies if every diagnosis here is right, and it has to be earned
-by re-scoring against corrected references — not asserted from this file. It
-can also move **down**: 21 passes are unaudited and 1 of the 9 sampled was
-unsound.
+**A projected corrected figure stood here and has been removed.** It assumed the
+errors run one way. They do not — q039 and q008 pass by matching an arbitrary
+tiebreak, so the raw number is inflated as well as deflated, by unknown amounts
+in both directions. A projection resting on a one-directional assumption is not
+conservative; it is wrong.
 
-What is safe to say now is narrower and more useful: **the raw 69.7% measures
-the instrument at least as much as the model**, which is why it was never acted
-on.
+What is safe to say is narrower: **the raw figure measured the instrument at
+least as much as the model, in both directions.** That is why it was never acted
+on, and why no number appears here. The v2 re-measure produces the first figure
+this project can stand behind.
 
 ## Fix budget for this round
 
@@ -605,6 +610,78 @@ point of running it rather than asserting it.
 
 Also, tooling rather than rule: the conjunct splitter mis-parsed
 `FILTER (WHERE …)` clauses in q026 and q047, so those two were traced by hand.
+
+### Second and third iterations — run to stationarity
+
+The first run **amended the rule twice** (grain; `traps` as a fourth field) and
+neither amendment had been executed. A rule that changes itself has not
+terminated, so enumeration now has a termination condition:
+
+> **Enumeration is complete when a full run adds no new clauses and no new
+> findings.**
+
+| iteration | clauses added | findings |
+|---|---|---|
+| 1 — first trace | **2** (grain, `traps`) | 5 tie defects (4 new), 4 smaller |
+| 2 — hardened parser, grain + `traps` swept | 0 | **q024 retracted**; q035 confirmed; grain false positives from column-wise testing |
+| 3 — grain tested as a tuple | 0 | q039 cleared; q040 cleared on a cross-table check |
+
+**Stationary after iteration 3.** The *rule* stabilised at iteration 1; the
+*tooling* needed three refinements, each removing false positives rather than
+adding findings.
+
+### Instance seven: the tool failed silently
+
+The first trace's clause extractor took the **first textual `WHERE`**, which in
+q026 and q047 is the one inside `FILTER (WHERE …)`. It then produced a
+clean-looking trace over a subset. Those two were caught by hand — but nothing
+in the output said anything was missing.
+
+**A checker that drops what it cannot parse and reports success is the recurring
+defect class living inside the tool built to detect the recurring defect class.**
+It is the worst variant so far, because its failure output is a *green result*:
+every other instance at least produced a wrong number, which is falsifiable.
+
+Hardened: clause extraction is depth-aware and literal-aware, split conjuncts
+must **round-trip against their source predicate**, and any mismatch is a hard
+exit rather than a warning. Re-run: **61 conjuncts across 39 references, 0
+dropped.** q026 correctly shows *no* top-level `WHERE` — its date windows live
+entirely in `FILTER` expressions — which also corrects where the earlier
+hand-trace located that finding.
+
+**And it happened again in the very next probe.** The rounded-`ORDER BY` class
+check used a regex that could not handle nested parentheses, so it missed q031
+and q047 — the two *known* instances — while finding a third. Rewritten with a
+balanced-paren scan: **3 references rank on a rounded value**, q031 and q047
+(manifest) and **q033 (new, latent — 7 distinct values, so no collision today)**.
+
+Two silent tool failures in one session, both found only because the results
+looked wrong against something already known. **A probe with no known-positive
+to check itself against cannot be trusted**, which is a rule about how to build
+these, not just about this one.
+
+### Singletons checked as classes — the ledger
+
+Every defect found as a singleton is a candidate class until checked
+mechanically.
+
+| singleton | class check | result |
+|---|---|---|
+| q012 — tie at the cut | done | **5 questions** — became a class |
+| q031/q047 — rank on a rounded column | done | **3 questions** — q033 new, latent |
+| q035 — `GROUP BY` grain conflation | done | **1** — genuine singleton |
+| q005 — stale `intent` | done | **1** — genuine singleton |
+| q024 — stale `traps` | done | **0 — RETRACTED**, the convention is universal |
+| ties in `ranked_all` | done | **0** — q029, q030, q033, q034 all fully distinct |
+| unstated predicate in a reference | done | **≥8** — q001, q004, q045, q008, q047, q020, q014, q032 |
+| **q019 — narrowing an unstated period** | **NOT DONE** | q026's hardcoded window is a candidate; never swept |
+| **q024/q042 — row identity** | **NOT DONE** | |
+| **q047 — ratio magnitude** | **NOT DONE** | |
+| `is_active` — model-side unstated predicate | **impossible** | structurally invisible to a reference-side rule |
+
+Three singletons remain unchecked. On this session's record — one became five,
+one became three, two stayed at one, one went to zero — **the prior is genuinely
+uninformative**, which is the argument for checking rather than guessing.
 
 ### Verdict on the rule
 

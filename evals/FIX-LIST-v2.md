@@ -70,23 +70,61 @@ The trace was run across all 47 references **after** this list was thought
 complete. It found defects in references that had already passed diagnosis *and*
 the pass audit. Details in `DIAGNOSIS-2026-08-07.md` → *First prospective run*.
 
-| # | defect | questions | what's wrong |
-|---|---|---|---|
-| 14 | **LIMIT cut falls inside a tie** | q008, q011, q012, q039, q042 | The ranking value at position *n* equals position *n+1*, so the reference's `sku` tiebreak decides **membership**, not order. Severity: **q042 — 5 of 10 slots contested among 13 tied products**; q008 2 of 10 among 11; q012 4 of 10 among 5; q011 2 of 15 among 5; q039 2 of 15 among 3. q012 was already known; **the other four are new.** |
-| 15 | Stale `traps` tag | q024 | Tagged `impossible-yoy` while its own intent says "**POSSIBLE** — Holi occurs twice in the window" and it expects rows. The tag belongs to q023. A **fourth** coupled field. |
-| 16 | Hardcoded window where a table exists | q026 | Festive season hardcoded as `2025-09-25`…`2025-10-20` with `/26.0` and `/92.0` divisors, while q024 and q025 read the window from the `festivals` table. Traces to nothing in the question and is inconsistent with its siblings. |
-| 17 | Question is ambiguous by its own intent | q030 | Intent says "**Ambiguous** between absolute revenue and per-day or per-line efficiency", yet it is scored `ranked_all` against one fixed answer. Either the intent is wrong or the question is `disambiguation`. |
-| 18 | Unstated predicates, currently inert | q047, q020, q014, q032 | q047 `HAVING … FILTER(promotion_id IS NOT NULL) > 0` (zero-share rows cannot reach a top-10 by share anyway); q020 does not scope to the named September 2025 reform (only one exists in the window); q014 picks `2025-03-15` for "March 2025" (the term period spans the month); q032 `current_unit_cost IS NOT NULL` (NULLs do not contribute to `SUM`). **All four are inert on this data and none changed an answer** — listed because inert is not the same as traced. |
+| # | defect | questions | fix form | cost |
+|---|---|---|---|---|
+| 14 | **LIMIT cut falls inside a tie** — the ranking value at position *n* equals *n+1*, so the reference's `sku` tiebreak decides **membership**, not order. **q042: 5 of 10 slots contested among 13 tied.** q008 2 of 10 among 11; q012 4 of 10 among 5; q011 2 of 15 among 5; q039 2 of 15 among 3. | q008, q011, q012, q039, q042 | **`scoring.py`** — accept any valid tie-completion | **FREE** |
+| 15 | ~~Stale `traps` tag on q024~~ | — | **RETRACTED — not a defect.** See below. | — |
+| 16 | Hardcoded festive window (`2025-09-25`…`2025-10-20`, `/26.0`, `/92.0`) where q024 and q025 read it from the `festivals` table. | q026 | `questions.jsonl` | **FREE** |
+| 17 | Intent says "**Ambiguous** between absolute revenue and per-day efficiency", yet scored `ranked_all` against one fixed answer. | q030 | `questions.jsonl` — or re-shape to `disambiguation` | **FREE** |
+| 18 | Unstated predicates, **all inert on this data**: q047 `HAVING … FILTER(…) > 0`; q020 not scoped to the named reform; q014 picks `2025-03-15` for "March 2025"; q032 `current_unit_cost IS NOT NULL`. | q047, q020, q014, q032 | `questions.jsonl` | **FREE** |
+| 19 | **Ranks on a rounded column** — rounding manufactures ties the data does not contain. Item 1 covers q031 and q047 where it *manifested*; **q033 is latent** (7 distinct values, no collision today). | q033 | `questions.jsonl` | **FREE** |
 
-**Item 14 is the significant one**, and it changes a verdict: **q039 was recorded
-as a sound pass in the pass audit and is not.** It passes only because the model
-happened to choose the same arbitrary `sku` tiebreak as the reference.
+**Item 14 changes a verdict:** **q039 was recorded as a sound pass and is not.**
+It passes only because the model happened to choose the same arbitrary `sku`
+tiebreak as the reference.
+
+### Item 14 — why the scoring fix and not the question fix
+
+There are two fix forms with **different costs**, and the choice is real:
+
+| form | what it does | cost |
+|---|---|---|
+| **Change `scoring.py`** to accept any valid tie-completion | Treats the question as having several correct answer sets, which it does | **FREE** — cached responses re-score |
+| Change the **question** to name a tiebreak | "…ties broken by SKU" | **VOIDING for that question** — the model input changes, so its cached response is dead and costs a call |
+
+**Proposed: the scoring fix**, for a reason beyond cost. A question that does not
+determine its own tiebreak *genuinely has multiple correct answers*, and writing
+a tiebreak into the question authors around the instrument rather than fixing
+it — it makes the measurement pass by narrowing what was asked. The scoring fix
+states the truth: several answer sets are correct, and the model is not wrong
+for picking one.
+
+**If you prefer the question fix**, five questions void and the re-measure grows
+by five calls. Still small, but it is a decision, not a default — which is why
+this row is stated rather than assumed.
+
+### Item 15 — RETRACTED
+
+The previous revision recorded q024's `traps: ['impossible-yoy']` as a stale tag
+contradicting its own intent. **Sweeping `traps` across all 47 disproves that.**
+Seven trap tags span different `expects` values, and **every one is a documented
+twin pair** — `causal-question` (q036/q047), `pattern-not-people` (q037/q042),
+`scope-boundary` (q044/q045), `transactions-are-not-customers` (q038/q043),
+`gst-reform-blending` (q018/q019), `stock-zero-vs-low` (q001/q002/q003).
+
+The tag names **the trap being tested**, and both members of a twin carry it.
+q024's intent says so outright: *"Counterpart to q023, so the refusal there is a
+judgement about the data rather than a blanket refusal to compare festivals."*
+The tag is correct.
+
+**It was found incidentally and misread. The class check is what corrected it** —
+the same mechanism that turned q012 from one question into five.
 
 ### NOT FIXED — recorded and gated
 
 | # | item | why not |
 |---|---|---|
-| 13 | `is_active` blind spot | Inert under this seed; all 600 products active. Fixing means changing `random.Random(42)`, which invalidates every expected result set. **Gated to any future seed change** — see `docs/HANDOFF.md`. |
+| 20 | `is_active` blind spot | Inert under this seed; all 600 products active. Fixing means changing `random.Random(42)`, which invalidates every expected result set. **Gated to any future seed change** — see `docs/HANDOFF.md`. |
 
 ---
 
@@ -112,7 +150,7 @@ The order is forced by the two costs, and getting it wrong costs a run.
 ## What the number is expected to do, and why that is not a result
 
 Of the **10** not-view-covered failures, **8 are instrument** and 2 are model
-(q026, q043). Correcting them moves not-view-covered from 23/33 to **31/33**.
+(q026, q043).
 
 **That figure is a projection and is reported nowhere.** It is what the
 arithmetic implies if every diagnosis is right, and it must be *earned* by the
@@ -120,8 +158,10 @@ step-2 re-score rather than asserted. It can also move down — the pass audit
 found q008 and q005, and a corrected reference can expose a pass that was
 passing for the wrong reason.
 
-What is safe to say: **the raw 69.7% measured the instrument at least as much as
-the model.** That is why it was never acted on.
+What is safe to say is only this: **the raw figure measured the instrument at
+least as much as the model, in both directions.** That is why it was never acted
+on, and why no number is quoted here. The v2 re-measure produces the first
+figure this project can stand behind.
 
 ---
 
