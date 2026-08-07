@@ -49,10 +49,27 @@ Four findings that were not just new diagnoses:
 - **q043 is a bucket flip, not a fresh finding**, and it moves model failures
   1 → 2.
 
-_What didn't, and why:_ No fixes applied. Fixing mid-audit voids the comparison,
-and 21 passes are still unaudited. The disambiguation ruling is **recorded and
-deliberately not implemented** — labels are not signal, so a reading is read off
-the predicate. No prompt change, so the freeze and the $0.99 run both hold.
+Then the diagnosis record itself was audited, and **the q019 entry recorded a
+hand-verification that never ran**: it reported 8.23 / 6.73 as the model's
+output, which are the constants `business_context.md` publishes as the true
+rates. The expected values were written into the observed slot. Every numeric
+claim in the file was re-executed as a result — **q018 (8.23, split verified),
+q009's 54,759 / 54,594, q001's unsound pass all hold**; q026's timing does not
+reproduce (5.33s, not 1.59s) but its verdict strengthens. As a wholesale
+control, **46 of 47 cached responses reproduce their recorded outcome** — the
+run record is sound; the defect was in the prose.
+
+The q045 half-fix hypothesis was **checked and withdrawn** — git archaeology
+over every reference edit found it to be one occurrence, not a class. What it
+found instead: **8 of 14 failing references were never revised at all.** The
+rotation gap is reach, not depth. Agreement is not verification.
+
+_What didn't, and why:_ No fixes applied. The disambiguation ruling is
+**recorded and restated on the corrected axis** — identity is not signal, so a
+reading is read off the predicate — and deliberately not implemented.
+**A pending decision is recorded for next sitting: declare instrument v2 and
+drop the fix cap**, on the ground that q004's context fix voids the fingerprint
+regardless, so the cap now protects no comparison.
 _Anything half-finished someone would trip over:_ The 21 unaudited passes. 1 of
 the 9 sampled was unsound, so expect ~2 more to be hiding something. Also
 unchecked: whether any **other** reference borrows a predicate from a

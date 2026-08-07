@@ -286,10 +286,31 @@ Reworded to ask what the data actually supports.
 > inverting the authoring order is the preventive one.**
 
 The bias has a direction, and that is what makes it systematic rather than
-noisy. Four references have been wrong — q001, q017, q043, q045 — and **every
-one was wrong in favour of the reference and against the model.** Not one erred
-the other way. A random defect would scatter; this one points, because the
-author knows what they meant and it therefore looks obvious in retrospect.
+noisy. Four references were wrong before the measured run — q001, q017, q043,
+q045 — and **every one was wrong in favour of the reference and against the
+model.** Not one erred the other way. A random defect would scatter; this one
+points, because the author knows what they meant and it therefore looks obvious
+in retrospect.
+
+> **The 47×1 run made this much larger, and the direction did not change.**
+> Diagnosis found **11 of 14 failures to be instrument defects** — and again,
+> not one erred against the reference. See
+> [`DIAGNOSIS-2026-08-07.md`](DIAGNOSIS-2026-08-07.md), which also carries
+> **three axes beyond the six below**, one correction to this section, and a
+> falsified verification found in its own record:
+>
+> - **Axis 7 — row identity.** Which column names a row is not determined by
+>   the question: `stores.code` and `stores.name` both identify it. First
+>   written up as "free-text labels the query invents"; **that statement was
+>   wrong and its evidence was wrong in 3 of its 4 questions.** Corrected there.
+> - **Axis 8 — ratio magnitude.** "Share" does not determine `0.05` or `5.0`.
+> - **Axis 9 — disambiguation was unscoreable.** It was scored on stated
+>   reasoning that `sql_generate.md` forbids the model from writing. Ruled:
+>   a reading is read off the predicate, not the caption.
+>
+> Also corrected there: **q043's `reference_sql` was never edited.** What
+> rotation 4 fixed was its *question*, which had not named the period the
+> reference filtered on.
 
 ### The systematic gap behind all six
 

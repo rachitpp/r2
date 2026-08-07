@@ -29,6 +29,49 @@ verdict** and is not reported anywhere without this file beside it.
 
 ---
 
+## Re-verification of this file's own numeric claims
+
+The q019 entry recorded a hand-verification **that never ran** (see below). Every
+numeric claim in this file was therefore re-executed against the database from
+the cached responses. **Zero model calls.** Two checks were run: each individual
+claim, and — as a wholesale control — the scorer re-run over all 47 cached
+responses and compared to the recorded outcomes.
+
+| claim | verdict |
+|---|---|
+| **q019 returned 8.23 / 6.73, "verified by hand"** | **FALSIFIED.** Returns **8.30 / 7.08**. Both recorded figures are constants published in `business_context.md` lines 122–123. |
+| q018 split at 2025-09-22 unprompted | **VERIFIED.** Pre-reform rate is **8.23 exactly**, and it matches the published constant because the model genuinely filtered from 2025-07-01 — the published window. Its post-reform figure is **7.08, not the published 6.73**, so it did *not* echo the constants. |
+| tolerance's returns trap, 54,759 gross vs 54,594 net | **VERIFIED EXACT.** q009 over May 2026: gross 54,759, returned 165, net 54,594 — a 0.301% gap. Chain-wide the figures are 965,408 / 963,062; the docstring is scoped to the trap question, not the chain, and is correct. |
+| q001 passed by an unsound route | **VERIFIED.** Model omits `below_reorder_point`, uses `days_of_cover IS NOT NULL`, and returns the identical 10 rows. |
+| q026 reference runs in 0.10s | **VERIFIED** — 0.09s. |
+| q026 model runs in 1.59s | **NOT REPRODUCED — 5.33s.** Timings are machine- and cache-dependent, so this is a soft discrepancy, not a falsification. The conclusion **strengthens**: it exceeds the 5s `statement_timeout` outright rather than "compounding past" it. |
+| — | **New:** run without that timeout, q026 returns `wrong_rows`. It is **wrong as well as slow**, so "semantically plausible, operationally unusable" was too generous. |
+
+**Wholesale control: 46 of 47 cached responses reproduce their recorded outcome
+exactly.** The single divergence is q026, and it is an artifact of the re-run
+connecting as a role without the 5s timeout — which is itself the confirmation
+above. **The run record is sound.** The defect was in this file's prose, not in
+the measurement.
+
+### What the q019 entry actually was
+
+`business_context.md` publishes 8.23% and 6.73% as the true effective rates
+either side of the reform. Those two constants were written into the
+**observed-value** slot, and a hand-verification was then asserted over them.
+
+That is the project's recurring defect class in its purest form — **a check that
+is not running, wearing the label of a check that is** — and it had migrated out
+of the code, where the eval harness exists to catch it, and into the diagnosis
+record, where nothing was looking. The instrument's own audit trail was the one
+artifact with no instrument pointed at it.
+
+The general rule this earns: **a recorded observation that equals a published
+constant is not evidence, it is a coincidence requiring proof.** Both surviving
+matches above (q018's 8.23, q009's 54,759) were re-executed for exactly that
+reason, and both hold.
+
+---
+
 ## A seventh axis — CORRECTED: it is row identity, not invented labels
 
 > **The original statement of this axis rested on a false claim, and its
@@ -147,37 +190,48 @@ unprompted, which is the correct behaviour and the GST teaching working. What
 does not survive is scoring it — or its two siblings — against a criterion the
 prompt forbids.
 
-### RULING — recorded, deliberately NOT implemented
+### RULING — restated on the corrected premise, deliberately NOT implemented
 
-The root problem is not the prompt. It is that **the instrument holds two
-contradictory rules about labels**: the seventh axis says labels are not signal
-and normalises them away; disambiguation scoring says labels *are* signal
-because they reveal the reading. q018 sits exactly on that seam — it is credited
-with declaring its reading through the same `CASE` strings the other rule
-discards.
+> The ruling was first taken against axis 7 as "free-text labels". **That premise
+> has been withdrawn** — the axis is row identity, and q042 was never on it. The
+> rationale below is re-derived from scratch on the corrected axis. The
+> conclusion survives; it now rests on reasoning that is actually true.
 
-**Ruled: labels are not signal.** Disambiguation is read off the **predicate in
-the generated SQL**. The artifact under test is a query, so the reading is the
-`WHERE` clause — which reading was taken is a fact about what the query
-*computes*, not about what it captions.
+**Under the corrected axis, the contradiction is sharper, not weaker.** Row
+identity says: *which column names a row is not determined by the question, so
+any column that identifies the same row satisfies it.* Disambiguation scoring
+says: *the caption reveals which reading was taken, so read it.* q018 sits on
+that seam — it is credited with declaring its reading through the very
+`CASE` strings row identity exists to normalise away. Under row identity,
+`'Pre-reform (2025-07-01 to 2025-09-21)'` and `MIN(business_date)` name the same
+row, so discarding the string is the axis working correctly, not a gap in it.
 
-Consequences:
+**Ruled: identity is not signal. A reading is read off the predicate.** The
+artifact under test is a query. Which reading it took is a fact about what it
+*computes* — its `WHERE`, its `GROUP BY`, its join condition — not about what it
+captions. This is now the same rule the row-identity axis already applies to
+scoring rows, rather than a second rule bolted alongside it. **One rule, two
+uses**, which is why the contradiction disappears rather than moving.
 
-- **q018 is re-adjudicated on its predicate**, not its `CASE` strings. Its
-  `business_date < DATE '2025-09-22'` split is the declaration. Verdict is not
-  expected to change; the grounds do.
-- **q003 and q027 become scoreable.** q027 computed raw festive revenue with no
-  per-store baseline — that predicate *is* its reading, and it is the reading
-  the question was rewritten to make ambiguous.
+Re-derived consequences:
+
+- **q018 re-adjudicates on `business_date < DATE '2025-09-22'`.** That predicate
+  is the declaration, and it is verified above as genuinely present and
+  genuinely correct. Verdict unchanged; grounds now sound.
+- **q003 becomes scoreable** on `below_reorder_point` — that predicate is its
+  reading of "needs attention", declared in the only place a query can declare
+  anything.
+- **q027 becomes scoreable** on the *absence* of a per-store baseline: it summed
+  raw festive revenue, and that is the reading. Note this only works under the
+  restated rule — the original label-based rule could not have scored q027 at
+  all, because it emitted no caption to read. **The corrected premise scores a
+  question the original one could not**, which is the strongest evidence the
+  restatement is right rather than merely surviving.
 - **No prompt change.** `sql_generate.md` keeps "return only SQL", so the freeze
-  at `de60dd5e3dde7787` holds and **the $0.99 run stays valid.** The alternative
-  — permitting a declaring comment — would have unfrozen the prompt and voided
-  47 cached responses for a scoring problem.
+  at `de60dd5e3dde7787` holds and **the $0.99 run stays valid.**
 
-**Not implemented, on purpose.** `scoring.py` is unchanged. 21 passes are still
-unaudited, and changing the contract mid-audit voids the comparison in precisely
-the way this file exists to prevent. This is a decision **recorded ahead of its
-application**, which is the same discipline as the fix budget.
+**Not implemented, on purpose.** `scoring.py` is unchanged — see the instrument
+v2 decision below, which changes what "not yet" is protecting.
 
 ## An accounting gap in this file's own count
 
@@ -220,11 +274,59 @@ number) was corrected against `business_context.md`, and the structural half
 (an extra predicate belonging to another definition) was not — by an edit that
 had the definition open at the time.
 
-**This is a gap in the rotation process, not in q045.** A rotation that corrects
-the threshold a question names, without re-deriving the whole predicate from the
-definition, will systematically leave conflated predicates behind. Worth
-checking whether any other reference carries a predicate from a neighbouring
-definition — that check has not been done.
+**This is a gap in the rotation process, not in q045.**
+
+### Checked: the half-fix pattern is NOT systemic
+
+The signature is greppable — a commit changing a literal or comparator inside a
+reference's `WHERE`/`HAVING` while leaving the predicate's identifier structure
+untouched. Every reference edit across all 8 commits that touched
+`questions.jsonl` was diffed that way. Git only, no model calls.
+
+Four candidates; **three are not the pattern**:
+
+| id | edit | verdict |
+|---|---|---|
+| q045 @ `1045fdb` | `< 5` → `<= 7`, `below_reorder_point` left | **the pattern** — the only instance |
+| q005 @ `e68f950` | `on_hand <= 5` → `<= 2` | **legitimate** — the question says "2 units or fewer"; the threshold was aligned to the number the question names |
+| q012 @ `395e6e9` | `stockout_days_30d >= 3` → `> 0` | **legitimate** — removed an invented filter the question never mentioned |
+| q017 @ `1045fdb` | flagged on a `round(…,1)` literal | **false positive** — the real edit replaced `v_supplier_terms_current` with `supplier_terms … AND t.valid_period @> po.ordered_on`, a full point-in-time re-derivation. The opposite of a half-fix. |
+
+So **q045 is one occurrence, not a class.** The hypothesis it suggested does not
+survive contact with the history, and is withdrawn rather than left standing on
+a single case.
+
+### What the archaeology found instead: coverage, not depth
+
+Tracing the edit history of all 14 failing references:
+
+- **8 of 14 were never revised after authoring** — q015, q019, q022, q026, q031,
+  q042, q043, q047.
+- **6 of 14 were revised at least once and failed anyway** — q004, q011, q012,
+  q024, q035, q045.
+
+The rotation process's weakness is **reach, not thoroughness**. Where it touched
+a reference it mostly corrected it properly; it simply never reached most of
+what was wrong. Rotation 5's stopping rule was "coverage complete", meaning
+every question had been model-tested — but a question can be model-tested,
+agreed, and still carry a reference that is wrong in a way the model's single
+answer did not happen to expose. **Agreement is not verification**, and eight
+references passed on agreement.
+
+That reframes the fix: not "re-derive predicates more carefully during rotation"
+but "one model answer per question is too thin a check to harden a reference
+against". It is also the strongest argument for the fresh-question ledger and
+for inverted authoring, both of which attack reach.
+
+### A correction to the record while here
+
+`evals/README.md` lists q043 among four references "found wrong". Its
+`reference_sql` was **never edited**. What rotation 4 changed was the
+**question** — "How many transactions…" became "**Since the start of April**,
+how many transactions…", naming the period the reference had always filtered on.
+So q043's known defect was real and was fixed, on the question side. Its failure
+in the measured run is an unrelated axis (`subtotal` vs `total`) and is the
+model's, not the reference's.
 
 ## Needs-review — diagnosed
 
@@ -362,6 +464,66 @@ reference fixes and re-score first, context edit second and deliberately.
 **The 21 unaudited passes should be audited before any of this is applied** —
 a fix that lands mid-audit voids the comparison in exactly the way this file
 was written to prevent.
+
+---
+
+## PENDING DECISION: declare instrument v2 and drop the cap
+
+**Recorded, not acted on.** Per the rule that a ruling is taken in a separate
+sitting from the evidence that prompted it, this is written down for a later
+decision rather than applied on first sight.
+
+### The cap no longer protects anything
+
+The fix budget exists for one purpose: to keep this measurement comparable to
+the next one. That purpose is **already void**, and not by accumulation:
+
+- **q004 is bucketed `context`**, so its fix edits `business_context.md`, which
+  **changes the prompt fingerprint and voids all 47 cached responses.** The
+  re-measure is committed the moment that fix lands, whatever else is or is not
+  done. Roughly $0.99 and about 2.3 days at 20 RPD.
+- With the re-measure already owed, rationing fixes to stay under ten buys
+  **nothing except the appearance of an intact run.** That is favourable
+  rounding one level up — at the process rather than the number.
+
+### The instrument has already changed beyond the threshold
+
+Independently of the cap, what has accumulated is not a tuned instrument:
+
+- **11 instrument defects in 14 failures.**
+- **An axis redefined** — axis 7 is row identity, not labels, and its evidence
+  was wrong in 3 of its 4 questions.
+- **A falsified verification in the diagnosis record**, which is a defect in the
+  audit trail rather than in a reference.
+- **1 unsound pass in 9 sampled**, with 21 unread.
+- **A scoring contract to be rewritten** (the disambiguation ruling).
+
+The rule says void the run **deliberately, not by accumulation.** Deliberately
+is available right now. Accumulation is what happens if the last slot is spent
+and work continues regardless.
+
+### Recommendation
+
+1. **Declare instrument v2 explicitly** and mark the 47×1 as v1 — measured,
+   diagnosed, superseded. It keeps its value as the run that found the defects;
+   it stops being a baseline anything is compared against.
+2. **Drop the fix cap for the remainder of the audit.** It is protecting a
+   comparison that no longer exists.
+3. **Finish all 21 unaudited passes without budget pressure** — the pass audit
+   is where the remaining unknown is, and the cap was actively discouraging it.
+4. **Batch every fix**: references, the scoring contract, the context edit.
+5. **Re-measure once, against v2.** One $0.99 run, not two.
+
+### The argument against, stated fairly
+
+Dropping the cap removes the mechanism that forces defects to be *enumerated
+before being fixed* — which is what produced this file. The cap's stated purpose
+was comparability, but its **working** effect was discipline: it made "fix it
+and see" expensive. Item 4 should preserve that effect by some other means —
+enumerate-then-fix as an explicit rule — or v2 will be tuned by iteration, which
+is the failure mode the whole apparatus was built against.
+
+**This is the decision to take next sitting.** Nothing here is implemented.
 
 ## Note on runs 1 and 2
 
