@@ -65,6 +65,30 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
+## BLOCKED: no GCP credential exists in this environment
+
+ADR-0010 routes every model call through Vertex. **It cannot be executed yet.**
+There is no `gcloud`, no service account, no `GOOGLE_APPLICATION_CREDENTIALS`,
+and nothing GCP-shaped in `.env` beyond the AI Studio key. The service account
+ADR-0009 assumed for Phase 2 does not exist.
+
+Three things need checking in the console before any Vertex call, none of which
+could be done from here:
+
+1. **Do credits actually cover Gemini on Vertex?** The billing page is explicit
+   that they do NOT cover AI Studio, and **silent** about Vertex. The only
+   Vertex exclusion found names *partner* models (Claude, Llama, Mistral in
+   Model Garden), not first-party Gemini — so probably covered, but "probably"
+   bills a card when wrong.
+2. **Remaining credit and expiry.** 90 days from signup, not first use. If the
+   account is not new the balance may already be zero.
+3. **`gemini-3.6-flash` on Vertex, in region, exact model string.** A mismatched
+   pin breaks reproducibility silently, and after ADR-0006 the pinned string is
+   the entire reproducibility claim.
+
+Also: Vertex is now **Gemini Enterprise Agent Platform** (renamed May 2026);
+console and doc paths have moved.
+
 ## RPD MEASURED: 20 per day. This changes the plan.
 
 Not from a blog and not from AI Studio — from the `429` body itself, which

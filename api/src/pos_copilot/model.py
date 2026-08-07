@@ -31,6 +31,59 @@ class RateLimited(RuntimeError):
     """Provider returned 429 and the retry budget is spent."""
 
 
+class BudgetExceeded(RuntimeError):
+    """The run hit its call or spend ceiling and stopped itself."""
+
+
+@dataclass
+class Budget:
+    """A hard stop on calls and estimated spend, checked before every request.
+
+    Credits and free tiers both fail the same way: a loop that should have made
+    forty calls makes four thousand, and nothing complains until the money is
+    gone or the day is. The ceiling is not a safety net for a runaway loop, it
+    is the thing that makes a runaway loop cheap to discover.
+
+    Estimated, not billed. It stops obvious runaways; it is not an accountant.
+    """
+
+    max_calls: int = 250
+    max_spend_usd: float = 25.0
+    usd_per_million_input: float = 1.50
+    usd_per_million_output: float = 7.50
+    assumed_output_tokens: int = 400
+    calls: int = 0
+    input_tokens: int = 0
+
+    @property
+    def spend_usd(self) -> float:
+        out = self.calls * self.assumed_output_tokens
+        return (
+            self.input_tokens / 1e6 * self.usd_per_million_input
+            + out / 1e6 * self.usd_per_million_output
+        )
+
+    def check(self, next_prompt: str) -> None:
+        if self.calls >= self.max_calls:
+            raise BudgetExceeded(
+                f"stopped at the {self.max_calls}-call ceiling "
+                f"(~${self.spend_usd:.2f} estimated). Raise --max-calls only "
+                "after checking why so many were needed."
+            )
+        projected = self.spend_usd + len(next_prompt) / 4 / 1e6 * (
+            self.usd_per_million_input
+        )
+        if projected > self.max_spend_usd:
+            raise BudgetExceeded(
+                f"stopped at the ${self.max_spend_usd:.2f} ceiling after "
+                f"{self.calls} calls (~${self.spend_usd:.2f} estimated)."
+            )
+
+    def record(self, prompt: str) -> None:
+        self.calls += 1
+        self.input_tokens += len(prompt) // 4
+
+
 @dataclass
 class Pacer:
     """Serial pacing plus exponential backoff with jitter.

@@ -28,8 +28,20 @@ Not preferences. Work that breaks one of these gets reverted.
 
 1. **No model calls in CI.** CI runs with no API key. Anything needing one is a
    local `make` target.
-2. **Free tier everywhere.** No paid frontier calls. Embeddings run local
-   (bge-small-en-v1.5, CPU). Flag anything that spends quota in a loop.
+2. **The system a reader runs must never need paid inference. Author-side
+   measurement and build steps may.** Demo mode runs with no key at all; the
+   live path uses the reader's own credentials. But the Gemini API free tier is
+   **20 requests per day per model** (measured 2026-08-07), which cannot carry
+   a 189-call eval, so `PLAN`, `CLASSIFY` and `EXTRACT` all route through
+   Vertex — see ADR-0010 and ADR-0009.
+
+   Google Cloud credits may cover that, and **credits expire 90 days from
+   signup**; after they do, this is paid inference regardless. So: embeddings
+   stay local (bge-small-en-v1.5, CPU), loops stay bounded, responses stay
+   cached permanently, and anything that spends in a loop still gets flagged.
+   None of that relaxes because a credit balance turned up — it is good design
+   independent of budget and worse without it. Every runner carries a call
+   ceiling and a spend ceiling.
 3. **Agent loop caps at ~6 tool calls.** Bounded sequences, not open-ended
    exploration. Rate limits are the binding constraint on design.
 4. **SQL generation runs as the read-only role, and the row `LIMIT` is enforced

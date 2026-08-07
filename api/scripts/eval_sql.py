@@ -33,6 +33,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from pos_copilot.model import (
+    Budget,
+    BudgetExceeded,
     Pacer,
     ResponseCache,
     StubProvider,
@@ -133,6 +135,7 @@ def run(args: argparse.Namespace) -> int:
         print(f"estimate   {total_calls * pacer.min_interval / 60:.1f} min minimum")
     print()
 
+    budget = Budget(max_calls=args.max_calls, max_spend_usd=args.max_spend)
     url = args.database_url
     judgements: list[tuple[dict, object]] = []
     per_question_outcomes: dict[str, list[str]] = {}
@@ -156,7 +159,9 @@ def run(args: argparse.Namespace) -> int:
 
             cached = cache.get(fingerprint, q["id"], run_index)
             if cached is None:
+                budget.check(prompt)
                 cached = provider.generate(prompt)
+                budget.record(prompt)
                 cache.put(fingerprint, q["id"], run_index, cached)
 
             sql = strip_fences(cached)
@@ -188,6 +193,7 @@ def run(args: argparse.Namespace) -> int:
                 f"{'  — ' + verdict.detail if verdict.detail else ''}"
             )
 
+    print(f"\nspent {budget.calls} calls, ~${budget.spend_usd:.2f} estimated")
     stats = summarise(judgements)
 
     # Cross-run variance: how often a question does not give the same outcome
@@ -259,13 +265,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--only", default="", help="comma-separated question ids")
     parser.add_argument("--no-cache", action="store_true")
     parser.add_argument(
+        "--max-calls",
+        type=int,
+        default=250,
+        help="hard ceiling; the run stops itself rather than looping away",
+    )
+    parser.add_argument("--max-spend", type=float, default=25.0)
+    parser.add_argument(
         "--database-url",
         default=os.environ.get(
             "READONLY_DATABASE_URL",
             "postgresql://pos_readonly:pos_readonly_dev@localhost:5432/pos",
         ),
     )
-    return run(parser.parse_args(argv))
+    try:
+        return run(parser.parse_args(argv))
+    except BudgetExceeded as exc:
+        print(f"\nBUDGET STOP: {exc}")
+        print("Cached answers are kept, so a resumed run costs only the rest.")
+        return 2
 
 
 if __name__ == "__main__":
