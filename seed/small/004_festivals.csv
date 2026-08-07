@@ -1,0 +1,10 @@
+festival_id,name,festival_date,ramp_start,ramp_end,is_regional,notes
+1,Makar Sankranti,2026-01-14,2026-01-08,2026-01-16,false,
+2,Republic Day,2026-01-26,2026-01-23,2026-01-27,false,
+3,Maha Shivaratri,2026-02-15,2026-02-11,2026-02-16,false,
+4,Holi,2026-03-04,2026-02-23,2026-03-06,false,
+5,Gudi Padwa,2026-03-19,2026-03-12,2026-03-21,true,Larger in Pune than elsewhere in the chain
+6,Eid al-Fitr,2026-03-20,2026-03-08,2026-03-22,false,
+7,Ram Navami,2026-03-26,2026-03-22,2026-03-27,false,
+8,Akshaya Tritiya,2026-04-19,2026-04-14,2026-04-20,false,
+9,Eid al-Adha,2026-05-27,2026-05-19,2026-05-29,false,

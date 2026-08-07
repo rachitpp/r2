@@ -269,3 +269,56 @@ def test_no_expectation_hits_the_row_cap(questions):
             "would truncate the model's answer. Narrow the question."
         )
         assert not q["expected"]["truncated"], q["id"]
+
+
+# ── Guards for under-determination that is absent today but could return ─────
+
+
+def test_no_ordered_question_sorts_on_a_null(questions):
+    """NULLS FIRST vs NULLS LAST is a choice the question never states.
+
+    Clean today. If a NULL ever reaches an ordered expectation, its position is
+    undetermined and the question needs a predicate excluding it.
+    """
+    for q in questions:
+        if q.get("result_shape") not in ("top_n", "ranked_all"):
+            continue
+        for row in (q.get("expected") or {}).get("rows", []):
+            assert all(v is not None for v in row), (
+                f"{q['id']} orders rows containing NULL — NULLS FIRST/LAST is "
+                "undetermined. Exclude NULLs in the question's predicate."
+            )
+
+
+def test_no_top_n_question_has_a_tie_at_its_cutoff(questions):
+    """If rows N and N+1 tie on the sort key, which one makes the list is luck.
+
+    Only checkable for the rows the expectation holds, so this catches a tie
+    WITHIN the list — the boundary itself is guarded by the question naming a
+    count and the reference carrying a total-order tiebreak.
+    """
+    for q in questions:
+        if q.get("result_shape") != "top_n":
+            continue
+        rows = [tuple(r) for r in (q.get("expected") or {}).get("rows", [])]
+        assert len(rows) == len(set(rows)), (
+            f"{q['id']} has duplicate rows in a ranked list; the order between "
+            "them is undetermined"
+        )
+
+
+def test_every_answerable_question_declares_its_answer_columns(questions):
+    """The expectation must hold only what the question asks for.
+
+    Comparison requires every expected value to appear in the model's row, so
+    an unasked-for column in the expectation demands the model guess it — the
+    defect recorded in evals/README.md.
+    """
+    for q in questions:
+        if not q.get("expected"):
+            continue
+        assert q.get("answer_columns"), f"{q['id']} has no answer_columns"
+        assert q["expected"]["columns"] == q["answer_columns"], (
+            f"{q['id']}: expectation columns {q['expected']['columns']} do not "
+            f"match its declared answer {q['answer_columns']}"
+        )

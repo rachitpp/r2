@@ -131,12 +131,63 @@ but never gives the dates, so the window is not knowable from the context it
 was given. Per ADR-0001 the fix for that is `business_context.md`, never a
 few-shot pair.
 
-**Status: awaiting a ruling.** Proposed direction is to trim every reference to
-the columns the question actually asks for, then compare each expected row as a
-sub-multiset of the model's row — so extra context columns are free but every
-answer value must be present — with a numeric tolerance instead of matched
-rounding. That deliberately loosens the instrument, which is a decision worth
-taking explicitly rather than by default.
+**Fixed by** comparing each expected row as a **sub-multiset** of the model's
+row. Rows are the answer; columns are a projection over it. Extra columns
+cannot make an answer wrong — returning the supplier name alongside the payment
+terms has still answered the question — but a missing one can. Over-selection
+is not entirely unmeasured: reaching for a column the read-only role cannot see
+fails at the permission layer instead.
+
+## The family, audited rather than patched one at a time
+
+All three defects were the same thing: **the reference encoded a choice the
+question did not determine.** Rather than fix the third instance, the whole
+family was enumerated on paper — no model calls — and closed at once.
+
+| Under-determined | Status | How it is handled |
+|---|---|---|
+| Row count (`LIMIT`) | **was live** | `result_shape` |
+| Row order | **was live** | `result_shape` |
+| Column selection | **was live** | sub-multiset row match |
+| Column order | **was live** | sub-multiset row match |
+| Column names (`weekday` vs `day_of_week`) | latent | values compared, names never |
+| Rounding / precision | **was live**, 13 questions | precision alignment + tolerance |
+| Numeric vs text rendering of a number | latent, 32 questions | parsed as `Decimal` |
+| Padded `to_char` output (`'Sunday   '`) | **was live**, q033 | trimmed before comparison |
+| Boolean rendering (`t` / `true` / `TRUE`) | latent | normalised |
+| date vs timestamptz vs text, timezone in rendering | latent, 6 questions | compared as the day only |
+| `NULLS FIRST` vs `NULLS LAST` in an ordered shape | **absent today** | guarded by test |
+| Ties at a `top_n` cutoff | **absent today** | guarded by test |
+| A `GROUP BY` the question did not ask for | not under-determined | changes the rows, so it correctly fails |
+
+The last two are clean right now and guarded rather than fixed, because they
+are properties of the seeded data and could reappear when it changes.
+
+## Tolerance
+
+**Absolute, never relative.** The returns trap is a 0.3% gap — 54,759 gross
+units against 54,594 net — and any relative tolerance loose enough to be useful
+would swallow it, reporting a pass on the exact failure it exists to catch.
+
+    counts, quantities, ids     exact
+    money                       +/- 0.01     (matches corpus/README.md)
+    rates, percentages          +/- 0.005
+
+Kind is derived from the reference column's name. `margin` is money;
+`margin_pct` is a rate.
+
+**Values are compared at the coarser of the two precisions**, then within
+tolerance. This is not a loosening — it is the same under-determination one
+level down. "Rank the days by average takings" never says how many decimals, so
+a reference writing `round(avg(...))` gives 326958 where a raw average gives
+326958.0876: the same answer, 0.0876 apart, which absolute money tolerance
+alone would call wrong. Alignment is on *decimal places*, not significant
+figures, so a model answering 1200 where the truth is 1234.56 still fails.
+
+`api/tests/test_tolerance.py` holds the right-and-known-wrong pair for every
+trap and asserts each gap clears its tolerance by more than an order of
+magnitude. **If a tolerance is ever loosened to within 10x of a trap gap, that
+test fails** — the trap would otherwise stop being a trap silently.
 
 ## Running it
 

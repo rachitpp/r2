@@ -787,6 +787,7 @@ TABLE_ORDER = [
     "stores",
     "categories",
     "gst_rates",
+    "festivals",
     "suppliers",
     "products",
     "users",
@@ -810,6 +811,15 @@ TABLE_ORDER = [
 COLUMNS = {
     "stores": ["store_id", "code", "name", "city", "timezone", "opened_on"],
     "categories": ["category_id", "name", "department"],
+    "festivals": [
+        "festival_id",
+        "name",
+        "festival_date",
+        "ramp_start",
+        "ramp_end",
+        "is_regional",
+        "notes",
+    ],
     "gst_rates": [
         "gst_rate_id",
         "category_id",
@@ -1032,6 +1042,32 @@ def build_categories(csvs: CsvSet) -> dict[str, int]:
         ids[cat.name] = index
         csvs.row("categories", index, cat.name, cat.department)
     return ids
+
+
+def build_festivals(csvs: CsvSet, window_start: date, window_end: date) -> None:
+    """Emit the festival calendar the demand model already runs on.
+
+    Only festivals whose day falls inside the window, so the table never
+    describes trade the sales history does not contain. Consumes no RNG — this
+    is the same static calendar the multiplier is built from, published rather
+    than recomputed, so the two can never disagree.
+    """
+    festival_id = 0
+    for festival in FESTIVALS:
+        if not (window_start <= festival.peak <= window_end):
+            continue
+        festival_id += 1
+        regional = festival.name in REGIONAL_FESTIVAL_WEIGHT
+        csvs.row(
+            "festivals",
+            festival_id,
+            festival.name,
+            festival.peak.isoformat(),
+            (festival.peak - timedelta(days=festival.ramp_days)).isoformat(),
+            (festival.peak + timedelta(days=festival.tail_days)).isoformat(),
+            "true" if regional else "false",
+            "Larger in Pune than elsewhere in the chain" if regional else None,
+        )
 
 
 def build_gst_rates(csvs: CsvSet, category_ids: dict[str, int]) -> None:
@@ -1539,6 +1575,7 @@ def simulate(csvs: CsvSet, spec: SizeSpec) -> dict[str, object]:
 
     category_ids = build_categories(csvs)
     build_gst_rates(csvs, category_ids)
+    build_festivals(csvs, window_start, window_end)
     stores = build_stores(csvs, spec)
     supplier_by_category = build_suppliers(csvs)
     products = build_products(csvs, spec, category_ids, supplier_by_category)

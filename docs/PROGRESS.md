@@ -65,7 +65,21 @@ _Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tes
   `eval_expectations.py` treats that as a broken question rather than a result.
 - **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
 
-## BLOCKED: the eval set is under-determined — read before running it again
+## Free-tier daily quota EXHAUSTED 2026-08-07
+
+A re-score hit `429` and six backoff attempts spanning roughly two minutes did
+not clear it, which points at the **daily** cap rather than requests-per-minute.
+No more model calls today; it resets at midnight Pacific.
+
+The cache did not save this run, and correctly so: `business_context.md`
+changed, so the prompt fingerprint changed, so every cached answer describes a
+prompt that no longer exists. Caching protects a *re-run of the same prompt*,
+not a re-run after editing one.
+
+**Still needed: the real RPM/TPM/RPD from `aistudio.google.com/rate-limit`.**
+Roughly 20 calls were spent today across three staged runs.
+
+## Eval instrument — three defects found, all fixed
 
 Stage 1 (5 questions x 1 run, `gemini-3.6-flash`) returned 0/4. **That is not a
 measurement of the model. It is the instrument failing**, and no result file was
@@ -87,13 +101,21 @@ Two defects, both mine:
 Ordering has the same problem: 19 reference queries impose an `ORDER BY` the
 question does not imply.
 
-**Do not re-run until this is fixed, and do not read anything into the 0%.**
-Proposed fix is a `result_shape` field per question (`top_n` / `all_matching` /
-`scalar`) so comparison matches what the question actually determines — awaiting
-a ruling.
+All three were one family: **the reference encoded a choice the question did
+not determine.** Enumerated on paper and closed together rather than one at a
+time — see `evals/README.md` for the full table.
 
-Cost so far: ~7 model calls. Staging caught this before the 135-call run, which
-is exactly what staging is for.
+- `result_shape` (4 kinds) fixes row count and row order.
+- Sub-multiset row matching plus `answer_columns` fixes column selection,
+  column order and column names. The expectation now holds ONLY what the
+  question asks for; the reference still SELECTs context for a human reader.
+- `tolerance.py` fixes rounding and rendering: absolute tolerances only,
+  compared at the coarser of the two precisions.
+
+Third staged run (fresh questions) went 3/5, with both failures again the
+instrument — q029 read as singular and the model answered with one row
+correctly; q040's reference demanded a PO count the question never asked for.
+Both fixed. **The next staged run is the first that can be believed.**
 
 ## Model providers and live limits
 

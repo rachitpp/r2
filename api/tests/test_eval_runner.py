@@ -282,7 +282,7 @@ def test_all_matching_fails_on_under_fetching():
     """An incomplete answer is a wrong answer, LIMIT clause or not."""
     verdict = compare({"rows": [[1], [2], [3]]}, {"rows": [[1], [2]]}, "all_matching")
     assert verdict.outcome is Outcome.WRONG_ROWS
-    assert "1 expected rows missing" in verdict.detail
+    assert "1 missing" in verdict.detail
 
 
 def test_ordered_shapes_still_care_about_order():

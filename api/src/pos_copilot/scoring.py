@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
+from pos_copilot.tolerance import classify, values_match
+
 INSUFFICIENT = "-- INSUFFICIENT SCHEMA"
 OUT_OF_SCOPE = "-- OUT OF SCOPE"
 
@@ -97,6 +99,40 @@ def rows_of(result: dict) -> list[tuple[str, ...]]:
     return [tuple(normalise(v) for v in row) for row in result.get("rows", [])]
 
 
+def row_contains(expected_row: list, columns: list[str], actual_row: list) -> bool:
+    """Is every expected value present in the actual row, within tolerance?
+
+    Sub-multiset, not equality. **Rows are the answer; columns are a projection
+    over it.** Extra columns cannot make an answer wrong — a model returning
+    supplier name alongside the payment terms has still answered — but a
+    missing one can. The question fixes which rows come back, and almost never
+    fixes which columns render them, so scoring on the projection measured
+    whether the model guessed a SELECT list that existed only in the reference.
+
+    Over-selection is not left entirely unmeasured: reaching for a column the
+    read-only role cannot see fails at the permission layer instead.
+    """
+    remaining = list(actual_row)
+    # Iterate the expected VALUES, not the column list. Zipping the two would
+    # silently stop at the shorter one, so a missing or truncated `columns`
+    # would leave the remaining values unchecked and pass everything.
+    for index, want in enumerate(expected_row):
+        column = columns[index] if index < len(columns) else ""
+        kind = classify(column, want)
+        for index, got in enumerate(remaining):
+            if values_match(want, got, kind):
+                del remaining[index]
+                break
+        else:
+            return False
+    return True
+
+
+def _describe(row: list, columns: list[str]) -> str:
+    pairs = [f"{c}={v!r}" for c, v in zip(columns, row, strict=False)]
+    return ", ".join(pairs[:4]) + (" …" if len(pairs) > 4 else "")
+
+
 #: What a question's text actually determines about its answer.
 #:
 #: The first eval run scored 0/4 because every reference carried an arbitrary
@@ -121,38 +157,63 @@ def compare(expected: dict, actual: dict, shape: str = "top_n") -> Judgement:
     incomplete answer is a wrong answer. Ignoring the model's LIMIT means not
     penalising the *clause*; it never means not penalising its *effect*.
     """
-    want, got = rows_of(expected), rows_of(actual)
+    columns = expected.get("columns", [])
+    want, got = expected.get("rows", []), actual.get("rows", [])
 
     if shape in UNORDERED_SHAPES:
-        if sorted(want) == sorted(got):
+        unmatched = list(got)
+        missing = []
+        for row in want:
+            for index, candidate in enumerate(unmatched):
+                if row_contains(row, columns, candidate):
+                    del unmatched[index]
+                    break
+            else:
+                missing.append(row)
+        if not missing and not unmatched:
             return Judgement(Outcome.CORRECT)
-        missing = len([r for r in want if r not in got])
-        extra = len([r for r in got if r not in want])
-        return Judgement(
-            Outcome.WRONG_ROWS,
-            f"set differs: {missing} expected rows missing, {extra} unexpected "
-            f"(expected {len(want)}, got {len(got)})",
-        )
-
-    if want == got:
-        return Judgement(Outcome.CORRECT)
-
-    if sorted(want) == sorted(got):
-        # Same data, different sequence. Almost always a missing ORDER BY
-        # tiebreak, which is worth naming separately because the remedy is
-        # specific and it still counts as silent-wrong.
-        return Judgement(
-            Outcome.WRONG_ORDER,
-            "same rows in a different order — likely a missing ORDER BY tiebreak",
-        )
+        detail = f"set differs: {len(missing)} missing, {len(unmatched)} unexpected"
+        if missing:
+            detail += f"; first missing {_describe(missing[0], columns)}"
+        return Judgement(Outcome.WRONG_ROWS, detail)
 
     if len(want) != len(got):
         return Judgement(
             Outcome.WRONG_ROWS, f"expected {len(want)} rows, got {len(got)}"
         )
 
-    differing = sum(1 for a, b in zip(want, got, strict=False) if a != b)
-    return Judgement(Outcome.WRONG_ROWS, f"{differing} of {len(want)} rows differ")
+    mismatched = [
+        i
+        for i, (a, b) in enumerate(zip(want, got, strict=False))
+        if not row_contains(a, columns, b)
+    ]
+    if not mismatched:
+        return Judgement(Outcome.CORRECT)
+
+    # Same rows, wrong sequence: almost always a missing ORDER BY tiebreak.
+    # Worth naming separately because the remedy is specific — and it is still
+    # silent-wrong, because a ranked answer in the wrong order is wrong.
+    pool = list(got)
+    reordered = True
+    for row in want:
+        for index, candidate in enumerate(pool):
+            if row_contains(row, columns, candidate):
+                del pool[index]
+                break
+        else:
+            reordered = False
+            break
+    if reordered and not pool:
+        return Judgement(
+            Outcome.WRONG_ORDER,
+            "same rows in a different order — likely a missing ORDER BY tiebreak",
+        )
+
+    return Judgement(
+        Outcome.WRONG_ROWS,
+        f"{len(mismatched)} of {len(want)} rows differ; first at position "
+        f"{mismatched[0]}, expected {_describe(want[mismatched[0]], columns)}",
+    )
 
 
 def judge(

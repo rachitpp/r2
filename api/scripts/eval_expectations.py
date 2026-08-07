@@ -74,11 +74,28 @@ def dump(questions: list[dict]) -> str:
     return "".join(json.dumps(q, ensure_ascii=False) + "\n" for q in questions)
 
 
-def run(conn, sql: str) -> dict:
+def run(conn, sql: str, answer_columns: list[str] | None = None) -> dict:
+    """Execute the reference and keep only the columns the question asks for.
+
+    The reference SELECTs extra context because it is also read by humans. The
+    EXPECTATION must not, because comparison requires every expected value to
+    appear in the model's row — so an unasked-for column would demand the model
+    guess it. Projecting here keeps the query readable and the expectation
+    honest.
+    """
     with conn.cursor() as cur:
         cur.execute(sql)
         columns = [d.name for d in cur.description]
         rows = cur.fetchall()
+
+    if answer_columns:
+        missing = [c for c in answer_columns if c not in columns]
+        if missing:
+            raise KeyError(f"answer_columns not in reference output: {missing}")
+        keep = [columns.index(c) for c in answer_columns]
+        columns = answer_columns
+        rows = [tuple(row[i] for i in keep) for row in rows]
+
     return {
         "columns": columns,
         "row_count": len(rows),
@@ -127,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                 updated.append(fresh)
                 continue
             try:
-                fresh["expected"] = run(conn, sql)
+                fresh["expected"] = run(conn, sql, item.get("answer_columns"))
             except Exception as exc:  # report, do not crash the whole run
                 failures.append(f"{item['id']}: {type(exc).__name__}: {exc}")
                 conn.rollback()

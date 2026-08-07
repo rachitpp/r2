@@ -286,11 +286,25 @@ Three things that follow:
 Demand is strongly seasonal, and the festive season is the single largest
 signal in the data.
 
+**The festival calendar is in the database — use it, do not hardcode dates.**
+The `festivals` table has one row per festival occurrence, with `festival_date`
+and, more usefully, `ramp_start` and `ramp_end` bounding the window over which
+trade is actually affected:
+
+    JOIN festivals f
+      ON d.business_date BETWEEN f.ramp_start AND f.ramp_end
+    WHERE f.name = 'Diwali'
+
+**"During a festival" almost always means the window, not the day.** Trade
+builds for weeks beforehand and frequently *drops* on the festival itself, so
+filtering to `festival_date` answers a different and much less useful question.
+
 **Navratri → Dussehra → Dhanteras → Diwali is one continuous six-week build,
 not four separate spikes.** In 2025 it runs from late September, peaks the day
-before Dhanteras (17 October), and drops into a marked slump for about a
+before Dhanteras (18 October), and drops into a marked slump for about a
 fortnight after Diwali. At its peak, daily takings run well over double the
-baseline.
+baseline. Their ramp windows overlap in the table, which is what that
+continuity looks like in the data.
 
 Consequences for queries:
 
@@ -298,9 +312,11 @@ Consequences for queries:
   So is a comparison of the fortnight after Diwali against anything.
 - **Pooja & Festive, Sweets & Chocolates, and Edible Oils & Ghee move hardest**
   in the season. Staples barely move at all.
-- **Ganesh Chaturthi (late August) is a large regional event** — bigger in Pune
-  than in Nagpur, because this is a Maharashtra chain. A store comparison
-  across late August is partly measuring that.
+- **Ganesh Chaturthi is a large regional event** — bigger in Pune than in
+  Nagpur, because this is a Maharashtra chain. `festivals.is_regional` flags
+  these. A store comparison across one of them is partly measuring geography,
+  so normalise against each store's own baseline rather than comparing raw
+  totals.
 - Holi is quiet on the day itself and busy in the week before it.
 - Other seasonality: soft drinks peak hard in the May–June summer, tea and
   coffee peak in winter, fresh produce peaks with the mango season.

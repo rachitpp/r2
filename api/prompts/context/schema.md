@@ -18,6 +18,20 @@ Product categories, one level deep, grouped into departments. Demand seasonality
 | `name` | text NOT NULL |  |  |
 | `department` | text NOT NULL |  |  |
 
+## `festivals`
+
+The festival calendar for the trading window, one row per festival occurrence. Use this rather than hardcoding dates: it is what makes "how did we do over Diwali" and "which festivals fell in Q3" answerable by query. Only festivals whose day falls inside the sales history are listed.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `festival_id` | smallint NOT NULL | PK |  |
+| `name` | text NOT NULL |  |  |
+| `festival_date` | date NOT NULL |  | The festival itself. Note this is usually NOT the busiest day — trade peaks in the run-up and often falls on the day, so a question about festival trade almost always means the window, not the date. |
+| `ramp_start` | date NOT NULL |  | First day demand starts building for this festival. For Dhanteras that is about four weeks out; for a minor festival, a few days. |
+| `ramp_end` | date NOT NULL |  | Last day still affected, including the post-festival slump. Use business_date BETWEEN ramp_start AND ramp_end for "during the festival". |
+| `is_regional` | boolean NOT NULL |  | True when the festival lands harder in some of our stores than others — Ganesh Chaturthi is far larger in Pune than in Nagpur. Comparing stores across a regional festival without normalising against each store's own baseline measures store size, not the festival. |
+| `notes` | text |  |  |
+
 ## `gst_rates`
 
 The GST rate for each category, over time. One row per rate period. The rate India charges on a product changed on 22 September 2025 (56th GST Council): the 12% and 28% slabs were withdrawn, most 12% items moved to 5%, most 28% items to 18%, and aerated beverages to a new 40% slab. That date is inside the sales history, so ANY question about tax over a period crossing it has two answers, not one. Averaging across the boundary produces a number that was never the rate.
