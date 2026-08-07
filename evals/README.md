@@ -279,6 +279,18 @@ say *enough*. This is a question that asks for something the data cannot hold
 at all, where the reference substitutes something it can and does not say so.
 Reworded to ask what the data actually supports.
 
+### What the instrument was actually measuring
+
+> **The instrument measures whether the model guesses the author's intended
+> answer, not whether it understands the data. Rotation is the post-hoc fix;
+> inverting the authoring order is the preventive one.**
+
+The bias has a direction, and that is what makes it systematic rather than
+noisy. Four references have been wrong — q001, q017, q043, q045 — and **every
+one was wrong in favour of the reference and against the model.** Not one erred
+the other way. A random defect would scatter; this one points, because the
+author knows what they meant and it therefore looks obvious in retrospect.
+
 ### The systematic gap behind all six
 
 Six axes is no longer a series of individual oversights, and the common cause
@@ -300,6 +312,26 @@ The proposal that follows is to invert the order for any future question —
 the reference.** Rotation currently applies that test five at a time, after the
 fact. Applied at authoring time it is the same test, run before the reference
 can absorb the assumption.
+
+## Inverted authoring
+
+Applied 2026-08-07 to the 21 questions rotation had not yet spent, plus q047.
+**Question first, model answers, sharpen the question against what it did, and
+only then trust the reference.** Zero added cost: the calls would have been
+spent on rotation anyway.
+
+22 calls. 12 agreed outright. Of the 9 disagreements, **8 were the question,
+not the model** — "fast-moving" never defined, no period stated on a GST
+comparison, no grain stated on a stock valuation, "top sellers" left open.
+Six questions were sharpened, one reference corrected (q012 invented a
+`stockout_days >= 3` filter the question never mentioned), and q027 became a
+`disambiguation` because the ambiguity between raw festive revenue and
+uplift-against-own-baseline *is* the trap and cannot be scored as a fixed
+result set.
+
+That ratio is the argument for the inversion. Eight defects that would each
+have surfaced one rotation at a time, five calls apart, were found in a single
+pass — and found *before* the reference hardened around them.
 
 ## When to stop rotating
 
@@ -326,7 +358,7 @@ at five a round.**
 | 3 | q007 q020 q029 q040 q046 | Singular-vs-ranked reading; unasked-for column demanded |
 | 4 | q013 q021 q031 q035 q043 | **Predicate axis** — unstated period, threshold, join rule |
 | 5 | q009 q017 q026 q036 q045 | **Causal-question axis** — question asks what the data cannot hold; reference substitutes a proxy |
-| 6 | — | pending |
+| 6 | — | pending; 21 unspent questions went through inverted authoring instead |
 
 Unspent (21): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025 q027 q028 q030
 q032 q034 q037 q038 q039 q041 q042 q044.
