@@ -1,6 +1,29 @@
 # Fix list for the instrument v2 sitting
 
-**Decision artifact. Nothing here is applied.** **ENUMERATION TERMINATED** —
+> ## STATUS 2026-08-08 — thirteen fixes APPLIED, free re-score taken
+>
+> The mechanical items are done and re-scored at **zero model calls, 47 cache
+> hits, 0 misses**. **No regressions**: q015 and q045 now pass, nothing that
+> passed before now fails, and q011 moved `wrong_rows` → `wrong_order` — the
+> grain fix landed and only its boundary tie remains.
+>
+> **not-view-covered moved 23/33 → 24/33.** That is *not* a headline number and
+> the retirement still stands: the batch is incomplete, the four forks below are
+> undecided, and `full×3` has not run. It is an interim re-score, nothing more.
+>
+> **Every remaining failure now maps to a deferred fork or a model failure** —
+> q019/q022/q024/q042 to row identity, q011/q012 to the tie class, q047 to ratio
+> magnitude, q031 to its measure, q004 to the context fix, and q026/q043 are the
+> two model failures. Nothing is left that a mechanical fix reaches.
+>
+> **It was thirteen, not the sixteen claimed.** Three of the "unambiguous"
+> sixteen were not: q026 needs *the festive season* defined in data terms,
+> q014's fix requires editing a question — which desynchronises its cached
+> response rather than merely costing a call — and item 11 needs a new
+> per-question field naming each reading's predicate before the ruling can be
+> implemented. All three are recorded below as deferred, not done.
+
+**Decision artifact. The four forks and the framing call are not applied.** **ENUMERATION TERMINATED** —
 47 questions diagnosed, all 30 passes audited, all 47 `intent` fields checked,
 every known singleton checked as a class, and the predicate trace run to
 **stationarity at iteration 5**: a full re-run under one validated parser added

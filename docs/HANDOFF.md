@@ -37,8 +37,10 @@ audited**.
 > re-measure.** It must not appear in a commit message, the README, or any
 > portfolio text before then.
 
-**No fixes have been applied.** Enumeration is complete; the batch waits for the
-instrument v2 sitting.
+**Thirteen mechanical fixes are applied and re-scored** (2026-08-08, zero model
+calls, no regressions). The **four forks and the v2 framing call are not** — they
+need a decision, and every failure still open maps to one of them or to the two
+model failures. See `evals/FIX-LIST-v2.md`.
 
 ---
 

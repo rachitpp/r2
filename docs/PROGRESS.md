@@ -146,11 +146,19 @@ same role.
    **Two surfaces are proposed and they are separable:** the approval card (the
    signature, Phase 4) and the query view (Phase 1, and the only one backed by
    working code). Agreeing one does not commit you to the other.
-3. **Apply the free batch** — items 1–11, 14, 16–19, 21, 22. Not just 1–11; see
-   the note on that line in the fix list.
-4. **Re-score free.** Zero model calls. The only measurement that isolates
-   instrument change from model change, because the model's answers are held
-   fixed while the instrument moves around them.
+3. ~~Apply the free batch~~ **— thirteen mechanical fixes APPLIED 2026-08-08.**
+   Reference corrections only; no question text edited, so the prompt
+   fingerprint and the cache both survive.
+4. ~~Re-score free~~ **— done. 47 cache hits, 0 misses, 0 calls, $0.00.**
+   **No regressions**; q015 and q045 fixed; q011 `wrong_rows` → `wrong_order`.
+   not-view-covered 23/33 → 24/33 — **an interim re-score, not a headline; the
+   retirement stands.** Every remaining failure now maps to one of the four
+   undecided forks or to the two model failures (q026, q043).
+   **Still to decide, and now the only thing between here and a clean batch:**
+   the forks — item 14 (tie-completion in `scoring.py` vs naming a tiebreak),
+   item 22 (q042's reference vs accepting either identifier), item 17 (q030),
+   item 12 (q004, the voiding one) — plus items 16, 21 and 11, which turned out
+   not to be mechanical.
 5. **Then q004** (`business_context.md`, voids the fingerprint) **and re-measure
    once.**
 6. ~~API query endpoint~~ **— done, demo half.** `POST /query` returns the
