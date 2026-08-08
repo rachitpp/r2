@@ -532,8 +532,19 @@ happened, and what the inversion answers.
 ### Fresh-question ledger
 
 A rotation run on a question the model has already been tuned against measures
-nothing, so questions are spent once. **20 of 46 spent, 26 left — five rounds
-at five a round.**
+nothing, so questions are spent once.
+
+**"Spent" means used in a diagnostic rotation — not "never seen by the model".**
+The `full×3` runs send every question in the set, so no question is unseen. What
+the ledger protects is the supply of questions whose *first* result was not
+already known.
+
+> **Corrected 2026-08-08.** This block said "20 of 46 spent, 26 left" three lines
+> above its own footer saying "25 of 46 spent", and the two lists below covered
+> 46 of the set's 47 questions — **q047 appeared in neither**, so the one
+> artifact whose job is to guarantee no question is reused could not see one of
+> them. The counts below are computed from the lists, and the lists now cover the
+> whole set.
 
 | Rotation | Questions | New defect class found |
 |---|---|---|
@@ -542,12 +553,21 @@ at five a round.**
 | 3 | q007 q020 q029 q040 q046 | Singular-vs-ranked reading; unasked-for column demanded |
 | 4 | q013 q021 q031 q035 q043 | **Predicate axis** — unstated period, threshold, join rule |
 | 5 | q009 q017 q026 q036 q045 | **Causal-question axis** — question asks what the data cannot hold; reference substitutes a proxy |
-| 6 | — | pending; 21 unspent questions went through inverted authoring instead |
+| 6 | — | pending; the unspent questions went through inverted authoring instead |
 
-Unspent (21): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025 q027 q028 q030
-q032 q034 q037 q038 q039 q041 q042 q044.
+Unspent in a rotation (22): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025
+q027 q028 q030 q032 q034 q037 q038 q039 q041 q042 q044 **q047**.
 
-**25 of 46 spent.** Five rotations, six defect classes, ~30 model calls.
+**25 of 49 spent in a rotation.** Five rotations, six defect classes, ~30 model
+calls.
+
+**q048 and q049 are not rotation questions** and are not counted above. They were
+written on 2026-08-08 as ADR-0001's prescribed response to its two consistent
+failures — *targeted questions probing the observed failure mode* — so their
+purpose is the opposite of a rotation's: the failure they probe is already known,
+and what is being measured is whether it recurs. Both were verified by hand
+against the predicate-trace rule rather than by the prospective run that covered
+the original 47.
 
 ## Running it
 

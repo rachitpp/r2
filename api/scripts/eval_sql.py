@@ -12,6 +12,9 @@ gates anything — it produces the numbers that go in the README.
     python eval_sql.py --runs 1
     python eval_sql.py --runs 3
 
+    # a SECOND triple of the same prompt — a replication, not a re-score
+    python eval_sql.py --runs 3 --run-offset 3
+
 Serial by design. RPM is the first ceiling on a free tier, so there is no
 concurrency and the pacer keeps request starts a fixed interval apart, with
 full-jitter exponential backoff on 429.
@@ -149,7 +152,7 @@ def run(args: argparse.Namespace) -> int:
     # added. Postgres terminates the connection, correctly. Holding a database
     # transaction open across a network call to a third party is the actual
     # mistake; the timeout just makes it visible.
-    for run_index in range(args.runs):
+    for run_index in range(args.run_offset, args.run_offset + args.runs):
         for q in questions:
             prompt = bundle.render(
                 question=q["question"],
@@ -226,6 +229,19 @@ def run(args: argparse.Namespace) -> int:
     if cache.enabled:
         print(f"{'cache':<18} {cache.hits} hits, {cache.misses} misses")
     print("=" * 66)
+
+    # A run that made no calls did not measure anything new, and cross-run
+    # variance is the number where that matters most: ADR-0001's reversal
+    # condition is "a second full x 3", and repeating the command under an
+    # unchanged prompt satisfies it by replaying the first one. Saying so is the
+    # difference between a check that runs and a check that looks like it did.
+    if args.runs > 1 and cache.enabled and cache.misses == 0:
+        print(
+            "\nNOTE: every response came from cache, so this is a RE-SCORE of an "
+            f"earlier measurement, not a new sample. The {variance:.1%} variance "
+            "above is the one those cached runs already showed. For a genuine "
+            f"second sample use --run-offset {args.run_offset + args.runs}."
+        )
     print(
         "\nADR-0001 threshold 2 is read off not_view_covered, and only when "
         "the interval excludes 85%."
@@ -233,7 +249,22 @@ def run(args: argparse.Namespace) -> int:
 
     stamp = datetime.now(UTC).strftime("%Y-%m-%d")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out = RESULTS_DIR / f"{stamp}-sql.json"
+
+    # `<date>-sql.json` is the canonical full run, and ONLY a canonical full run
+    # may write it. A subset, or a triple at an offset, measures something else:
+    # letting it take the same name is how a five-question smoke test silently
+    # replaces a 141-response result file. That was found once already and was
+    # still live until now — two runs on one day were one filename apart.
+    first, last = args.run_offset, args.run_offset + args.runs - 1
+    subset = bool(args.only or args.limit)
+    canonical = not subset and args.run_offset == 0
+    name = (
+        f"{stamp}-sql.json"
+        if canonical
+        else f"{stamp}-sql-{fingerprint}-runs{first}-{last}"
+        f"{'-subset' if subset else ''}.json"
+    )
+    out = RESULTS_DIR / name
     out.write_text(
         json.dumps(
             {
@@ -242,7 +273,12 @@ def run(args: argparse.Namespace) -> int:
                 "prompt_fingerprint": fingerprint,
                 "prompt_hashes": bundle.hashes,
                 "runs": args.runs,
+                "run_indices": [first, last],
+                "canonical_full_run": canonical,
                 "questions": len(questions),
+                # Which ones, not just how many: a results file that records a
+                # count cannot be told apart from one that ran a different 47.
+                "question_ids": [q["id"] for q in questions],
                 "stats": stats,
                 "cross_run_variance": variance,
                 "unstable_questions": unstable,
@@ -262,6 +298,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=("gemini", "stub"), default="gemini")
     parser.add_argument("--runs", type=int, default=1)
+    parser.add_argument(
+        "--run-offset",
+        type=int,
+        default=0,
+        help=(
+            "first run index. Responses are cached on (prompt, question, run "
+            "index), so repeating `--runs 3` under an UNCHANGED prompt replays "
+            "runs 0-2 from cache and reports the same variance it reported "
+            "before — a second sample that is not one. A genuine replication is "
+            "`--runs 3 --run-offset 3`."
+        ),
+    )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--only", default="", help="comma-separated question ids")
     parser.add_argument("--no-cache", action="store_true")

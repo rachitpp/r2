@@ -1,5 +1,5 @@
 {
-  "cross_run_variance": 0.10638297872340426,
+  "cross_run_variance": 0.02040816326530612,
   "model": "gemini-3.6-flash",
   "outcomes": {
     "q001": [
@@ -78,7 +78,7 @@
       "correct"
     ],
     "q016": [
-      "wrong_rows",
+      "correct",
       "correct",
       "correct"
     ],
@@ -108,7 +108,7 @@
       "correct"
     ],
     "q022": [
-      "execution_error",
+      "correct",
       "correct",
       "correct"
     ],
@@ -179,7 +179,7 @@
     ],
     "q036_causation_trap": [
       "correct",
-      "should_have_refused",
+      "correct",
       "correct"
     ],
     "q037": [
@@ -214,8 +214,8 @@
     ],
     "q043": [
       "correct",
-      "wrong_rows",
-      "wrong_rows"
+      "correct",
+      "correct"
     ],
     "q044": [
       "correct",
@@ -236,27 +236,36 @@
       "correct",
       "correct",
       "correct"
+    ],
+    "q048": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q049": [
+      "wrong_rows",
+      "wrong_rows",
+      "wrong_rows"
     ]
   },
-  "prompt_fingerprint": "415953964db74b80",
+  "prompt_fingerprint": "f3b7a9193a56f10d",
   "prompt_hashes": {
-    "context/business_context.md": "ad4a623e2a3ed46d6512f527b076831709f7c1da4d7db62fbeb6dcd938b7c6d7",
-    "context/schema.md": "1b00185cecba62158e77ff5052ad13062ae32018800007deef8f4906e00ecc15",
+    "context/business_context.md": "e051d6d6c1dc3e333bbcfbcd7d70f83db9093fe1e5a88a8902ef5d4e0b1c4e78",
+    "context/schema.md": "ab2f8838957ffc62fd68637a6e703d90b7617a9817ff01aff42d7850cba25e36",
     "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9"
   },
   "provider": "vertex",
-  "questions": 47,
+  "questions": 49,
   "runs": 3,
   "stats": {
     "not_view_covered": {
-      "accuracy": "88.9% (88/99, 95% CI 81-94%)",
-      "correct": 88,
+      "accuracy": "91.4% (96/105, 95% CI 85-95%)",
+      "correct": 96,
       "execution_errors": [
-        "q022",
         "q026",
         "q026"
       ],
-      "n": 99,
+      "n": 105,
       "needs_review": [
         "q018",
         "q027",
@@ -266,25 +275,23 @@
         "q027"
       ],
       "silent_wrong": [
-        "q016",
         "q017",
+        "q049",
         "q017",
         "q026",
-        "q036_causation_trap",
-        "q043",
+        "q049",
         "q017",
-        "q043"
+        "q049"
       ]
     },
     "overall": {
-      "accuracy": "91.7% (121/132, 95% CI 86-95%)",
-      "correct": 121,
+      "accuracy": "93.5% (129/138, 95% CI 88-97%)",
+      "correct": 129,
       "execution_errors": [
-        "q022",
         "q026",
         "q026"
       ],
-      "n": 132,
+      "n": 138,
       "needs_review": [
         "q003",
         "q018",
@@ -297,14 +304,13 @@
         "q027"
       ],
       "silent_wrong": [
-        "q016",
         "q017",
+        "q049",
         "q017",
         "q026",
-        "q036_causation_trap",
-        "q043",
+        "q049",
         "q017",
-        "q043"
+        "q049"
       ]
     },
     "view_covered": {
@@ -321,10 +327,6 @@
     }
   },
   "unstable_questions": [
-    "q016",
-    "q022",
-    "q026",
-    "q036_causation_trap",
-    "q043"
+    "q026"
   ]
 }
