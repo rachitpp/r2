@@ -140,6 +140,121 @@ that is what makes it a ledger rather than a list.
 
 ---
 
+---
+
+# The query view — the surface that exists today
+
+Proposed separately from the signature above, because bundling them would get
+this decided as a side effect of a decision about the approval card. Same
+tokens, same type. **It shares nothing else, and specifically it does not
+compete** — the convention says spend boldness in one place, and that place is
+the approval card. This surface is quiet on purpose.
+
+It is also the only surface backed by working code: `POST /query` returns
+exactly the fields wireframed here.
+
+## Its one argument
+
+> **The answer and its derivation are peers, shown together.**
+
+Not an answer with a "show SQL" disclosure — that makes the query a debug
+affordance and quietly concedes that the answer is the product. The whole claim
+of this project is that an unchecked confident answer is the failure that
+matters. So the query sits **beside** the answer at the same visual weight, and
+it is never behind a click.
+
+## Answer state
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  Ask about the shop                                    demo mode   │  body-sm, brass
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │ What's about to run out at our store this week?           ▾  │  │  body
+│  └──────────────────────────────────────────────────────────────┘  │
+│  at ( Kothrud ▾ )                                    [ Ask ]       │  indigo
+└────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────┬─────────────────────────────────┐
+│ ANSWER                           │ THE QUERY THAT PRODUCED IT      │  display-sm
+│ 76 rows matched · showing 100    │                                 │  brass, mono
+│ ──────────────────────────────── │ SELECT * FROM (                 │
+│ SKU       PRODUCT        COVER   │   SELECT sku, product_name,     │  mono, tnum
+│ RTC-0001  Soup Mix        1.1    │          on_hand, days_of_cover │
+│ BEV-0028  Mango Drink     1.1    │   FROM v_stock_status           │
+│ OIL-0003  Cow Ghee        1.2    │   WHERE store_id = 1            │
+│ …                                │     AND on_hand > 0             │
+│                                  │ ) AS _guarded LIMIT 101         │
+└──────────────────────────────────┴─────────────────────────────────┘
+```
+
+**The truncation notice sits at the top of the table, not the bottom.** Silent
+truncation is the exact production failure this project is built around — an
+answer that quietly shows 100 of 440 rows and says nothing. Putting it in a
+footer would reproduce the failure with extra steps. It renders in `brass`,
+which is the same token that means *awaiting your attention* on the approval
+card.
+
+The `store_id = 1` predicate is visible in the query on purpose. Rule 5 says
+scope belongs in the query rather than applied to results afterwards, and this
+is where a reader can see that it was.
+
+## Refusal state — and it is not an error
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  How many customers do we have?                                    │
+├────────────────────────────────────────────────────────────────────┤
+│  This can't be answered from the data.                             │  display-sm, ink
+│                                                                    │
+│  This POS records anonymous transactions. There is no customer     │  body
+│  table, so a customer count is not something the data can answer.  │
+│  Baskets and transactions can be counted; people cannot.           │
+│                                                                    │
+│  ─────────────  no query was run  ─────────────                    │  rule + body-sm
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Refusals render in `ink`, never `oxide`.** A refusal is a *correct answer of a
+different kind* — the system declining to fabricate — and styling it red would
+teach a reader it is a malfunction to be worked around. `oxide` is reserved for
+things that actually went wrong: stale inputs, expiry, rejection.
+
+**"no query was run" is not a placeholder.** The surface promises you always see
+what executed; when nothing did, saying so keeps the promise rather than
+silently dropping the panel.
+
+## Offering rather than accepting anything
+
+Demo mode answers a fixed set, so the question field is a **combobox over
+`GET /demo/questions`**, not a free-text box that 404s on most input. That
+endpoint now returns `requires_store` and `expect` for each question, so:
+
+- `requires_store: true` → the store selector enables; **it is never
+  pre-filled**, because the API refuses to guess a store rather than answer the
+  wrong shop, and a UI that defaults to Kothrud reintroduces exactly that
+- `expect: "refusal"` → listed with a quiet **"will decline"** marker, so the
+  refusal is *offered as a demonstration* rather than stumbled into
+
+```
+  ┌──────────────────────────────────────────────────────────────┐
+  │ What's about to run out at our store this week?    needs store│
+  │ What was our revenue last month?                              │
+  │ What effective tax rate … before and after the GST reform?    │
+  │ What were our top 10 products by units last month?            │
+  │ How many customers do we have?                    will decline│  brass
+  └──────────────────────────────────────────────────────────────┘
+```
+
+## Responsive
+
+Two columns become one below `768px`: **answer first, query directly below it,
+always expanded.** Collapsing the query behind a disclosure on small screens
+would contradict the surface's only argument at precisely the moment a reader is
+most likely to skim. It scrolls horizontally inside its own container; the page
+never does.
+
+---
+
 ## What this leaves open
 
 - **No dark mode proposed.** A ledger has a paper colour. If you want one it
@@ -147,6 +262,10 @@ that is what makes it a ledger rather than a list.
 - **Devanagari** is not in scope — the interface is English — but Public Sans
   has no Devanagari coverage, so if store names ever render in Devanagari this
   needs revisiting rather than falling back silently.
-- **The query view** (demo beat 1's answer-beside-SQL) is not wireframed here.
-  It is a different surface from the approval card and should be proposed
-  separately rather than bundled into a decision about the signature.
+- **The live-mode query view is not designed.** When the model generates SQL
+  there is a latency to fill and a failure mode — a refused or unsafe query —
+  that demo mode cannot produce. That surface should be proposed when the live
+  path is built, which is after the q004 fix.
+- **No empty state for the audit log** and no zero-results state for a query
+  that legitimately matches nothing. Both need writing as copy, not styling —
+  the convention is explicit that empty states are an invitation to act.

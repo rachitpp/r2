@@ -143,6 +143,9 @@ same role.
    decision, and taking the second while warm from the first is how the
    aesthetic gets decided by leftover attention. Having something to react to is
    the mitigation, not a reason to merge the two.
+   **Two surfaces are proposed and they are separable:** the approval card (the
+   signature, Phase 4) and the query view (Phase 1, and the only one backed by
+   working code). Agreeing one does not commit you to the other.
 3. **Apply the free batch** — items 1–11, 14, 16–19, 21, 22. Not just 1–11; see
    the note on that line in the fix list.
 4. **Re-score free.** Zero model calls. The only measurement that isolates
