@@ -28,6 +28,7 @@ import re
 import sys
 from datetime import date, datetime
 from decimal import Decimal
+from itertools import pairwise
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -117,7 +118,7 @@ def tie_structure(conn, sql: str, answer_columns: list[str] | None) -> dict | No
     included = keys[:n]
 
     contested = len(rows) > n and keys[n - 1] == keys[n]
-    interior = any(a == b for a, b in zip(included, included[1:]))
+    interior = any(a == b for a, b in pairwise(included))
     if not (contested or interior):
         return None  # ranking key unique — nothing to relax
 
