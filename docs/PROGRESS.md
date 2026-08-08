@@ -147,10 +147,14 @@ same role.
    fixed while the instrument moves around them.
 5. **Then q004** (`business_context.md`, voids the fingerprint) **and re-measure
    once.**
-6. **API query endpoint, then `web/`.** This is the phase deliverable and it is
-   at zero. `readonly_sql.execute()` is built and tested and wired to nothing;
-   there is no `APIRouter` and no `web/` directory. Demo beat 1 is the
-   definition of done.
+6. ~~API query endpoint~~ **— done, demo half.** `POST /query` returns the
+   answer **beside the SQL that produced it**, plus `/health` and
+   `/demo/questions`. Demo mode only, so **no key and no quota**: canned pairs
+   in `api/demo/queries.json`, deliberately *not* the eval references, since
+   those are the instrument and are under repair. Scope is substituted into the
+   query before it runs (rule 5) with `check_scope` as the tripwire. 17 tests,
+   `make serve`. **The live model path is a 501 and is the next slice.**
+   Then **`web/`**, which is still at zero and needs tokens agreed first.
 7. **Variance spot-check somewhere in 3–6** — 5–8 questions × 3 runs, ~20 calls.
    **`full×3` at Phase 1 close, deferred not dropped**: it is the third stage of
    the staged-run rule, every diagnosis rests on one sample per question, and

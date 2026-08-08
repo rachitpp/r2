@@ -158,7 +158,7 @@ label of one that is (commits against progress notes).
 | Phase 1 | budgeted | actual | state |
 |---|---|---|---|
 | eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
-| API query endpoint | part of ~32h | **not started** | `readonly_sql.execute()` is built, tested, and wired to nothing |
+| API query endpoint | part of ~32h | **demo half done** | `POST /query` serves answer + SQL with no key and no quota; live model path returns 501 |
 | `web/` — Next.js, tokens, typed client, SSE | part of ~32h | **does not exist** | demo beat 1 blocked on it |
 
 > **Rule: check deliverable-against-budget at the point where it can still

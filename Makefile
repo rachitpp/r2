@@ -14,6 +14,7 @@ SHELL := /bin/bash
 POSTGRES_USER ?= postgres
 POSTGRES_DB   ?= pos
 SEED_SIZE     ?= small
+API_PORT ?= 8000
 TEMPLATE_DB   := $(POSTGRES_DB)_template
 POS_APP_PASSWORD      ?= pos_app_dev
 POS_READONLY_PASSWORD ?= pos_readonly_dev
@@ -146,6 +147,11 @@ hooks: ## Enable the repo's git hooks (credential scan on commit)
 
 psql: ## Interactive psql against the working database
 	@docker compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
+serve: ## Run the query API (demo mode by default — no key, no quota)
+	@# PYTHONPATH rather than a build backend: pyproject.toml declares none on
+	@# purpose, and pytest reaches src/ the same way.
+	cd api && PYTHONPATH=src $(UV) run uvicorn pos_copilot.app:app --reload --port $(API_PORT)
 
 test: ## Run pytest
 	cd api && $(UV) run pytest

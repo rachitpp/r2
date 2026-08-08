@@ -15,6 +15,12 @@ requires-python = ">=3.12,<3.13"
 # urllib, so this does not drag in a second HTTP stack. See ADR-0010.
 dependencies = [
     "google-auth>=2.35",
+    # Phase 1, per ADR-0007: `api/` is FastAPI, JSON + SSE only. uvicorn is the
+    # ASGI server it runs under. Both are confined to the serving layer —
+    # api/scripts/seed.py stays stdlib-only, so the byte-identity claim still
+    # rests on nothing that can move underneath it.
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
 ]
 
 [dependency-groups]
@@ -22,6 +28,10 @@ dev = [
     "pytest>=8.3",
     "ruff>=0.8",
     "psycopg[binary]>=3.2",
+    # starlette's TestClient transport. Test-only on purpose: the serving layer
+    # itself makes no outbound HTTP calls, and Vertex is reached over urllib
+    # (ADR-0010), so this must not become a runtime dependency.
+    "httpx2>=0.28",
 ]
 
 [tool.ruff]
