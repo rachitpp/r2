@@ -148,6 +148,12 @@ hooks: ## Enable the repo's git hooks (credential scan on commit)
 psql: ## Interactive psql against the working database
 	@docker compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
+web: ## Run the web app (needs `make serve` in another shell)
+	cd web && npm run dev
+
+web-check: ## Typecheck and build the web app
+	cd web && npx tsc --noEmit && npm run build
+
 serve: ## Run the query API (demo mode by default — no key, no quota)
 	@# PYTHONPATH rather than a build backend: pyproject.toml declares none on
 	@# purpose, and pytest reaches src/ the same way.

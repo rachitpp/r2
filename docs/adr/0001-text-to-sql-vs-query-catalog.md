@@ -1,8 +1,9 @@
 # ADR-0001: Text-to-SQL, with measured thresholds for switching to a query catalog
 
 Date: 2026-08-05
-Status: Accepted — **measured 2026-08-08. Two thresholds fire. The resolution
-is not written here yet, deliberately: see "The measurement" below.**
+Status: **Resolved 2026-08-08 — keep generated SQL. Two thresholds fired and
+the catalog is still not built; the reasoning is in "The resolution" below and
+it is reversible on one specific new fact.**
 
 ## Context
 
@@ -73,10 +74,62 @@ A refusal that is right two times in three is not a safety property.
 three-run sample can resolve, and the honest reading is "at the boundary,
 measured once" rather than "decisively over".
 
-**This ADR is not being resolved by the agent that ran the measurement.** The
-decision it gates — abandon generated SQL for a query catalog — reshapes the
-remaining phases, and the project's own rule is not to act on a number on first
-sight of it.
+## The resolution — keep generated SQL
+
+Two thresholds fired and the catalog is **not** being built. Three reasons, in
+order of weight.
+
+**1. Threshold 3's stated harm does not apply to the demo, because demo mode
+already removed it.** The threshold reads *"non-determinism is fatal for a
+repeated demo"* — the harm is a demo that answers differently each time it is
+shown. `POST /query` in demo mode answers from `api/demo/queries.json` with
+**zero model calls**, so the demo is deterministic by construction. The variance
+is real and it lives on the live path, which is a labelled capability a reader
+opts into with their own credentials. The threshold fired at 10.6% against a 10%
+line on a single triple; one question either way moves it to 8.5% or 12.8%.
+Firing by 0.6 points on one sample, against a harm that has already been
+designed out, is not enough to discard the premise of the project.
+
+**2. Threshold 1's own instruction is to investigate individually, and the
+investigation does not describe an incapable model.** Of the five distinct
+silent-wrongs, **three pass in at least one run** — q016 dropped `sku` from a
+SELECT, q043 chose `subtotal` over `total`, q036 answered instead of refusing.
+Those are instability, not inability. Two fail consistently and are specific:
+q017 reads `po.expected_on` instead of the terms in force at order time, and
+q026 writes a correlated `EXISTS` that exceeds the statement timeout. Both are
+exactly what this ADR says to respond to with **targeted questions probing the
+observed failure mode**, and neither is evidence that generated SQL cannot work
+on a fifteen-table schema.
+
+**3. Threshold 2 — the one that measures capability — does not fire.**
+88.9% with an interval of 81–94%, above the line rather than below it, and
+100% on view-covered questions. The audit that opened this ADR predicted the
+context document would do the work, and it did.
+
+### What is being done instead
+
+- **q036 gets its own work, and it is the real finding.** The causation refusal
+  held twice and broke once. That is a safety property, not an accuracy metric,
+  and it is the behaviour this project's argument rests on. Per this ADR's own
+  rule, the fix is `business_context.md` — **not** a few-shot pair showing the
+  refusal, which would destroy the instrument while appearing to improve it.
+- **Targeted questions for q017 and q026**, being the two consistent failures.
+- **The demo path stays canned.** That is now load-bearing for this decision
+  rather than merely convenient, and it should not be replaced with live
+  generation without revisiting this ADR.
+
+### What would reverse this
+
+**A second full×3 putting cross-run variance clearly above 10%**, or q036-class
+refusal instability appearing in other refusal questions. The first is one run
+away and cheap; nothing here should be treated as settled until it exists. This
+resolution rests on 10.6% being a boundary reading of one sample — if it is not,
+the resolution changes.
+
+**Recorded by the agent that ran the measurement**, which is worth stating: the
+project's rule is not to act on a number on first sight of it, and the mitigating
+fact is that the reasoning above turns on demo mode's design rather than on the
+number itself.
 
 **Build the catalog if any threshold fires:**
 

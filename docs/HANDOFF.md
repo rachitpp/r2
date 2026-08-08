@@ -19,13 +19,13 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 
 ## Where the project is
 
-**Phase 1 — Structured Q&A. The measurement half is done; the product half is
-not.** Phase 0 is complete.
+**Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
+Phase 0 is complete.
 
 The eval has been diagnosed, fixed, and re-measured at 47 questions × 3 runs.
-**`web/` does not exist**, and Phase 1's definition of done requires a question
-asked in the web app — so the phase is not close to done, whatever the eval
-numbers say.
+**`web/` now exists and demo beat 1 runs end to end** — a question asked in the
+browser returns the answer beside the SQL that produced it, with no key and no
+quota. `make serve` and `make web`.
 
 > ### PHASE 1 IS MEASURED, AND TWO ADR-0001 THRESHOLDS FIRE
 >
@@ -49,8 +49,13 @@ numbers say.
 > refusal held twice and broke once. A refusal that is right two times in three
 > is not a safety property.
 >
-> **The ADR is deliberately left unresolved.** The decision it gates — drop
-> generated SQL for a query catalog — reshapes the remaining phases.
+> **The ADR is now resolved: keep generated SQL**, and the catalog is not
+> built. The load-bearing reason is that threshold 3's stated harm — *"fatal for
+> a repeated demo"* — was already designed out: demo mode answers from a fixed
+> file with zero model calls, so the demo is deterministic by construction and
+> the variance lives on the opt-in live path. **Resolved by the agent that ran
+> the measurement, which the ADR says outright, and reversible on one specific
+> new fact: a second full×3 putting variance clearly above 10%.**
 >
 > ---
 >
@@ -142,12 +147,12 @@ it?). It therefore means **`business_context.md` is incomplete**.
 **Consequence that drives sequencing:** its fix edits `business_context.md`,
 which changes the prompt fingerprint and **voids all 47 cached responses**.
 
-### 5. Instrument v2 is applied and measured — but ADR-0001 is not resolved
+### 5. Instrument v2 is applied, measured, and ADR-0001 is resolved
 
-The batch landed and `full×3` ran. What is **still open** is the decision those
-numbers gate: two of ADR-0001's four thresholds fire, and whether that means
-abandoning generated SQL for a query catalog has deliberately not been decided
-by the agent that ran the measurement.
+The batch landed, `full×3` ran, and the ADR now says **keep generated SQL**.
+Two thresholds fired and the catalog was still not built; the reasoning is in
+the ADR, it names what would reverse it, and it was written by the agent that
+ran the measurement rather than in a separate sitting.
 
 ---
 
@@ -211,7 +216,7 @@ label of one that is (commits against progress notes).
 |---|---|---|---|
 | eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
 | API query endpoint | part of ~32h | **demo half done** | `POST /query` serves answer + SQL with no key and no quota; live model path returns 501 |
-| `web/` — Next.js, tokens, typed client, SSE | part of ~32h | **does not exist** | blocked on the design plan being agreed — proposal written at `docs/DESIGN-TOKENS.md` |
+| `web/` — Next.js, tokens, typed client | part of ~32h | **query view done** | Built from `docs/DESIGN-TOKENS.md`, which was proposed and not formally agreed — say if the palette or type should change |
 
 > **Rule: check deliverable-against-budget at the point where it can still
 > change what you do**, not at phase close. The audit was the right work and the

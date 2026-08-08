@@ -9,20 +9,24 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. The measurement half is DONE; the product half is
-not.**
+**Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
 
 `docs/PLAN.md` says Phase 1 is done when the harness prints execution accuracy,
 silent-wrong and cross-run variance **and** a question asked in the web app
 returns an answer beside the query that produced it.
 
 - **Harness: done.** 47 questions × 3 runs against instrument v2.
-- **Web app: does not exist.** `web/` is empty. It is blocked on the design plan
-  in `docs/DESIGN-TOKENS.md` being agreed — proposed, not agreed.
+- **Web app: the query view exists and works.** `web/` is a Next.js App Router
+  app with the proposed palette and type in `tailwind.config.ts`, a typed client
+  mirroring the FastAPI models, and the answer-beside-SQL view. `make web` with
+  `make serve` alongside. **Demo beat 1 runs end to end.**
+  The approval card (the design plan's signature surface) is Phase 4 and is not
+  built. `docs/DESIGN-TOKENS.md` was proposed and then built from — say if the
+  palette or type should change and it is a config edit, not a rewrite.
 
-**Two ADR-0001 thresholds fire and the ADR is deliberately unresolved.** Read
-`docs/adr/0001-*.md` before acting on that; its own threshold 1 makes the
-individual investigation the *input* to the decision.
+**Two ADR-0001 thresholds fired and the ADR is now resolved: keep generated
+SQL.** The reasoning is in the ADR and is reversible — read it before building
+on it.
 
 State and corrections: `docs/HANDOFF.md`. Fix-list history:
 `evals/FIX-LIST-v2.md`.
@@ -32,7 +36,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
-| 1 Structured Q&A | **in progress** | Measurement done (47×3, instrument v2). Query API demo half done. **`web/` at zero — the phase deliverable.** Budget long overrun; see HANDOFF |
+| 1 Structured Q&A | **near done** | Measurement done (47×3, instrument v2). Query API + web query view working end to end — **demo beat 1 runs**. Remaining: live model path, and polish. Budget long overrun; see HANDOFF |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -53,7 +57,11 @@ _What landed:_ The instrument was fixed, measured, and then measured properly.
   91.7%, view-covered 100%, **cross-run variance 10.6%**. ~$2.79 all in.
 - **Query API, demo half.** `POST /query` returns the answer beside the SQL.
   No key, no quota. `make serve`.
-- **Design plan proposed** — two separable surfaces, neither agreed.
+- **Design plan proposed, then built from.** Two separable surfaces; the query
+  view is built, the approval card is Phase 4.
+- **ADR-0001 resolved: keep generated SQL.** Two thresholds fired and the
+  catalog was not built — the reasoning turns on demo mode already removing
+  threshold 3's stated harm, and it is reversible on one specific new fact.
 
 _Four defects I introduced and then found:_ bigint division in q047's `ORDER BY`
 (every ratio floored to 0, so the "ranking" was alphabetical and every test
@@ -61,20 +69,23 @@ still passed); double-rounding in `tolerance.py`; a wireframe asserting an API
 contract it had never been run against; and a `--only` run silently overwriting
 the full results file.
 
-_What didn't:_ `web/`. ADR-0001 is recorded but not resolved.
+_What didn't:_ the live model path, and the approval card (Phase 4).
 _Anything half-finished someone would trip over:_ No. The `is_active` gate is
 the one live hazard and fires only on a seed change.
 _Is the system in a working state?_ Yes. 180 passed, 29 skipped; ruff clean.
 
 ## Next session should
 
-1. **Resolve ADR-0001.** Two thresholds fire. The decision reshapes the
-   remaining phases, so it wants its own sitting. **q036 is the item to weigh:**
-   the causation refusal held in two runs and broke in the third.
-2. **Agree or amend `docs/DESIGN-TOKENS.md`.** Two separable surfaces — the
-   approval card and the query view. This blocks `web/`.
-3. **Build `web/`** — Next.js scaffold, typed client from the OpenAPI schema,
-   the query view. This is the phase deliverable and it is at zero.
+1. **Review the ADR-0001 resolution, and overturn it if you disagree.** It was
+   resolved by the agent that ran the measurement, which the ADR says outright.
+   The load-bearing claim is that demo mode already removes threshold 3's stated
+   harm. **q036 is the item to weigh:** the causation refusal held in two runs
+   and broke in the third.
+2. **Review `web/` running** (`make serve` + `make web`) and the design it was
+   built from. Palette and type are a `tailwind.config.ts` edit, not a rewrite.
+3. ~~Build `web/`~~ **— done.** Review it running (`make serve` + `make web`)
+   and say what should change; the palette and type are a `tailwind.config.ts`
+   edit, not a rewrite.
 4. **Then the live model path**, which waits on the prompt being stable rather
    than on quota.
 
