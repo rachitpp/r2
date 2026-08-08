@@ -95,6 +95,28 @@ def lookup(question: str) -> DemoPair:
         ) from None
 
 
-def catalogue() -> list[str]:
-    """What demo mode can answer — so the UI can offer them rather than guess."""
-    return [p.question for p in load().values()]
+def catalogue() -> list[dict]:
+    """What demo mode can answer, **and what each question needs or does**.
+
+    Returning bare strings was a defect, not a simplification. Two things the
+    caller cannot recover from a list of questions:
+
+    1. **Which questions need a store.** A UI that cannot tell has to infer, and
+       the first move of an inferring UI is to guess and default — which is
+       precisely what `DemoPair.resolve` refuses to do, reintroduced one layer
+       up. `requires_store` is that refusal made visible to the caller.
+    2. **Which question refuses.** The refusal is the strongest thing in the
+       demo — ADR-0002's pattern-not-people constraint visible in the product
+       rather than asserted in a document — and it is worth *offering*
+       deliberately rather than leaving a reader to stumble on it. `expect`
+       lets a UI label it as a demonstration instead of showing it as one of
+       five equivalent questions.
+    """
+    return [
+        {
+            "question": p.question,
+            "requires_store": p.store_scoped,
+            "expect": "refusal" if p.sql is None else "answer",
+        }
+        for p in load().values()
+    ]

@@ -141,6 +141,25 @@ under this seed.
 
 ---
 
+## Why the live model path waits for the v2 sitting
+
+**The primary reason is not quota.** It is that **q004's fix edits
+`business_context.md`, which changes the prompt, which changes what the live
+path produces.** Building and testing a generation path against a prompt already
+known to be about to change means validating the wrong artifact — the tests
+would pass against something that no longer exists the moment the batch lands.
+
+Quota is the *second* argument: the live path competes with the ~47-call
+re-measure for 20 requests/day.
+
+The ordering matters because it decides whether the sequencing still holds if
+quota stops being scarce. **It does.** A credit balance turning up would remove
+the second argument and leave the first untouched — so the live path waits for
+the v2 sitting either way, and specifically for the q004 fix to land, not merely
+for calls to become cheap.
+
+---
+
 ## Budget vs actual, per phase — check this before starting work
 
 **Phase 1 was budgeted ~32h. The eval diagnosis alone ran to a large multiple of

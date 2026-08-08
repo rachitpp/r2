@@ -69,6 +69,17 @@ class Answer(BaseModel):
     notice: str | None
 
 
+class DemoQuestion(BaseModel):
+    question: str
+    #: True when the question is about one store. The caller must supply
+    #: `store_id`; demo mode will not pick one, because picking would answer the
+    #: wrong shop without saying so.
+    requires_store: bool
+    #: "answer" or "refusal". Exposed so a UI can OFFER the refusal as a
+    #: demonstration rather than leave a reader to stumble into it.
+    expect: Literal["answer", "refusal"]
+
+
 class QueryResponse(BaseModel):
     mode: Literal["demo", "live"]
     question: str
@@ -84,10 +95,15 @@ def health() -> dict:
     return {"status": "ok", "mode": "demo" if demo_mode() else "live"}
 
 
-@app.get("/demo/questions")
-def demo_questions() -> dict:
-    """What demo mode can answer, so a UI can offer rather than guess."""
-    return {"questions": demo.catalogue()}
+@app.get("/demo/questions", response_model=list[DemoQuestion])
+def demo_questions() -> list[dict]:
+    """What demo mode can answer, what each needs, and what each will do.
+
+    A bare list of strings would force the caller to infer which questions are
+    store-scoped, and an inferring caller guesses and defaults — the failure
+    `DemoPair.resolve` exists to prevent, one layer up.
+    """
+    return demo.catalogue()
 
 
 @app.post("/query", response_model=QueryResponse)

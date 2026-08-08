@@ -105,8 +105,34 @@ def test_health_reports_the_mode():
 
 
 def test_the_catalogue_lists_what_demo_mode_can_answer():
-    questions = client.get("/demo/questions").json()["questions"]
-    assert "How many customers do we have?" in questions
+    listed = {q["question"] for q in client.get("/demo/questions").json()}
+    assert listed == {p.question for p in demo.load().values()}
+
+
+def test_the_catalogue_says_which_questions_need_a_store():
+    """Otherwise the caller infers, and an inferring caller guesses and
+    defaults — the exact thing `resolve` refuses to do, one layer up."""
+    listed = {q["question"]: q for q in client.get("/demo/questions").json()}
+    for pair in demo.load().values():
+        assert listed[pair.question]["requires_store"] is pair.store_scoped
+
+
+def test_the_refusal_is_offered_deliberately_not_stumbled_into():
+    """The refusal is the strongest beat in the demo. A reader should be able to
+    pick it from the list knowing what it demonstrates."""
+    listed = client.get("/demo/questions").json()
+    refusals = [q for q in listed if q["expect"] == "refusal"]
+    assert [q["question"] for q in refusals] == ["How many customers do we have?"]
+
+
+def test_every_catalogued_question_is_actually_askable():
+    """A catalogue that lists something /query rejects is worse than no
+    catalogue — it sends the caller at a wall it advertised as a door."""
+    for entry in client.get("/demo/questions").json():
+        payload = {"question": entry["question"]}
+        if entry["requires_store"]:
+            payload |= {"role": "clerk", "store_id": 1}
+        assert client.post("/query", json=payload).status_code in (200, 500)
 
 
 def test_a_question_the_data_cannot_support_returns_a_refusal_not_a_guess():

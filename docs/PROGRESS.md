@@ -155,6 +155,11 @@ same role.
    query before it runs (rule 5) with `check_scope` as the tripwire. 17 tests,
    `make serve`. **The live model path is a 501 and is the next slice.**
    Then **`web/`**, which is still at zero and needs tokens agreed first.
+   **The live path waits on the q004 fix, not on quota** — that edit changes
+   `business_context.md`, so it changes the prompt, so it changes what the live
+   path produces. Building against a prompt known to be about to change
+   validates the wrong artifact. Quota is the second argument, which means the
+   sequencing holds even if credits turn up. See `docs/HANDOFF.md`.
 7. **Variance spot-check somewhere in 3–6** — 5–8 questions × 3 runs, ~20 calls.
    **`full×3` at Phase 1 close, deferred not dropped**: it is the third stage of
    the staged-run rule, every diagnosis rests on one sample per question, and
