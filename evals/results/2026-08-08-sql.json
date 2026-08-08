@@ -33,10 +33,10 @@
       "correct"
     ],
     "q011": [
-      "wrong_order"
+      "correct"
     ],
     "q012": [
-      "wrong_rows"
+      "correct"
     ],
     "q013": [
       "correct"
@@ -105,7 +105,7 @@
       "correct"
     ],
     "q035": [
-      "wrong_rows"
+      "correct"
     ],
     "q036_causation_trap": [
       "correct"
@@ -126,7 +126,7 @@
       "correct"
     ],
     "q042": [
-      "wrong_rows"
+      "correct"
     ],
     "q043": [
       "wrong_rows"
@@ -155,8 +155,8 @@
   "runs": 1,
   "stats": {
     "not_view_covered": {
-      "accuracy": "81.8% (27/33, 95% CI 66-91%)",
-      "correct": 27,
+      "accuracy": "87.9% (29/33, 95% CI 73-95%)",
+      "correct": 29,
       "execution_errors": [],
       "n": 33,
       "needs_review": [
@@ -166,15 +166,13 @@
       "silent_wrong": [
         "q026",
         "q031",
-        "q035",
-        "q042",
         "q043",
         "q047"
       ]
     },
     "overall": {
-      "accuracy": "79.5% (35/44, 95% CI 65-89%)",
-      "correct": 35,
+      "accuracy": "88.6% (39/44, 95% CI 76-95%)",
+      "correct": 39,
       "execution_errors": [],
       "n": 44,
       "needs_review": [
@@ -184,28 +182,22 @@
       ],
       "silent_wrong": [
         "q004",
-        "q011",
-        "q012",
         "q026",
         "q031",
-        "q035",
-        "q042",
         "q043",
         "q047"
       ]
     },
     "view_covered": {
-      "accuracy": "72.7% (8/11, 95% CI 43-90%)",
-      "correct": 8,
+      "accuracy": "90.9% (10/11, 95% CI 62-98%)",
+      "correct": 10,
       "execution_errors": [],
       "n": 11,
       "needs_review": [
         "q003"
       ],
       "silent_wrong": [
-        "q004",
-        "q011",
-        "q012"
+        "q004"
       ]
     }
   },

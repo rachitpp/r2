@@ -16,7 +16,7 @@ expectation records its columns alongside its rows.
 from __future__ import annotations
 
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from enum import StrEnum
 
 MONEY = Decimal("0.01")
@@ -112,10 +112,18 @@ def numbers_match(want: Decimal, got: Decimal, kind: Kind) -> bool:
     Aligning decimal places does not hide real errors, because it aligns
     DECIMALS, not significant figures: a model answering 1200 where the truth
     is 1234.56 still fails at zero places.
+
+    Rounding is **half away from zero, matching Postgres**, not Python's
+    default banker's rounding. The two disagree on exact halves, and money
+    lands on them: q035's `sum(line_total)::bigint` gives 34709 for 34708.50
+    where `Decimal.quantize` gives 34708, so a correct answer scored wrong on a
+    half-paisa. Comparing at the coarser precision means adopting the rounding
+    of whatever produced it.
     """
     places = min(_places(want), _places(got))
     quantum = Decimal(1).scaleb(-places)
-    left, right = want.quantize(quantum), got.quantize(quantum)
+    left = want.quantize(quantum, rounding=ROUND_HALF_UP)
+    right = got.quantize(quantum, rounding=ROUND_HALF_UP)
     return abs(left - right) <= TOLERANCE[kind]
 
 
