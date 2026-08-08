@@ -754,6 +754,101 @@ inspection — the probe refused to report a result because it had missed a defe
 it was required to find. That is the rule from the previous iteration working as
 intended, on the very next probes written after it.
 
+### Iteration 5 — STATIONARY. Enumeration terminates.
+
+Iteration 4 was mixed evidence and could not be the terminus: some of its
+findings came from five regex probes demonstrably missing defects they were
+required to find, and the parser that replaced them arrived mid-run. Anything
+emitted before that fix was untrustworthy on its own.
+
+Iteration 5 re-ran **every probe over all 47 references under the single
+validated parser**: 166 select expressions parsed, all round-tripping.
+
+| probe | iteration 5 | vs iteration 4 |
+|---|---|---|
+| grain | q035, q040 | same (q040 already adjudicated clean on a cross-table check) |
+| traps | 19 tags, 7 spanning expectations, **all twin pairs** | same — 0 defects |
+| ties (`top_n` + `ranked_all`) | q008, q011, q012, q039, q042 | same |
+| rounded ranking | q031, q033, q047 | same |
+| period | q019, q022, q026 | same (q022 benign) |
+| row identity | 12 flagged, 2 manifest | same |
+| ratio magnitude | q047 only | same |
+
+**No new clauses. No new findings. Iteration 5 is stationary and enumeration
+terminates.**
+
+### The reframe applied to a second axis — and it gives the opposite answer
+
+Asking *what the model chose* rather than *what the question permitted* is a
+method, not a q042 fact. Applied to ratio magnitude across all eight ratio
+columns:
+
+| | reference | model |
+|---|---|---|
+| q012, q022, q026, q034, q043 | fraction | fraction |
+| q019, q031 | percent | percent |
+| **q047** | **percent** | **fraction** |
+
+**Seven of eight agree.** The reference set is *consistent* here — and the model
+diverged exactly once. That is the **mirror image** of row identity, where the
+model was consistent and the reference set held one outlier.
+
+This is what makes the reframe a diagnostic rather than a rhetorical move: it
+discriminates. Applied to identity it said *fix the reference*; applied to
+magnitude it says *the references are fine and q047 is a genuine
+under-determination the model resolved differently but defensibly* — "share"
+reads as a fraction at least as naturally as a percentage.
+
+### Correction: q031's magnitude ambiguity is LATENT, not manifest
+
+Iteration 4 recorded q031 as "new and severe" because its percentage and
+absolute readings return disjoint answer sets. The disjointness is real. But
+**the model ranked on the margin ratio, exactly as the reference does** —
+`ORDER BY (SUM(net_revenue) - SUM(cogs)) / NULLIF(SUM(net_revenue), 0)`. Neither
+party diverged.
+
+So q031 belongs with the *latent* defects, not the manifest ones: severe in
+consequence if a model ever reads it the other way, but it did not happen here
+and it did not affect the run. Recorded as a downgrade of this file's own
+iteration-4 claim.
+
+### Instance eight, recorded in full
+
+**Five probes. Five silent failures. One root cause: regexes guessing at SQL
+structure.** The identity probe failed **twice** — the second time after already
+being fixed once.
+
+| # | probe | failure |
+|---|---|---|
+| 1 | clause extractor | took the first textual `WHERE` — the one inside `FILTER (WHERE …)` |
+| 2 | rounded-column check | regex could not survive nested parens; **missed both known instances** |
+| 3 | period probe | excused a literal whenever the year *and any month* appeared, so a question naming September excused a reference pinning July |
+| 4 | identity probe | `([^,]+?) AS col` cannot span `round(x / NULLIF(y, 0), 1)` |
+| 5 | identity probe, again | attributed `p.name` to `stores` by matching the first table in a dict instead of resolving the alias |
+
+The class has now appeared in a column name, an empty expectation, the matcher,
+the pre-commit hook, a passing eval row, a process rule, the conjunct splitter,
+and the probes.
+
+**What is novel about instance eight — two things.**
+
+1. **The tooling built to find the class kept reproducing it.** Every probe
+   written to detect "a check that isn't running" was itself a check that wasn't
+   running. That is not irony; it is the same cause — a checker is easier to
+   write than to validate, so the validation is what gets skipped, in the eval
+   harness and in the probe alike.
+2. **Two of the five were caught by a failing assertion, not by inspection or by
+   a model disagreeing.** The probe refused to report because it had missed a
+   defect it was *required* to find. **This is the first countervailing evidence
+   in the project** against the standing claim that this class is only ever
+   caught by use rather than by testing — see `README.md` → *What four staged
+   runs cost*, whose "every one was found by rotating the questions, not by
+   reading them" is now qualified rather than absolute.
+
+The mechanism that did it is cheap and general: **give every probe a
+known-positive it must find, and make missing it a hard failure.** A probe with
+no known-positive cannot distinguish "found nothing" from "looked at nothing".
+
 ### Verdict on the rule
 
 It found a defect class in references that had survived diagnosis, a pass audit,

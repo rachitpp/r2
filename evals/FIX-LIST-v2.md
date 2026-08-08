@@ -128,7 +128,7 @@ the same mechanism that turned q012 from one question into five.
 
 | # | item | why not |
 |---|---|---|
-| 21 | **q031 — "worst-margin" fixes neither percentage nor absolute.** The reference answers in `margin_pct`; the two readings return **disjoint** top-10 sets (STP-* vs DRY-/FNV-/BSK-*, zero overlap). Second defect in this question, and larger than its rounded-`ORDER BY` one. | q031 | `questions.jsonl` — name the measure | **FREE** |
+| 21 | **q031 — "worst-margin" fixes neither percentage nor absolute.** The two readings return **disjoint** top-10 sets (STP-* vs DRY-/FNV-/BSK-*, zero overlap). **LATENT, not manifest** — corrected at iteration 5: the model ranked on the margin *ratio*, exactly as the reference does, so neither party diverged and the run was unaffected. Severe only if a model ever reads it the other way. | q031 | `questions.jsonl` — name the measure | **FREE** |
 | 22 | **The reference set is internally inconsistent about naming an entity.** Six references identify a supplier or store by `.name`; **q042 alone uses `.code`**. The model consistently used `.name` and was scored wrong only on the outlier. Fixing q042 to match its siblings is the smaller change; the alternative is accepting either identifier in `scoring.py`. | q042 (+ q030, q013, q014, q015, q017, q040 as the consistent group) | `questions.jsonl` **or** `scoring.py` | **FREE** either way |
 
 ### NOT FIXED — recorded and gated (continued)
@@ -175,6 +175,27 @@ on, and why no number is quoted here. The v2 re-measure produces the first
 figure this project can stand behind.
 
 ---
+
+## Every singleton, checked as a class
+
+The rule is that a defect found once is a candidate class until checked
+mechanically. All are now checked, and the result is the argument for the rule:
+
+| singleton | became | note |
+|---|---|---|
+| q012 — `LIMIT` cut inside a tie | **1 → 5** | q008, q011, q039, q042 all new |
+| q031/q047 — ranks on a rounded column | **1 → 3** | q033 new, latent |
+| q019 — narrows an unstated period | **1 → 2** | q026 |
+| q024/q042 — row identity | **1 → 2 manifest** (12 flagged) | reframed: inconsistent *references*, not under-determined questions |
+| q047 — ratio magnitude | **1 → 1** | references consistent; model diverged once |
+| q035 — grain conflation | **1 → 1** | |
+| q005 — stale `intent` | **1 → 1** | |
+| q024 — stale `traps` | **1 → 0** | **retracted** — the convention is universal |
+
+**The prior was uninformative in both directions.** One became five; two stayed
+at one; one went to zero and had to be withdrawn. How a defect looked when first
+found predicted nothing about what the check would return — which is the case
+for checking mechanically rather than judging.
 
 ## The decision
 

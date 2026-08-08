@@ -155,11 +155,59 @@ has favoured the reference and run against the model.** The cause is structural
 retrospect. Inverted authoring is the preventive fix; the predicate trace is the
 verification one.
 
-**The recurring defect class, six instances and counting:** *a check that is not
-running, wearing the label of a check that is.* Found in code (silent
-truncation), in prose (q019's "verified by hand"), and in a process rule (the
-old stopping rule) — the last being worst, because it licensed the other two to
-stop looking.
+**The recurring defect class, eight instances:** *a check that is not running,
+wearing the label of a check that is.* It has appeared in a column name, an
+empty expectation, the matcher, the pre-commit hook, a passing eval row, a
+**process rule** (the old stopping rule — worst, because it licensed the others
+to stop looking), the conjunct splitter, and finally **the probes built to hunt
+the class itself**.
+
+### Instance eight changes a standing claim — read this before repeating it
+
+This project has said throughout that the class is only ever caught **by use**:
+by rotating questions, by a model disagreeing — *never* by a test failing. See
+`evals/README.md` → *What four staged runs cost*, and `CONVENTIONS.md`.
+
+**That is no longer true, and instance eight is the counter-example.** Five
+probes failed silently, all from one cause — regexes guessing at SQL structure
+instead of parsing it — and **two of the five were caught by a failing
+assertion**, not by inspection and not by a model disagreeing. The probe refused
+to report a result because it had missed a defect it was *required* to find.
+
+The mechanism is cheap and worth copying: **give every probe a known-positive it
+must find, and make missing it a hard failure.** A probe with no known-positive
+cannot tell "found nothing" from "looked at nothing" — and a checker is always
+easier to write than to validate, which is exactly why the validation is what
+gets skipped.
+
+So the claim should now be stated as: *inspection alone does not catch this
+class, and use catches it late — but an assertion with a known-positive catches
+it at the moment it is written.*
+
+---
+
+## Every singleton, checked as a class
+
+The standing rule is that **any defect found once is a candidate class until
+someone checks mechanically.** All of them have now been checked. The result is
+the argument for doing it:
+
+| singleton found | checked? | became |
+|---|---|---|
+| q012 — `LIMIT` cut inside a tie | yes | **5** (q008, q011, q012, q039, q042) |
+| q031/q047 — ranks on a rounded column | yes | **3** (q033 new, latent) |
+| q019 — narrows an unstated period | yes | **2** (q019, q026) |
+| q024/q042 — row identity | yes | **2 manifest of 12** — and it *reframed*: the reference set is inconsistent, not the questions under-determined |
+| q047 — ratio magnitude | yes | **1** — the references are consistent; the model diverged once |
+| q035 — `GROUP BY` grain conflation | yes | **1** |
+| q005 — stale `intent` | yes | **1** |
+| q024 — stale `traps` tag | yes | **0 — retracted**, the convention is universal |
+| `is_active` — model-side unstated predicate | **impossible in kind** | a reference-side rule cannot see a predicate the model adds |
+
+**The prior was uninformative in both directions.** One singleton became five;
+two stayed singletons; one went to zero and had to be retracted. Nothing about
+how a defect *looked* when first found predicted what the check would return —
+which is why the check is mechanical and not a judgement call.
 
 ---
 

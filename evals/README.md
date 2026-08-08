@@ -61,6 +61,14 @@ the ceiling.
 Three defects. **Every one was found by rotating the questions, not by reading
 them.** Every one would have published a confidently wrong number.
 
+> **Qualified 2026-08-07.** This claim stood unchallenged until instance eight
+> of the recurring defect class. Five probes built to audit the eval failed
+> silently, and **two were caught by a failing known-positive assertion** — not
+> by inspection, not by a model disagreeing. So: inspection alone still does not
+> catch this class, and use catches it late, but **an assertion with a
+> known-positive catches it at the moment the checker is written.** See
+> `DIAGNOSIS-2026-08-07.md` → *Instance eight*.
+
 | Run | Questions | Score | What it actually found |
 |---|---|---|---|
 | 1 | q001–q005 | 0/4 | Arbitrary `LIMIT` in every reference; q001's reference contradicting the generation prompt's own store rule |

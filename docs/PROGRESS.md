@@ -9,10 +9,13 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. Enumeration complete; awaiting the instrument v2
+**Phase 1 — Structured Q&A. ENUMERATION TERMINATED; awaiting the instrument v2
 decision.** The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
-audited and all 47 `intent` fields checked. **No fixes applied.** Decide from
-`evals/FIX-LIST-v2.md`; state and corrections in `docs/HANDOFF.md`.
+audited, all 47 `intent` fields checked, and the predicate trace run to
+**stationarity at iteration 5** — a full re-run under one validated parser added
+no new clauses and no new findings. Every known singleton has been checked as a
+class. **No fixes applied.** Decide from `evals/FIX-LIST-v2.md`; state and
+corrections in `docs/HANDOFF.md`.
 
 Definition of done is in `docs/PLAN.md`.
 
@@ -80,8 +83,8 @@ not implemented. **Pending decision for next sitting: declare instrument v2 and
 replace the cap with an enumerate-then-fix gate** — "drop the cap" was proposed
 and **withdrawn**, because the cap's working effect was discipline rather than
 comparability. Single decision page: `evals/FIX-LIST-v2.md`.
-_Anything half-finished someone would trip over:_ No. Enumeration is complete
-and nothing is part-applied. The one live hazard is the **`is_active` gate** —
+_Anything half-finished someone would trip over:_ No. **Enumeration terminated
+at iteration 5** — stationary, nothing part-applied. The one live hazard is the **`is_active` gate** —
 see `docs/HANDOFF.md` — which fires only if the seed generator changes.
 **No accuracy number exists.** The raw figure is retired: it is wrong in both
 directions — 11 instrument defects deflate it, q039 and q008 inflate it by
