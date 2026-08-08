@@ -7,14 +7,26 @@
 > passed before now fails, and q011 moved `wrong_rows` → `wrong_order` — the
 > grain fix landed and only its boundary tie remains.
 >
-> **not-view-covered moved 23/33 → 24/33.** That is *not* a headline number and
+> **not-view-covered moved 23/33 → 27/33 (81.8%, CI 66–91%).** The interval does
+> **not** exclude 85%, so ADR-0001 threshold 2 does not fire. That is *not* a headline number and
 > the retirement still stands: the batch is incomplete, the four forks below are
 > undecided, and `full×3` has not run. It is an interim re-score, nothing more.
 >
-> **Every remaining failure now maps to a deferred fork or a model failure** —
-> q019/q022/q024/q042 to row identity, q011/q012 to the tie class, q047 to ratio
-> magnitude, q031 to its measure, q004 to the context fix, and q026/q043 are the
-> two model failures. Nothing is left that a mechanical fix reaches.
+> **Then the identity fork was decided and applied too.** q019, q022 and q024
+> moved to an ordered shape with the invented label out of `answer_columns` —
+> the fix the diagnosis had already prescribed. **q042 was made consistent with
+> its six siblings (`stores.name`) rather than loosening the matcher to accept
+> either identifier**, because loosening would mask genuine identity errors
+> everywhere else. q030's intent now names the reading it is scored against.
+> Five questions fixed in total: q015, q019, q022, q024, q045.
+>
+> **What is left, and it is now only three things:** the **tie class** (q011,
+> q012, q042 — item 14), which needs `expected` to carry the tied alternatives
+> and so is a schema change to the measurement artifact, not a decision;
+> **q004** (item 12), which spends ~$0.99 and ~2.3 days of quota and is
+> therefore yours under "ask before anything that repeatedly spends quota"; and
+> the two genuine model failures, q026 and q043, which no instrument fix
+> reaches.
 >
 > **It was thirteen, not the sixteen claimed.** Three of the "unambiguous"
 > sixteen were not: q026 needs *the festive season* defined in data terms,

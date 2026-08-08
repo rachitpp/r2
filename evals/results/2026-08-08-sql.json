@@ -57,7 +57,7 @@
       "needs_review"
     ],
     "q019": [
-      "wrong_rows"
+      "correct"
     ],
     "q020": [
       "correct"
@@ -66,19 +66,19 @@
       "correct"
     ],
     "q022": [
-      "wrong_rows"
+      "correct"
     ],
     "q023": [
       "correct"
     ],
     "q024": [
-      "wrong_rows"
+      "correct"
     ],
     "q025": [
       "correct"
     ],
     "q026": [
-      "execution_error"
+      "wrong_rows"
     ],
     "q027": [
       "needs_review"
@@ -155,20 +155,16 @@
   "runs": 1,
   "stats": {
     "not_view_covered": {
-      "accuracy": "72.7% (24/33, 95% CI 56-85%)",
-      "correct": 24,
-      "execution_errors": [
-        "q026"
-      ],
+      "accuracy": "81.8% (27/33, 95% CI 66-91%)",
+      "correct": 27,
+      "execution_errors": [],
       "n": 33,
       "needs_review": [
         "q018",
         "q027"
       ],
       "silent_wrong": [
-        "q019",
-        "q022",
-        "q024",
+        "q026",
         "q031",
         "q035",
         "q042",
@@ -177,11 +173,9 @@
       ]
     },
     "overall": {
-      "accuracy": "72.7% (32/44, 95% CI 58-84%)",
-      "correct": 32,
-      "execution_errors": [
-        "q026"
-      ],
+      "accuracy": "79.5% (35/44, 95% CI 65-89%)",
+      "correct": 35,
+      "execution_errors": [],
       "n": 44,
       "needs_review": [
         "q003",
@@ -192,9 +186,7 @@
         "q004",
         "q011",
         "q012",
-        "q019",
-        "q022",
-        "q024",
+        "q026",
         "q031",
         "q035",
         "q042",

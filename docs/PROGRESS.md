@@ -154,11 +154,20 @@ same role.
    not-view-covered 23/33 → 24/33 — **an interim re-score, not a headline; the
    retirement stands.** Every remaining failure now maps to one of the four
    undecided forks or to the two model failures (q026, q043).
-   **Still to decide, and now the only thing between here and a clean batch:**
-   the forks — item 14 (tie-completion in `scoring.py` vs naming a tiebreak),
-   item 22 (q042's reference vs accepting either identifier), item 17 (q030),
-   item 12 (q004, the voiding one) — plus items 16, 21 and 11, which turned out
-   not to be mechanical.
+   **The identity fork (22) and q030 (17) are now decided and applied too** —
+   q019/q022/q024 to an ordered shape with the label out of `answer_columns`,
+   q042 to `stores.name` for consistency with its six siblings rather than
+   loosening the matcher. **not-view-covered 23/33 → 27/33 (81.8%, CI 66–91%);
+   the interval does not exclude 85%, so ADR-0001 threshold 2 does not fire.**
+   Still an interim re-score, not a headline.
+   **Three things remain:** the tie class (item 14 — needs `expected` to carry
+   the tied alternatives, a schema change rather than a decision), **q004**
+   (item 12 — spends ~$0.99 and ~2.3 days, so it is yours under CLAUDE.md's
+   "ask before anything that repeatedly spends quota"), and the two model
+   failures q026 and q043, which no instrument fix reaches.
+   **q026's classification is unstable** — it flipped `execution_error` →
+   `wrong_rows` between runs on the same cached response, because it sits right
+   on the 5s statement timeout. Wrong either way; the *kind* is timing-dependent.
 5. **Then q004** (`business_context.md`, voids the fingerprint) **and re-measure
    once.**
 6. ~~API query endpoint~~ **— done, demo half.** `POST /query` returns the
