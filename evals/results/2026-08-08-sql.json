@@ -93,7 +93,7 @@
       "correct"
     ],
     "q031": [
-      "wrong_rows"
+      "correct"
     ],
     "q032": [
       "correct"
@@ -141,7 +141,7 @@
       "correct"
     ],
     "q047": [
-      "wrong_rows"
+      "correct"
     ]
   },
   "prompt_fingerprint": "415953964db74b80",
@@ -155,8 +155,8 @@
   "runs": 1,
   "stats": {
     "not_view_covered": {
-      "accuracy": "84.8% (28/33, 95% CI 69-93%)",
-      "correct": 28,
+      "accuracy": "90.9% (30/33, 95% CI 76-97%)",
+      "correct": 30,
       "execution_errors": [
         "q026"
       ],
@@ -167,14 +167,12 @@
       ],
       "silent_wrong": [
         "q016",
-        "q017",
-        "q031",
-        "q047"
+        "q017"
       ]
     },
     "overall": {
-      "accuracy": "88.6% (39/44, 95% CI 76-95%)",
-      "correct": 39,
+      "accuracy": "93.2% (41/44, 95% CI 82-98%)",
+      "correct": 41,
       "execution_errors": [
         "q026"
       ],
@@ -186,9 +184,7 @@
       ],
       "silent_wrong": [
         "q016",
-        "q017",
-        "q031",
-        "q047"
+        "q017"
       ]
     },
     "view_covered": {
