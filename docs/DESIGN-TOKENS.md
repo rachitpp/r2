@@ -176,7 +176,7 @@ it is never behind a click.
 
 ┌──────────────────────────────────┬─────────────────────────────────┐
 │ ANSWER                           │ THE QUERY THAT PRODUCED IT      │  display-sm
-│ 76 rows matched · showing 100    │                                 │  brass, mono
+│ 91 rows                          │                                 │  ink, mono
 │ ──────────────────────────────── │ SELECT * FROM (                 │
 │ SKU       PRODUCT        COVER   │   SELECT sku, product_name,     │  mono, tnum
 │ RTC-0001  Soup Mix        1.1    │          on_hand, days_of_cover │
@@ -187,12 +187,32 @@ it is never behind a click.
 └──────────────────────────────────┴─────────────────────────────────┘
 ```
 
-**The truncation notice sits at the top of the table, not the bottom.** Silent
-truncation is the exact production failure this project is built around — an
-answer that quietly shows 100 of 440 rows and says nothing. Putting it in a
-footer would reproduce the failure with extra steps. It renders in `brass`,
-which is the same token that means *awaiting your attention* on the approval
-card.
+**Truncated, which is the state that matters** — same row, `brass`, verbatim
+from the API rather than a phrasing invented here:
+
+```
+│ 91 rows matched; showing the first 3.                              │  brass
+```
+
+**That count row is always present and is the same row in both states.** Complete
+answers show `91 rows` in `ink`, because a complete answer needs no attention.
+Truncated answers show the API's `notice` in `brass`. It never disappears and it
+never moves, so a reader learns one place to look — and the difference between
+"all of it" and "some of it" is a colour and a sentence in a row they are already
+reading.
+
+**It sits at the top of the table, not the bottom.** Silent truncation is the
+exact production failure this project is built around: an answer that quietly
+shows 100 of 440 rows and says nothing. A footer would reproduce that failure
+with extra steps.
+
+> **Both strings above were taken from a running server, not composed.** The
+> first draft of this wireframe read `76 rows matched · showing 100`, which is
+> not a state the system can produce — matching 76 and showing 100 is not
+> truncation — and it invented a separator the API does not emit. It also left
+> the far more common untruncated case unspecified, so a builder would have had
+> to guess what that row shows when `notice` is `null`. Three defects in one
+> illustrative line, none of them visible without running the thing.
 
 The `store_id = 1` predicate is visible in the query on purpose. Rule 5 says
 scope belongs in the query rather than applied to results afterwards, and this
