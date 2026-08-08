@@ -134,12 +134,15 @@ same role.
    to decide from — 20 live items, per-item cost and fix form, plus the
    singleton ledger and the enumerate-then-fix gate versus the cap. Enumeration
    terminated at iteration 5; the run is void **by enumeration, not by budget**.
-2. **Then design tokens — after a clear break, same sitting is fine.** Palette,
-   type pairing, approval-card wireframe (CONVENTIONS → Frontend, CLAUDE.md rule
-   12). **Keep it sequential, not merged.** The v2 decision is a judgement about
-   a finished artifact; tokens are a fresh generative decision, and taking the
-   second while warm from the first is how the aesthetic gets decided by
-   whatever attention is left over.
+2. **Then design tokens — after a clear break, same sitting is fine.**
+   **A proposal is now written: `docs/DESIGN-TOKENS.md`.** Palette (6 tokens,
+   contrast computed), type pairing, scale, and ASCII wireframes for the
+   approval card and audit log. **Proposed, not agreed — nothing implemented and
+   no component written.** Reject, amend, or take pieces. **Keep it sequential,
+   not merged:** the v2 decision judges a finished artifact, tokens are a fresh
+   decision, and taking the second while warm from the first is how the
+   aesthetic gets decided by leftover attention. Having something to react to is
+   the mitigation, not a reason to merge the two.
 3. **Apply the free batch** — items 1–11, 14, 16–19, 21, 22. Not just 1–11; see
    the note on that line in the fix list.
 4. **Re-score free.** Zero model calls. The only measurement that isolates

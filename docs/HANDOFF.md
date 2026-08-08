@@ -178,7 +178,7 @@ label of one that is (commits against progress notes).
 |---|---|---|---|
 | eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
 | API query endpoint | part of ~32h | **demo half done** | `POST /query` serves answer + SQL with no key and no quota; live model path returns 501 |
-| `web/` — Next.js, tokens, typed client, SSE | part of ~32h | **does not exist** | demo beat 1 blocked on it |
+| `web/` — Next.js, tokens, typed client, SSE | part of ~32h | **does not exist** | blocked on the design plan being agreed — proposal written at `docs/DESIGN-TOKENS.md` |
 
 > **Rule: check deliverable-against-budget at the point where it can still
 > change what you do**, not at phase close. The audit was the right work and the
