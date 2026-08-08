@@ -128,37 +128,38 @@ same role.
 
 ## Next session should
 
-1. ~~Audit the 21 unaudited passes.~~ **Done — all 30 passes now read.** 19 of
-   21 sound; **q005** carries a stale `intent` (says `on_hand <= 5`; question
-   and reference say `<= 2`) and **q008**'s reference carries an unstated
-   `HAVING sum(units_sold) > 200`. Note `is_active = true` is a structural
-   no-op — all 600 products are active — so the many generated queries adding
-   it are unstated predicates the eval cannot detect.
-2. **Take the instrument v2 decision** — `evals/FIX-LIST-v2.md` is the single
-   page to decide from. Enumeration is complete and pushed the list past the
-   10-fix cap on its own, so the run is void **by enumeration, not by budget** —
-   the deliberate case the rule contemplates.
-3. **Apply items 1–11 together, re-score free, then apply item 12 (q004) and
-   re-measure once.** Do not bundle 12 with the rest: it voids the fingerprint
-   and would throw away the free re-score, which is the only measurement that
-   isolates instrument change from model change.
-4. ~~Run the predicate-to-words trace across all 47 references.~~ **Done, and
-   run to stationarity — three iterations.** Found **five references whose
-   `LIMIT` cut falls inside a tie** (four new; q042 has 5 of 10 slots contested
-   among 13) and **q033 ranking on a rounded column**; **overturned q039's
-   "sound" verdict**; and **retracted** the q024 `traps` finding, which follows
-   the set's universal twin convention. Grain and `ranked_all` ties swept clean.
-   Items 14–22 in `evals/FIX-LIST-v2.md`. **A fourth iteration then ran the
-   three singletons the ledger still listed as unchecked** — declaring
-   stationarity with those outstanding had been premature. Period-narrowing is a
-   class of 2 (both already listed); **row identity reframes** — the model
-   diverged in only 2 of 12, so the defect is the reference set being
-   *internally inconsistent* (q042 alone names a store by `code`, six others use
-   `name`); and ratio magnitude found **q031, new and severe** — "worst-margin"
-   fixes neither percentage nor absolute, and the two readings return
-   **disjoint** answer sets.
-5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
-   before any component is written (CONVENTIONS → Frontend).
+**The order matters and two steps are deliberately separated.**
+
+1. **Take the instrument v2 decision.** `evals/FIX-LIST-v2.md` is the single page
+   to decide from — 20 live items, per-item cost and fix form, plus the
+   singleton ledger and the enumerate-then-fix gate versus the cap. Enumeration
+   terminated at iteration 5; the run is void **by enumeration, not by budget**.
+2. **Then design tokens — after a clear break, same sitting is fine.** Palette,
+   type pairing, approval-card wireframe (CONVENTIONS → Frontend, CLAUDE.md rule
+   12). **Keep it sequential, not merged.** The v2 decision is a judgement about
+   a finished artifact; tokens are a fresh generative decision, and taking the
+   second while warm from the first is how the aesthetic gets decided by
+   whatever attention is left over.
+3. **Apply the free batch** — items 1–11, 14, 16–19, 21, 22. Not just 1–11; see
+   the note on that line in the fix list.
+4. **Re-score free.** Zero model calls. The only measurement that isolates
+   instrument change from model change, because the model's answers are held
+   fixed while the instrument moves around them.
+5. **Then q004** (`business_context.md`, voids the fingerprint) **and re-measure
+   once.**
+6. **API query endpoint, then `web/`.** This is the phase deliverable and it is
+   at zero. `readonly_sql.execute()` is built and tested and wired to nothing;
+   there is no `APIRouter` and no `web/` directory. Demo beat 1 is the
+   definition of done.
+7. **Variance spot-check somewhere in 3–6** — 5–8 questions × 3 runs, ~20 calls.
+   **`full×3` at Phase 1 close, deferred not dropped**: it is the third stage of
+   the staged-run rule, every diagnosis rests on one sample per question, and
+   ADR-0006 gives the model layer no determinism guarantee. Quietly skipping it
+   would be the instrument loosening by omission.
+
+**Check deliverable against budget before starting**, not at phase close — see
+`docs/HANDOFF.md`. Phase 1 was budgeted ~32h; the diagnosis ran to a large
+multiple and nothing compared the two while it happened.
 
 ## Phase 1 so far
 

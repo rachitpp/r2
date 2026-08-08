@@ -141,6 +141,59 @@ under this seed.
 
 ---
 
+## Budget vs actual, per phase — check this before starting work
+
+**Phase 1 was budgeted ~32h. The eval diagnosis alone ran to a large multiple of
+that, and nothing registered it while it happened.**
+
+`PLAN.md` holds each phase's definition of done. `PROGRESS.md` tracks what
+landed. **No artifact compared them**, so effort could accumulate against a
+measurement apparatus while the phase's actual deliverable — *a question asked
+in the web app, answered beside the query that produced it* — stayed at zero.
+
+That is **the recurring defect class in the plan** rather than in the
+instrument: a check that is not running (deliverable against budget) wearing the
+label of one that is (commits against progress notes).
+
+| Phase 1 | budgeted | actual | state |
+|---|---|---|---|
+| eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
+| API query endpoint | part of ~32h | **not started** | `readonly_sql.execute()` is built, tested, and wired to nothing |
+| `web/` — Next.js, tokens, typed client, SSE | part of ~32h | **does not exist** | demo beat 1 blocked on it |
+
+> **Rule: check deliverable-against-budget at the point where it can still
+> change what you do**, not at phase close. The audit was the right work and the
+> handoff nominated it — the defect is that nothing was watching the ratio while
+> it ran.
+
+---
+
+## Cross-run variance is DEFERRED, not dropped
+
+`full×3` is the third stage of the staged-run rule (5×1 → full×1 → full×3) and
+**it has not been run.** Every diagnosis in this session rests on **one sample
+per question**.
+
+That matters more than a README line. ADR-0006 scopes determinism to the **parse
+layer precisely because the model layer has none**, and Vertex serves this model
+from `location=global` with no determinism guarantee. **If run-to-run variance is
+large, the 47×1 figure means less than this audit has been treating it as
+meaning.**
+
+**Dropping `full×3` would be the instrument loosening in a further direction —
+by omission rather than by fix**, which is harder to see and therefore worse.
+
+So it is deferred to **Phase 1 close**, with a cheap substitute first:
+
+> **Variance spot-check: 5–8 questions × 3 runs, ~20 calls, one day of quota.**
+> Pick the ones the diagnosis leans on hardest — q018's reform split, q009's
+> returns trap, and the tie cases once fixed. If variance is small, the
+> single-run numbers can be trusted until the full×3 and nothing rests on an
+> unmeasured assumption. If it is large, that changes how the whole audit reads
+> — learned cheaply, and before spending a week of quota.
+
+---
+
 ## What the instrument is and how it fails
 
 The eval measures execution accuracy over 47 natural-language questions against
