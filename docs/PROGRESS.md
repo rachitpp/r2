@@ -9,7 +9,11 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. INSTRUMENT v2 MEASURED.** The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
+**Phase 1 — Structured Q&A. MEASURED, 47x3. Two ADR-0001 thresholds fire and
+the ADR is deliberately unresolved.** The harness now prints all three required
+figures — execution accuracy, silent-wrong, cross-run variance — which was half
+of Phase 1's definition of done. The other half, a question asked in the web
+app, is still at zero: `web/` does not exist and needs the design plan agreed. The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
 audited, all 47 `intent` fields checked, and the predicate trace run to
 **stationarity at iteration 5** — a full re-run under one validated parser added
 no new clauses and no new findings. Every known singleton has been checked as a

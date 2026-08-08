@@ -24,26 +24,43 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 The 47×1 SQL eval has been measured, fully diagnosed, and **all 30 passes
 audited**.
 
-> ### INSTRUMENT v2 IS MEASURED — and one number is still not enough
+> ### PHASE 1 IS MEASURED, AND TWO ADR-0001 THRESHOLDS FIRE
 >
-> **not-view-covered: 84.8% (28/33, 95% CI 69–93%).** Overall 88.6% (39/44),
-> view-covered 100% (11/11). 47 calls, ~$0.93, prompt `415953964db74b80`.
+> **47 questions x 3 runs, instrument v2.** not-view-covered **88.9%
+> (88/99, CI 81–94%)**, overall 91.7%, view-covered 100%. Cross-run variance
+> **10.6%**. 141 responses, ~$2.79 all in.
 >
-> The interval **includes 85%**, so ADR-0001 threshold 2 does **not** fire and
-> text-to-SQL is not decided against.
+> **Threshold 1 fires** — five distinct questions produce a silent-wrong in at
+> least one run (q016, q017, q026, q036, q043). **Threshold 3 fires** — 10.6%
+> against a 10% line, narrowly. Threshold 2 does **not**: the interval straddles
+> 85% and the estimate is above it. Threshold 4 is unmeasured; no retry loop
+> exists.
 >
-> **How much of the old figure was the instrument, measured properly.** Holding
+> **Do not act on this before reading ADR-0001's own instruction.** Threshold 1
+> requires each silent-wrong to be investigated individually and makes that
+> investigation the *input* to the decision. All five are now model failures —
+> the instrument is fixed — but two of them (q016, q043) passed in at least one
+> run, so they are unstable rather than settled.
+>
+> **q036 is the one that matters most.** It is the causation trap, and the
+> refusal held twice and broke once. A refusal that is right two times in three
+> is not a safety property.
+>
+> **The ADR is deliberately left unresolved.** The decision it gates — drop
+> generated SQL for a query catalog — reshapes the remaining phases.
+>
+> ---
+>
+> ### How much of the original figure was the instrument
+>
+> Holding
 > the model's answers completely fixed and correcting only the instrument moved
 > not-view-covered from **23/33 to 29/33**. That is the honest attribution: six
 > of the ten original failures were never the model's.
 >
-> **Still do not quote a single run.** Between that re-score and v2 — same
-> instrument, fresh responses — **two questions flipped each way**: q004 and
-> q043 started passing, q016 and q017 started failing. Neither new failure has
-> anything to do with the context edit; q016 simply omitted `sku` from its
-> SELECT and q017 used `po.expected_on` instead of the terms in force. **That is
-> run-to-run variance of ±2 questions, observed rather than argued**, and it is
-> why `full×3` is owed before any figure goes in the README.
+> **Variance is now measured rather than argued.** Five of 47 questions changed
+> outcome between identical runs. That is why a single run was never quotable,
+> and why `full×3` was deferred rather than dropped.
 
 **Thirteen mechanical fixes are applied and re-scored** (2026-08-08, zero model
 calls, no regressions). The **four forks and the v2 framing call are not** — they

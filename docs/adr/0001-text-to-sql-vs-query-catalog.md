@@ -1,7 +1,8 @@
 # ADR-0001: Text-to-SQL, with measured thresholds for switching to a query catalog
 
 Date: 2026-08-05
-Status: Accepted — outcome deliberately open, settled by Phase 1 measurement
+Status: Accepted — **measured 2026-08-08. Two thresholds fire. The resolution
+is not written here yet, deliberately: see "The measurement" below.**
 
 ## Context
 
@@ -36,6 +37,46 @@ document and schema documentation *before* any prompt engineering — it is the
 highest-return work available. Measure on this schema with a 30–50 question eval
 set, each question run 3x, and switch to a query catalog only if measurement
 demands it.
+
+## The measurement — 2026-08-08, instrument v2, 47 questions x 3 runs
+
+Prompt `415953964db74b80`, seed `206fb7a8e55164f9`, 141 responses, ~$2.79 total.
+
+| | result | threshold | fires? |
+|---|---|---|---|
+| **1 · silent-wrong** | **5 distinct questions** — q016, q017, q026, q036, q043 | two or more | **YES** |
+| **2 · execution accuracy** | not-view-covered **88.9% (88/99, CI 81–94%)** | interval must exclude 85% | no — straddles, and the estimate is above it |
+| **3 · cross-run variance** | **10.6%** | > 10% | **YES**, narrowly |
+| **4 · attempts-to-correct** | not measured — no retry loop exists | > 1.3 | n/a |
+
+Five questions changed outcome between identical runs:
+
+    q016   wrong_rows  -> correct     -> correct
+    q022   exec_error  -> correct     -> correct
+    q026   exec_error  -> wrong_rows  -> exec_error
+    q036   correct     -> should_have_refused -> correct
+    q043   correct     -> wrong_rows  -> wrong_rows
+
+**Read threshold 1 before acting on it.** It says every silent-wrong is
+investigated individually and that the investigation is the INPUT to the
+decision, not a step after it. All five are now **model** failures — the
+instrument defects that produced the original 23/33 have been fixed and
+re-scored, and that correction was worth six questions with the model held
+completely fixed. But two of the five are *not stable failures*: q016 and q043
+each passed in at least one run.
+
+**q036 is the one to sit with.** It is the causation trap — the question the
+data cannot answer — and the refusal held in two runs and broke in the third.
+A refusal that is right two times in three is not a safety property.
+
+**Threshold 3 fires at 10.6% against a 10% line.** That is inside the noise a
+three-run sample can resolve, and the honest reading is "at the boundary,
+measured once" rather than "decisively over".
+
+**This ADR is not being resolved by the agent that ran the measurement.** The
+decision it gates — abandon generated SQL for a query catalog — reshapes the
+remaining phases, and the project's own rule is not to act on a number on first
+sight of it.
 
 **Build the catalog if any threshold fires:**
 

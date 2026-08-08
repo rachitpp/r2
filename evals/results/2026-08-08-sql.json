@@ -1,146 +1,240 @@
 {
-  "cross_run_variance": 0.0,
+  "cross_run_variance": 0.10638297872340426,
   "model": "gemini-3.6-flash",
   "outcomes": {
     "q001": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q002": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q003": [
+      "needs_review",
+      "needs_review",
       "needs_review"
     ],
     "q004": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q005": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q006": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q007": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q008": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q009": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q010": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q011": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q012": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q013": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q014": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q015": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q016": [
-      "wrong_rows"
+      "wrong_rows",
+      "correct",
+      "correct"
     ],
     "q017": [
+      "wrong_rows",
+      "wrong_rows",
       "wrong_rows"
     ],
     "q018": [
+      "needs_review",
+      "needs_review",
       "needs_review"
     ],
     "q019": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q020": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q021": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q022": [
+      "execution_error",
+      "correct",
       "correct"
     ],
     "q023": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q024": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q025": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q026": [
+      "execution_error",
+      "wrong_rows",
       "execution_error"
     ],
     "q027": [
+      "needs_review",
+      "needs_review",
       "needs_review"
     ],
     "q028": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q029": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q030": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q031": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q032": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q033": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q034": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q035": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q036_causation_trap": [
+      "correct",
+      "should_have_refused",
       "correct"
     ],
     "q037": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q038": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q039": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q040": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q041": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q042": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q043": [
-      "correct"
+      "correct",
+      "wrong_rows",
+      "wrong_rows"
     ],
     "q044": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q045": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q046": [
+      "correct",
+      "correct",
       "correct"
     ],
     "q047": [
+      "correct",
+      "correct",
       "correct"
     ]
   },
@@ -152,51 +246,85 @@
   },
   "provider": "vertex",
   "questions": 47,
-  "runs": 1,
+  "runs": 3,
   "stats": {
     "not_view_covered": {
-      "accuracy": "90.9% (30/33, 95% CI 76-97%)",
-      "correct": 30,
+      "accuracy": "88.9% (88/99, 95% CI 81-94%)",
+      "correct": 88,
       "execution_errors": [
+        "q022",
+        "q026",
         "q026"
       ],
-      "n": 33,
+      "n": 99,
       "needs_review": [
+        "q018",
+        "q027",
+        "q018",
+        "q027",
         "q018",
         "q027"
       ],
       "silent_wrong": [
         "q016",
-        "q017"
+        "q017",
+        "q017",
+        "q026",
+        "q036_causation_trap",
+        "q043",
+        "q017",
+        "q043"
       ]
     },
     "overall": {
-      "accuracy": "93.2% (41/44, 95% CI 82-98%)",
-      "correct": 41,
+      "accuracy": "91.7% (121/132, 95% CI 86-95%)",
+      "correct": 121,
       "execution_errors": [
+        "q022",
+        "q026",
         "q026"
       ],
-      "n": 44,
+      "n": 132,
       "needs_review": [
+        "q003",
+        "q018",
+        "q027",
+        "q003",
+        "q018",
+        "q027",
         "q003",
         "q018",
         "q027"
       ],
       "silent_wrong": [
         "q016",
-        "q017"
+        "q017",
+        "q017",
+        "q026",
+        "q036_causation_trap",
+        "q043",
+        "q017",
+        "q043"
       ]
     },
     "view_covered": {
-      "accuracy": "100.0% (11/11, 95% CI 74-100%)",
-      "correct": 11,
+      "accuracy": "100.0% (33/33, 95% CI 90-100%)",
+      "correct": 33,
       "execution_errors": [],
-      "n": 11,
+      "n": 33,
       "needs_review": [
+        "q003",
+        "q003",
         "q003"
       ],
       "silent_wrong": []
     }
   },
-  "unstable_questions": []
+  "unstable_questions": [
+    "q016",
+    "q022",
+    "q026",
+    "q036_causation_trap",
+    "q043"
+  ]
 }
