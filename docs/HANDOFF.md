@@ -19,10 +19,13 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 
 ## Where the project is
 
-**Phase 1 — Structured Q&A, at the end of enumeration.** Phase 0 is complete.
+**Phase 1 — Structured Q&A. The measurement half is done; the product half is
+not.** Phase 0 is complete.
 
-The 47×1 SQL eval has been measured, fully diagnosed, and **all 30 passes
-audited**.
+The eval has been diagnosed, fixed, and re-measured at 47 questions × 3 runs.
+**`web/` does not exist**, and Phase 1's definition of done requires a question
+asked in the web app — so the phase is not close to done, whatever the eval
+numbers say.
 
 > ### PHASE 1 IS MEASURED, AND TWO ADR-0001 THRESHOLDS FIRE
 >
@@ -62,10 +65,10 @@ audited**.
 > outcome between identical runs. That is why a single run was never quotable,
 > and why `full×3` was deferred rather than dropped.
 
-**Thirteen mechanical fixes are applied and re-scored** (2026-08-08, zero model
-calls, no regressions). The **four forks and the v2 framing call are not** — they
-need a decision, and every failure still open maps to one of them or to the two
-model failures. See `evals/FIX-LIST-v2.md`.
+**The whole instrument batch is applied**, including the forks: tie-completion
+lives in `scoring.py`, q042 was made consistent with its six siblings rather
+than loosening the matcher, and q004's context gap is closed. `evals/FIX-LIST-v2.md`
+is now a record of what was done rather than a decision page.
 
 ---
 
@@ -107,6 +110,7 @@ customer paid*. Second unambiguous model failure, after q026.
 
 ### 3. The stopping rule was falsified and is replaced
 
+
 The old rule — *every question must be model-tested and the instrument corrected
 against it* — **was satisfied**, and **8 of the 14 failing references had never
 been revised**. Agreement was being consumed as a positive result when it is a
@@ -138,10 +142,12 @@ it?). It therefore means **`business_context.md` is incomplete**.
 **Consequence that drives sequencing:** its fix edits `business_context.md`,
 which changes the prompt fingerprint and **voids all 47 cached responses**.
 
-### 5. Instrument v2 is a pending decision, not a settled one
+### 5. Instrument v2 is applied and measured — but ADR-0001 is not resolved
 
-See `evals/FIX-LIST-v2.md`. Recommendation recorded, **to be decided in a
-sitting separate from the evidence that prompted it.**
+The batch landed and `full×3` ran. What is **still open** is the decision those
+numbers gate: two of ADR-0001's four thresholds fire, and whether that means
+abandoning generated SQL for a query catalog has deliberately not been decided
+by the agent that ran the measurement.
 
 ---
 

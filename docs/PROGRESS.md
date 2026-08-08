@@ -9,25 +9,30 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. MEASURED, 47x3. Two ADR-0001 thresholds fire and
-the ADR is deliberately unresolved.** The harness now prints all three required
-figures — execution accuracy, silent-wrong, cross-run variance — which was half
-of Phase 1's definition of done. The other half, a question asked in the web
-app, is still at zero: `web/` does not exist and needs the design plan agreed. The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
-audited, all 47 `intent` fields checked, and the predicate trace run to
-**stationarity at iteration 5** — a full re-run under one validated parser added
-no new clauses and no new findings. Every known singleton has been checked as a
-class. **No fixes applied.** Decide from `evals/FIX-LIST-v2.md`; state and
-corrections in `docs/HANDOFF.md`.
+**Phase 1 — Structured Q&A. The measurement half is DONE; the product half is
+not.**
 
-Definition of done is in `docs/PLAN.md`.
+`docs/PLAN.md` says Phase 1 is done when the harness prints execution accuracy,
+silent-wrong and cross-run variance **and** a question asked in the web app
+returns an answer beside the query that produced it.
+
+- **Harness: done.** 47 questions × 3 runs against instrument v2.
+- **Web app: does not exist.** `web/` is empty. It is blocked on the design plan
+  in `docs/DESIGN-TOKENS.md` being agreed — proposed, not agreed.
+
+**Two ADR-0001 thresholds fire and the ADR is deliberately unresolved.** Read
+`docs/adr/0001-*.md` before acting on that; its own threshold 1 makes the
+individual investigation the *input* to the decision.
+
+State and corrections: `docs/HANDOFF.md`. Fix-list history:
+`evals/FIX-LIST-v2.md`.
 
 ## Where things stand
 
 | Phase | Status | Note |
 |---|---|---|
-| 0 Data foundation | **done** | ~32h against a 20h budget; PLAN.md updated |
-| 1 Structured Q&A | **in progress** | LIMIT wrapper done; eval runner built; 47×1 measured; **enumeration complete** (14 failures diagnosed, 30 passes audited, 47 intents checked); fixes batched pending the v2 decision; UI not started |
+| 0 Data foundation | **done** | ~32h against a 20h budget |
+| 1 Structured Q&A | **in progress** | Measurement done (47×3, instrument v2). Query API demo half done. **`web/` at zero — the phase deliverable.** Budget long overrun; see HANDOFF |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -35,202 +40,67 @@ Definition of done is in `docs/PLAN.md`.
 
 ## Last session
 
-_Date:_ 2026-08-07
-_What landed:_ Failure diagnosis completed and **the previous diagnosis audited**
-— model SQL and reference executed and compared field by field, **zero model
-calls**, every response already cached. All 14 failures now bucketed: 11
-instrument, 2 model, 1 context.
+_Date:_ 2026-08-08
+_What landed:_ The instrument was fixed, measured, and then measured properly.
 
-Four findings that were not just new diagnoses:
+- **Instrument v2 applied.** Reference corrections, tie-completion in
+  `scoring.py`, and one context gap closed in `business_context.md`. Prompt
+  re-frozen `de60dd5e3dde7787` → `415953964db74b80`.
+- **The attribution, held fixed.** Correcting only the instrument and reusing
+  the *same* model answers moved not-view-covered **23/33 → 29/33**. Six of the
+  ten original failures were never the model's.
+- **full×3 measured.** not-view-covered **88.9% (88/99, CI 81–94%)**, overall
+  91.7%, view-covered 100%, **cross-run variance 10.6%**. ~$2.79 all in.
+- **Query API, demo half.** `POST /query` returns the answer beside the SQL.
+  No key, no quota. `make serve`.
+- **Design plan proposed** — two separable surfaces, neither agreed.
 
-- **The seventh axis was mis-stated and its evidence wrong in 3 of 4 questions.**
-  q019 was recorded as "numbers identical, label text only, verified by hand" —
-  it is **8.30 vs 8.23 and 7.08 vs 6.73**. The real axis is **row identity**
-  (`ST-01` vs `Kothrud`), and q019 belongs with q045 instead.
-- **q004 re-bucketed `ambiguous` → `context`**, against the favourable
-  direction. `ambiguous` should mean no context document could settle it; this
-  one settles in a sentence.
-- **The rotation process half-fixed a known defect.** Rotation 5 edited q045's
-  cover threshold with the definition open and left `below_reorder_point` — a
-  predicate belonging to a *different* published phrase — in place.
-- **q043 is a bucket flip, not a fresh finding**, and it moves model failures
-  1 → 2.
+_Four defects I introduced and then found:_ bigint division in q047's `ORDER BY`
+(every ratio floored to 0, so the "ranking" was alphabetical and every test
+still passed); double-rounding in `tolerance.py`; a wireframe asserting an API
+contract it had never been run against; and a `--only` run silently overwriting
+the full results file.
 
-Then the diagnosis record itself was audited, and **the q019 entry recorded a
-hand-verification that never ran**: it reported 8.23 / 6.73 as the model's
-output, which are the constants `business_context.md` publishes as the true
-rates. The expected values were written into the observed slot. Every numeric
-claim in the file was re-executed as a result — **q018 (8.23, split verified),
-q009's 54,759 / 54,594, q001's unsound pass all hold**; q026's timing does not
-reproduce (5.33s, not 1.59s) but its verdict strengthens. As a wholesale
-control, **46 of 47 cached responses reproduce their recorded outcome** — the
-run record is sound; the defect was in the prose.
-
-The q045 half-fix hypothesis was **checked and withdrawn** — git archaeology
-over every reference edit found it to be one occurrence, not a class. What it
-found instead: **8 of 14 failing references were never revised at all.** The
-rotation gap is reach, not depth. Agreement is not verification.
-
-Finally **all 21 remaining passes were audited, and all 47 `intent` fields** —
-enumeration is now complete. 19 of 21 passes sound. **q008**'s reference carries
-an unstated `HAVING sum(units_sold) > 200` (inert; lowest nearby is 1,713), and
-**q005**'s `intent` is stale — `e68f950` updated its question and reference in
-lockstep and left `intent` behind, the q045 half-fix one field over. The intent
-sweep found **q005 is the only one of 47**. Also found: **`is_active = true` is
-a structural no-op** (all 600 products active), invisible to every check.
-
-_What didn't, and why:_ No fixes applied — enumeration is the gate and it has
-only just closed. The disambiguation ruling is **recorded and restated on the
-corrected axis** (identity is not signal; a reading is read off the predicate),
-not implemented. **Pending decision for next sitting: declare instrument v2 and
-replace the cap with an enumerate-then-fix gate** — "drop the cap" was proposed
-and **withdrawn**, because the cap's working effect was discipline rather than
-comparability. Single decision page: `evals/FIX-LIST-v2.md`.
-_Anything half-finished someone would trip over:_ No. **Enumeration terminated
-at iteration 5** — stationary, nothing part-applied. The one live hazard is the **`is_active` gate** —
-see `docs/HANDOFF.md` — which fires only if the seed generator changes.
-**No accuracy number exists.** The raw figure is retired: it is wrong in both
-directions — 11 instrument defects deflate it, q039 and q008 inflate it by
-passing on an arbitrary tiebreak — with neither magnitude known. Do not quote a
-number anywhere until the v2 re-measure.
-_Is the system in a working state?_ Yes. Nothing executable changed — docs only.
-158 passed, 25 skipped. Credential history verified clean; `make hooks` active.
-
-## The handoff now lives in the repo — `docs/HANDOFF.md`
-
-**Resolved 2026-08-07.** It was maintained outside version control and was
-falsified in five places while still reading as authoritative. Paste from
-`docs/HANDOFF.md` now; it carries all five corrections and the `is_active` gate.
-The corrections are summarised below and stated in full there.
-
-1. **The seven-axis table is wrong.** It publishes "free-text labels the query
-   invents" with a `'Before Sep 22, 2025'` example. The real axis is **row
-   identity** — which column names a row (`stores.code` vs `stores.name`) — and
-   the example is worse than wrong: **q019 did not return the reference's
-   numbers.** It returned 8.30 / 7.08 against 8.23 / 6.73. There are also two
-   further axes: **ratio magnitude** (fraction vs percent) and
-   **disambiguation was unscoreable** against a criterion the prompt forbids.
-2. **q043 is not a reference-author error.** Its `reference_sql` was never
-   edited. Rotation 4 fixed its *question*, which had not named the period the
-   reference already filtered on. It is now diagnosed **`model`** — it used
-   `subtotal` where the context says to use `total` for what a customer paid.
-3. **The stopping rule is falsified.** "Every question model-tested and the
-   instrument corrected against it" was satisfied, and 8 of 14 failing
-   references were never revised. Replaced by the **predicate-to-words trace** —
-   see `evals/README.md` → *When to stop rotating*. Agreement is a null result.
-4. **q004 is `context`, not `ambiguous`** — so its fix edits
-   `business_context.md` and voids the prompt fingerprint and all 47 cached
-   responses.
-5. **A pending decision is recorded**: declare instrument v2 and replace the fix
-   cap with an enumerate-then-fix gate. See the end of
-   `evals/DIAGNOSIS-2026-08-07.md`.
-
-`docs/prompts/phase-1-structured-qa.md` was a 0-byte placeholder superseded by
-`docs/HANDOFF.md`; deleted rather than left as a second empty candidate for the
-same role.
+_What didn't:_ `web/`. ADR-0001 is recorded but not resolved.
+_Anything half-finished someone would trip over:_ No. The `is_active` gate is
+the one live hazard and fires only on a seed change.
+_Is the system in a working state?_ Yes. 180 passed, 29 skipped; ruff clean.
 
 ## Next session should
 
-**The order matters and two steps are deliberately separated.**
-
-1. **Take the instrument v2 decision.** `evals/FIX-LIST-v2.md` is the single page
-   to decide from — 20 live items, per-item cost and fix form, plus the
-   singleton ledger and the enumerate-then-fix gate versus the cap. Enumeration
-   terminated at iteration 5; the run is void **by enumeration, not by budget**.
-2. **Then design tokens — after a clear break, same sitting is fine.**
-   **A proposal is now written: `docs/DESIGN-TOKENS.md`.** Palette (6 tokens,
-   contrast computed), type pairing, scale, and ASCII wireframes for the
-   approval card and audit log. **Proposed, not agreed — nothing implemented and
-   no component written.** Reject, amend, or take pieces. **Keep it sequential,
-   not merged:** the v2 decision judges a finished artifact, tokens are a fresh
-   decision, and taking the second while warm from the first is how the
-   aesthetic gets decided by leftover attention. Having something to react to is
-   the mitigation, not a reason to merge the two.
-   **Two surfaces are proposed and they are separable:** the approval card (the
-   signature, Phase 4) and the query view (Phase 1, and the only one backed by
-   working code). Agreeing one does not commit you to the other.
-3. ~~Apply the free batch~~ **— thirteen mechanical fixes APPLIED 2026-08-08.**
-   Reference corrections only; no question text edited, so the prompt
-   fingerprint and the cache both survive.
-4. ~~Re-score free~~ **— done. 47 cache hits, 0 misses, 0 calls, $0.00.**
-   **No regressions**; q015 and q045 fixed; q011 `wrong_rows` → `wrong_order`.
-   not-view-covered 23/33 → 24/33 — **an interim re-score, not a headline; the
-   retirement stands.** Every remaining failure now maps to one of the four
-   undecided forks or to the two model failures (q026, q043).
-   **The identity fork (22) and q030 (17) are now decided and applied too** —
-   q019/q022/q024 to an ordered shape with the label out of `answer_columns`,
-   q042 to `stores.name` for consistency with its six siblings rather than
-   loosening the matcher. **not-view-covered 23/33 → 27/33 (81.8%, CI 66–91%);
-   the interval does not exclude 85%, so ADR-0001 threshold 2 does not fire.**
-   Still an interim re-score, not a headline.
-   **Three things remain:** the tie class (item 14 — needs `expected` to carry
-   the tied alternatives, a schema change rather than a decision), **q004**
-   (item 12 — spends ~$0.99 and ~2.3 days, so it is yours under CLAUDE.md's
-   "ask before anything that repeatedly spends quota"), and the two model
-   failures q026 and q043, which no instrument fix reaches.
-   **q026's classification is unstable** — it flipped `execution_error` →
-   `wrong_rows` between runs on the same cached response, because it sits right
-   on the 5s statement timeout. Wrong either way; the *kind* is timing-dependent.
-5. **Then q004** (`business_context.md`, voids the fingerprint) **and re-measure
-   once.**
-6. ~~API query endpoint~~ **— done, demo half.** `POST /query` returns the
-   answer **beside the SQL that produced it**, plus `/health` and
-   `/demo/questions`. Demo mode only, so **no key and no quota**: canned pairs
-   in `api/demo/queries.json`, deliberately *not* the eval references, since
-   those are the instrument and are under repair. Scope is substituted into the
-   query before it runs (rule 5) with `check_scope` as the tripwire. 17 tests,
-   `make serve`. **The live model path is a 501 and is the next slice.**
-   Then **`web/`**, which is still at zero and needs tokens agreed first.
-   **The live path waits on the q004 fix, not on quota** — that edit changes
-   `business_context.md`, so it changes the prompt, so it changes what the live
-   path produces. Building against a prompt known to be about to change
-   validates the wrong artifact. Quota is the second argument, which means the
-   sequencing holds even if credits turn up. See `docs/HANDOFF.md`.
-7. **Variance spot-check somewhere in 3–6** — 5–8 questions × 3 runs, ~20 calls.
-   **`full×3` at Phase 1 close, deferred not dropped**: it is the third stage of
-   the staged-run rule, every diagnosis rests on one sample per question, and
-   ADR-0006 gives the model layer no determinism guarantee. Quietly skipping it
-   would be the instrument loosening by omission.
+1. **Resolve ADR-0001.** Two thresholds fire. The decision reshapes the
+   remaining phases, so it wants its own sitting. **q036 is the item to weigh:**
+   the causation refusal held in two runs and broke in the third.
+2. **Agree or amend `docs/DESIGN-TOKENS.md`.** Two separable surfaces — the
+   approval card and the query view. This blocks `web/`.
+3. **Build `web/`** — Next.js scaffold, typed client from the OpenAPI schema,
+   the query view. This is the phase deliverable and it is at zero.
+4. **Then the live model path**, which waits on the prompt being stable rather
+   than on quota.
 
 **Check deliverable against budget before starting**, not at phase close — see
-`docs/HANDOFF.md`. Phase 1 was budgeted ~32h; the diagnosis ran to a large
-multiple and nothing compared the two while it happened.
+`docs/HANDOFF.md`.
 
-## Phase 1 so far
+## Measured numbers
 
-- `api/prompts/context/business_context.md` — written first, before any prompt
-  work or eval question, per ADR-0001. Every factual claim in it was checked
-  against the built database rather than the draft.
-- `evals/sql/questions.jsonl` — 41 questions, expected result sets **generated**
-  by executing hand-written reference SQL (`make eval-expectations`), never
-  typed. Pinned to the seed by `seed_fingerprint`; a pytest fails when they
-  drift apart. `evals/sql/README.md` documents the schema and the trap coverage.
-- Four expectation kinds: `rows` (35), `empty` (1), `refusal` (3),
-  `disambiguation` (2). `empty` is a distinct kind on purpose — an empty
-  expectation filed under `rows` scores every wrong query as correct, and
-  `eval_expectations.py` treats that as a broken question rather than a result.
-- **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
+_SQL (n=47 questions × 3 runs, instrument v2, prompt `415953964db74b80`):_
+not-view-covered **88.9% (88/99, CI 81–94%)**, overall 91.7% (121/132),
+view-covered 100% (33/33), **cross-run variance 10.6%**, silent-wrong in 5
+distinct questions. Attempts-to-correct not measured — no retry loop exists.
 
-## KEY ROTATION PENDING — do not use the current credential
+_Extraction:_ Phase 2, not started.
+_Injection specimens:_ Phase 3, not started.
 
-The service account JSON arrived in the repo working tree, untracked and
-un-ignored, while every commit used `git add -A`. Not committed and not in
-history — verified — but its disposition is not fully accountable, so it is
-being **rotated**: new key in the console, old one deleted, replacement never
-placed inside the repo directory.
+## Named debt carried forward
 
-Two layers now guard this, because ignore patterns only catch anticipated
-filenames:
-
-1. `.gitignore` carries broad credential patterns, not just the one filename.
-2. `.githooks/pre-commit` greps STAGED CONTENT for the markers a service
-   account JSON and a PEM private key always carry, plus the AI Studio key
-   shape. The patterns live in the hook; they are deliberately not reproduced
-   here, because a document quoting them literally trips the hook — which is
-   how this paragraph got written. Enable with `make hooks`. Verified to block
-   the real key and to pass a normal commit.
+- **`full×3` is done, but it is one sample of three runs.** Variance at 10.6%
+  sits right on ADR-0001's line; another triple would move it either way.
+- **q036's refusal is not reliable** — two of three. It is the behaviour the
+  project's argument rests on.
+- **No retry loop exists**, so ADR-0001 threshold 4 has never been measured.
 
 ## Vertex: verified working, one surprise
+
 
 - Token mints from the service account; `gemini-3.6-flash` answers.
 - **It serves from `location=global` ONLY** — 404 in us-central1 and
@@ -246,111 +116,8 @@ project, so credit coverage, balance and expiry cannot be read from here.
 Calls succeed, which proves access and quota — not that credit is being drawn
 rather than a card.
 
-## BLOCKED: no GCP credential exists in this environment
-
-ADR-0010 routes every model call through Vertex. **It cannot be executed yet.**
-There is no `gcloud`, no service account, no `GOOGLE_APPLICATION_CREDENTIALS`,
-and nothing GCP-shaped in `.env` beyond the AI Studio key. The service account
-ADR-0009 assumed for Phase 2 does not exist.
-
-Three things need checking in the console before any Vertex call, none of which
-could be done from here:
-
-1. **Do credits actually cover Gemini on Vertex?** The billing page is explicit
-   that they do NOT cover AI Studio, and **silent** about Vertex. The only
-   Vertex exclusion found names *partner* models (Claude, Llama, Mistral in
-   Model Garden), not first-party Gemini — so probably covered, but "probably"
-   bills a card when wrong.
-2. **Remaining credit and expiry.** 90 days from signup, not first use. If the
-   account is not new the balance may already be zero.
-3. **`gemini-3.6-flash` on Vertex, in region, exact model string.** A mismatched
-   pin breaks reproducibility silently, and after ADR-0006 the pinned string is
-   the entire reproducibility claim.
-
-Also: Vertex is now **Gemini Enterprise Agent Platform** (renamed May 2026);
-console and doc paths have moved.
-
-## RPD MEASURED: 20 per day. This changes the plan.
-
-Not from a blog and not from AI Studio — from the `429` body itself, which
-names the quota:
-
-    metric  generativelanguage.googleapis.com/generate_content_free_tier_requests
-    id      GenerateRequestsPerDayPerProjectPerModel-FreeTier
-    value   20
-    model   gemini-3.6-flash
-
-**Twenty requests per day**, scoped per project PER MODEL. The arithmetic:
-
-| | calls | at 20/day |
-|---|---|---|
-| rotation 5x1 | 5 | 0.2 days |
-| 46 x 1 | 46 | 2.3 days |
-| 46 x 3 | 138 | 6.9 days |
-| **total** | **189** | **9.4 days** |
-
-The prompt is ~11,600 tokens (schema.md and business_context.md dominate), so
-the whole measurement is 2.19M input tokens. At the paid Flash rate of $1.50/M
-in and $7.50/M out that is **about $3.70 for the entire thing**.
-
-So the choice is roughly: **$3.70, or nine days.** Needs a ruling — see the
-options in the session report. Note the quota is per MODEL, so a different free
-model carries its own 20/day, but measuring across two models measures two
-models.
-
-## Free-tier daily quota EXHAUSTED 2026-08-07
-
-A re-score hit `429` and six backoff attempts spanning roughly two minutes did
-not clear it, which points at the **daily** cap rather than requests-per-minute.
-No more model calls today; it resets at midnight Pacific.
-
-The cache did not save this run, and correctly so: `business_context.md`
-changed, so the prompt fingerprint changed, so every cached answer describes a
-prompt that no longer exists. Caching protects a *re-run of the same prompt*,
-not a re-run after editing one.
-
-**Still needed: the real RPM/TPM/RPD from `aistudio.google.com/rate-limit`.**
-Roughly 20 calls were spent today across three staged runs.
-
-## Eval instrument — three defects found, all fixed
-
-Stage 1 (5 questions x 1 run, `gemini-3.6-flash`) returned 0/4. **That is not a
-measurement of the model. It is the instrument failing**, and no result file was
-kept, because a 0% sitting in `evals/results/` would be a lie.
-
-Two defects, both mine:
-
-1. **17 of 38 scorable questions have their row count fixed by an arbitrary
-   `LIMIT` the question never asks for.** "What should we reorder at Nashik?"
-   has no natural answer length; the reference says `LIMIT 20` and the model
-   said `LIMIT 100`. Verified on q004: **the model's first 20 rows match the
-   reference's 20 exactly.** It was right and scored wrong. Same shape on q005,
-   q002.
-2. **q001's reference filters `store_id = 1` although the question names no
-   store** — which contradicts `sql_generate.md`'s own rule ("when it does not
-   name a store, aggregate across stores"). The model followed the rule; the
-   reference broke it. 139 rows vs the correct 440.
-
-Ordering has the same problem: 19 reference queries impose an `ORDER BY` the
-question does not imply.
-
-All three were one family: **the reference encoded a choice the question did
-not determine.** Enumerated on paper and closed together rather than one at a
-time — see `evals/README.md` for the full table.
-
-- `result_shape` (4 kinds) fixes row count and row order.
-- Sub-multiset row matching plus `answer_columns` fixes column selection,
-  column order and column names. The expectation now holds ONLY what the
-  question asks for; the reference still SELECTs context for a human reader.
-- `tolerance.py` fixes rounding and rendering: absolute tolerances only,
-  compared at the coarser of the two precisions.
-
-Third staged run (fresh questions) went 3/5, with both failures again the
-instrument — q029 read as singular and the model answered with one row
-correctly; q040's reference demanded a PO count the question never asked for.
-Both fixed. **The next staged run is the first that can be believed.**
-
 ## Model providers and live limits
+
 
 Decided 2026-08-06. Reasoning in **ADR-0009** — the split is on **data terms**,
 not rate limits.
@@ -427,6 +194,7 @@ metric.
 
 ## Locale — resolved, India
 
+
 Currency INR, timezone Asia/Kolkata, modelled as a Maharashtra grocery chain
 (Kothrud/Pune, Gangapur Road/Nashik, Dharampeth/Nagpur). This is now final and
 the eval set can be written against it.
@@ -446,29 +214,8 @@ and committing the regenerated `seed/small/` + `seed/CHECKSUMS.txt` — **which
 invalidates every eval expected result set written before it.** Do it before
 Phase 1's eval set if it is going to happen at all.
 
-## Named debt carried into Phase 1
-
-- ~~**The `LIMIT` wrapper.**~~ **Discharged.** `api/src/pos_copilot/readonly_sql.py`
-  ships all four layers — single-`SELECT` check over a scanner that understands
-  literals, dollar-quoting and comments; write/DDL rejection including inside a
-  CTE; the bounding subquery at `max_rows + 1` so truncation is a fact rather
-  than an inference; and a named server-side cursor with a capped itersize.
-  Plus the scope tripwire, which refuses rather than filters (rule 5).
-- **`view_covered` on every eval question.** Already written into ADR-0001.
-  `v_stock_status` and friends make some questions near-trivial; the threshold-2
-  decision is evaluated against the not-view-covered number, or the measurement
-  flatters itself.
-- **`AS_OF_DATE`, not wall-clock.** `DATA_END_DATE = 2026-06-30` is a constant
-  in `seed.py` and is what makes byte-identity possible. `sql_generate.md` now
-  has the `{as_of_date}` placeholder and forbids `current_date`;
-  `business_context.md` must teach the same thing when it is written.
-- ~~**`business_context.md` does not exist yet.**~~ **Discharged.** Written, and
-  it now carries the working definitions ("fast-moving", "about to run out",
-  "a top seller") with the number behind each. Note that q045 caught a reference
-  contradicting one of those published definitions — the document is now
-  authoritative enough that references have to be checked against it.
-
 ## Facts about the data someone will otherwise rediscover the hard way
+
 
 - **`small` and `full` are independent datasets, not subset and superset.**
   Reference data (600 products, 18 categories, 12 suppliers) is identical;
@@ -532,6 +279,7 @@ Phase 1's eval set if it is going to happen at all.
 
 ## Open questions — ask me, don't decide
 
+
 These are unresolved by design. If you hit one, stop.
 
 - **Corpus size.** Estimated ~40 documents, never confirmed. If the whole corpus
@@ -560,20 +308,8 @@ These are unresolved by design. If you hit one, stop.
 clearance (personal, publishable; PII scan still required in Phase 2), frontend
 (Next.js + Tailwind, ADR-0007).
 
-## Measured numbers
-
-Fill in as they land. These go in the top-level README.
-
-_Extraction (n=__ hand-labeled documents):_ header fields __%, line item F1 __,
-hallucination __%, miss __%
-
-_SQL (n=__ questions, 3 runs each):_ execution accuracy __%, silent-wrong __%,
-cross-run variance __%, median attempts-to-correct __
-_(report overall, view-covered, and not-view-covered — see ADR-0001)_
-
-_Injection specimens:_ __ of __ held
-
 ## Decisions made mid-build
+
 
 Anything decided in a session that isn't yet an ADR. Promote or delete.
 
