@@ -12,7 +12,7 @@ import {
 
 export default function QueryView() {
   const [catalogue, setCatalogue] = useState<DemoQuestion[]>([]);
-  const [selected, setSelected] = useState<DemoQuestion | null>(null);
+  const [question, setQuestion] = useState("");
   const [storeId, setStoreId] = useState<number | "">("");
   const [result, setResult] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,23 +24,35 @@ export default function QueryView() {
       .catch((e: Error) => setError(e.message));
   }, []);
 
+  // The question is typed, with the catalogue offered as suggestions. One
+  // control for both modes on purpose: `DEMO_MODE` is API-side only
+  // (docs/CONVENTIONS.md), so this must not become two inputs behind a flag.
+  // A question the API cannot take is refused *by the API*, with its own
+  // reason, which is the honest way for the boundary to say no.
+  const listed = catalogue.find((q) => q.question === question) ?? null;
+
   // The API refuses to guess a store rather than answer the wrong shop. A UI
   // that pre-filled one would reintroduce exactly that, one layer up — so the
-  // control starts empty and the button stays disabled until it is chosen.
-  const needsStore = selected?.requires_store === true;
-  const ready = selected !== null && (!needsStore || storeId !== "");
+  // control starts empty, and for a question known to need a store the button
+  // stays disabled until it is chosen.
+  const needsStore = listed?.requires_store === true;
+  const scoped = storeId !== "";
+  const ready = question.trim() !== "" && (!needsStore || scoped);
 
   async function submit() {
-    if (!selected || !ready) return;
+    if (!ready) return;
     setBusy(true);
     setError(null);
     setResult(null);
     try {
       setResult(
         await ask({
-          question: selected.question,
-          role: needsStore ? "clerk" : "owner",
-          store_id: needsStore ? Number(storeId) : null,
+          question,
+          // Choosing a store asks as a clerk restricted to it; leaving it empty
+          // asks chain-wide. The scope reaches the model before it writes any
+          // SQL — it is never applied to the rows afterwards.
+          role: scoped ? "clerk" : "owner",
+          store_id: scoped ? Number(storeId) : null,
         }),
       );
     } catch (e) {
@@ -57,7 +69,7 @@ export default function QueryView() {
           Ask about the shop
         </h1>
         <p className="mt-1 text-[13px] text-brass">
-          demo mode · answered from a fixed set, with no model call
+          the answer, beside the query that produced it
         </p>
       </header>
 
@@ -65,25 +77,29 @@ export default function QueryView() {
         <label htmlFor="question" className="block text-[13px] font-medium">
           Question
         </label>
-        <select
+        {/* Typed, with the catalogue as suggestions. The list is what the API
+            can answer with no model call; anything else needs the live path,
+            and the API says which rather than this input guessing. */}
+        <input
           id="question"
+          list="catalogue"
+          autoComplete="off"
+          placeholder="Ask about the shop…"
           className="mt-1 w-full rounded border border-rule bg-white px-3 py-2 text-[15px]"
-          value={selected?.question ?? ""}
+          value={question}
           onChange={(e) => {
-            setSelected(catalogue.find((q) => q.question === e.target.value) ?? null);
-            setStoreId("");
+            setQuestion(e.target.value);
             setResult(null);
           }}
-        >
-          <option value="">Choose a question…</option>
+        />
+        <datalist id="catalogue">
           {catalogue.map((q) => (
             <option key={q.question} value={q.question}>
-              {q.question}
-              {q.expect === "refusal" ? "  — will decline" : ""}
-              {q.requires_store ? "  — needs a store" : ""}
+              {q.expect === "refusal" ? "will decline" : ""}
+              {q.requires_store ? " needs a store" : ""}
             </option>
           ))}
-        </select>
+        </datalist>
 
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div>
@@ -92,12 +108,11 @@ export default function QueryView() {
             </label>
             <select
               id="store"
-              disabled={!needsStore}
-              className="mt-1 rounded border border-rule bg-white px-3 py-2 text-[15px] disabled:opacity-40"
+              className="mt-1 rounded border border-rule bg-white px-3 py-2 text-[15px]"
               value={storeId}
               onChange={(e) => setStoreId(e.target.value ? Number(e.target.value) : "")}
             >
-              <option value="">{needsStore ? "Choose a store…" : "not needed"}</option>
+              <option value="">{needsStore ? "Choose a store…" : "all stores"}</option>
               {STORES.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -112,11 +127,13 @@ export default function QueryView() {
           >
             {busy ? "Asking…" : "Ask"}
           </button>
-          {needsStore && storeId === "" && (
-            <p className="text-[13px] text-brass">
-              This question is about one store. Choose which.
-            </p>
-          )}
+          <p className="text-[13px] text-brass">
+            {needsStore && !scoped
+              ? "This question is about one store. Choose which."
+              : scoped
+                ? "Asked as a clerk, restricted to that store."
+                : "Asked across every store."}
+          </p>
         </div>
       </section>
 
@@ -127,8 +144,22 @@ export default function QueryView() {
       )}
 
       {result?.refusal && <Refusal response={result} />}
+      {result?.error && <Failure response={result} />}
       {result?.answer && <Result response={result} />}
     </main>
+  );
+}
+
+/** What produced this answer, stated per answer rather than per page. The page
+ *  cannot know the mode before it asks — `DEMO_MODE` is API-side — and after it
+ *  asks, the response says. */
+function Provenance({ response }: { response: QueryResponse }) {
+  return (
+    <p className="mt-4 border-t border-rule pt-3 text-center font-mono text-[13px] text-brass">
+      {response.mode === "demo"
+        ? "answered from the fixed set · no model call"
+        : "SQL written by the model · generated fresh, may differ next time"}
+    </p>
   );
 }
 
@@ -136,15 +167,47 @@ export default function QueryView() {
  *  never `oxide` — styling it red would teach a reader it is a malfunction to
  *  work around, when it is the system declining to fabricate. */
 function Refusal({ response }: { response: QueryResponse }) {
+  // Two sentinels, and they are not the same claim: one says the database
+  // cannot answer this for anyone, the other that it can but not for this user.
+  const outOfScope = /^--\s*OUT OF SCOPE:/.test(response.refusal ?? "");
   return (
     <section className="mt-6 rounded border border-rule bg-card p-5">
-      <h2 className="font-display text-[20px]">This can&apos;t be answered from the data.</h2>
+      <h2 className="font-display text-[20px]">
+        {outOfScope
+          ? "This isn’t yours to see."
+          : "This can’t be answered from the data."}
+      </h2>
       <p className="mt-2 max-w-2xl text-[15px] leading-[1.55]">
-        {response.refusal?.replace(/^--\s*INSUFFICIENT SCHEMA:\s*/, "")}
+        {response.refusal?.replace(
+          /^--\s*(INSUFFICIENT SCHEMA|OUT OF SCOPE):\s*/,
+          "",
+        )}
       </p>
-      <p className="mt-4 border-t border-rule pt-3 text-center font-mono text-[13px]">
-        no query was run
+      <p className="mt-4 border-t border-rule pt-3 text-center font-mono text-[13px] text-brass">
+        no query was run ·{" "}
+        {response.mode === "demo" ? "answered from the fixed set" : "the model declined"}
       </p>
+    </section>
+  );
+}
+
+/** The generated query was refused by the guard or rejected by Postgres. This
+ *  one *is* a fault, so it carries oxide — the distinction from a refusal is
+ *  the whole point, and it is why `error` is a separate field. The query that
+ *  failed is shown: a failure you cannot read teaches nothing. */
+function Failure({ response }: { response: QueryResponse }) {
+  return (
+    <section className="mt-6 rounded border border-oxide/40 bg-card p-5">
+      <h2 className="font-display text-[20px] text-oxide">
+        The query didn’t run.
+      </h2>
+      <p className="mt-2 max-w-2xl text-[15px] leading-[1.55]">{response.error}</p>
+      {response.generated_sql && (
+        <pre className="mt-3 overflow-x-auto border-t border-rule pt-3 font-mono text-[13px] leading-[1.4]">
+          {response.generated_sql}
+        </pre>
+      )}
+      <Provenance response={response} />
     </section>
   );
 }
@@ -190,6 +253,7 @@ function Result({ response }: { response: QueryResponse }) {
         <pre className="mt-3 overflow-x-auto font-mono text-[13px] leading-[1.4]">
           {response.sql}
         </pre>
+        <Provenance response={response} />
       </section>
     </div>
   );

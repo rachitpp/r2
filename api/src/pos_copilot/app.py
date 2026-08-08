@@ -9,25 +9,32 @@ Scope, per CLAUDE.md rule 5, is applied **before** generation — a clerk's stor
 is substituted into the query — and `check_scope` runs afterwards only as a
 tripwire that refuses rather than filters.
 
-Demo mode is the default and needs no key (rule 2). The live model path is not
-wired here yet.
+Demo mode is the default and needs no key (rule 2). `DEMO_MODE=false` opts into
+the live model path in `live.py`, which spends the reader's own credentials —
+and does not replace the canned path, because ADR-0001's resolution rests on
+that path staying deterministic.
+
+This module is transport: it maps requests onto `demo` or `live` and maps their
+failures onto status codes. The judgement lives in those two.
 """
 
 from __future__ import annotations
 
-import os
 from typing import Literal
 
 import psycopg
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from pos_copilot import demo
+from pos_copilot import demo, env, live
+from pos_copilot.model import BudgetExceeded, RateLimited
 from pos_copilot.readonly_sql import (
     DEFAULT_MAX_ROWS,
     ScopeViolation,
+    StoreRequired,
     UnsafeQuery,
     execute,
+    visible_stores,
 )
 
 app = FastAPI(
@@ -36,21 +43,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
-#: Which stores a role may see. `None` means chain-wide.
-#: This is the whole of role-scoping for Phase 1 — deliberately small, and
-#: deliberately consulted BEFORE the query is built rather than after it runs.
-UNSCOPED_ROLES = frozenset({"manager", "owner"})
-
 
 def readonly_url() -> str:
-    url = os.environ.get("READONLY_DATABASE_URL")
+    url = env.text("READONLY_DATABASE_URL")
     if not url:
         raise HTTPException(500, "READONLY_DATABASE_URL is not set")
     return url
 
 
 def demo_mode() -> bool:
-    return os.environ.get("DEMO_MODE", "true").strip().lower() not in ("false", "0")
+    return env.text("DEMO_MODE", "true").lower() not in ("false", "0")
 
 
 class QueryRequest(BaseModel):
@@ -85,14 +87,32 @@ class QueryResponse(BaseModel):
     question: str
     #: The SQL actually executed, wrapper and all. Shown, never hidden.
     sql: str | None
-    #: Set when the honest answer is that the data cannot support the question.
+    #: What the model wrote, before the guard's wrapper — live mode only, since
+    #: demo mode generates nothing. Kept separate from `sql` so `sql` never
+    #: stops meaning "what actually ran", and present even when the query was
+    #: refused or failed: a query you cannot see is a query you cannot check.
+    generated_sql: str | None = None
+    #: The model declining, which is a correct answer of a different kind.
     refusal: str | None
+    #: The pipeline failing *after* generation — the guard refused the query, or
+    #: Postgres rejected it. Never merged with `refusal`: "the data cannot
+    #: answer this" and "the model wrote a bad query" are different facts, and
+    #: `prompts/README.md` forbids that merge one layer in.
+    error: str | None = None
     answer: Answer | None
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "mode": "demo" if demo_mode() else "live"}
+    """In live mode, report whether the path could actually serve.
+
+    Answering `ok` while every query 503s for want of a credential would be a
+    check that is not running wearing the label of one that is. No model call is
+    made — `readiness` resolves config and opens no socket.
+    """
+    if demo_mode():
+        return {"status": "ok", "mode": "demo"}
+    return {**live.readiness(), "mode": "live"}
 
 
 @app.get("/demo/questions", response_model=list[DemoQuestion])
@@ -106,17 +126,28 @@ def demo_questions() -> list[dict]:
     return demo.catalogue()
 
 
+def _answer_of(result: dict) -> Answer:
+    return Answer(
+        columns=result["columns"],
+        rows=result["rows"],
+        row_count=result["row_count"],
+        total_row_count=result["total_row_count"],
+        truncated=result["truncated"],
+        notice=result["notice"],
+    )
+
+
 @app.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest) -> QueryResponse:
-    if not demo_mode():
-        raise HTTPException(
-            501,
-            "the live model path is not wired yet — run with DEMO_MODE=true",
-        )
+    return _demo_answer(request) if demo_mode() else _live_answer(request)
 
+
+def _demo_answer(request: QueryRequest) -> QueryResponse:
     # Scope is decided here, before any SQL exists.
-    visible = None if request.role in UNSCOPED_ROLES else {request.store_id or 0}
-    store_id = request.store_id
+    try:
+        visible = visible_stores(request.role, request.store_id)
+    except StoreRequired as exc:
+        raise HTTPException(422, str(exc)) from None
 
     try:
         pair = demo.lookup(request.question)
@@ -133,7 +164,7 @@ def query(request: QueryRequest) -> QueryResponse:
         )
 
     try:
-        sql = pair.resolve(store_id)
+        sql = pair.resolve(request.store_id)
     except demo.DemoUnavailable as exc:
         raise HTTPException(422, str(exc)) from None
 
@@ -157,12 +188,64 @@ def query(request: QueryRequest) -> QueryResponse:
         question=request.question,
         sql=result["executed_sql"],
         refusal=None,
-        answer=Answer(
-            columns=result["columns"],
-            rows=result["rows"],
-            row_count=result["row_count"],
-            total_row_count=result["total_row_count"],
-            truncated=result["truncated"],
-            notice=result["notice"],
-        ),
+        answer=_answer_of(result),
+    )
+
+
+def _live_answer(request: QueryRequest) -> QueryResponse:
+    """Map the live path's outcomes onto status codes.
+
+    A refused or failed *generated query* is a 200 carrying `error`, not a 4xx:
+    the request was well-formed and the system did exactly what it should —
+    refuse it and show it. The 4xx and 5xx below are cases where no answer of
+    any kind exists.
+    """
+    try:
+        outcome = live.answer(
+            question=request.question,
+            role=request.role,
+            store_id=request.store_id,
+            max_rows=request.max_rows,
+            connect=lambda: psycopg.connect(readonly_url()),
+        )
+    except StoreRequired as exc:
+        raise HTTPException(422, str(exc)) from None
+    except live.UnknownStore as exc:
+        raise HTTPException(404, str(exc)) from None
+    # The next three are RuntimeError subclasses, so they must be caught above
+    # it — ordering here is load-bearing, not stylistic.
+    except RateLimited as exc:
+        raise HTTPException(
+            429, f"the model provider is rate limiting: {exc}"
+        ) from None
+    except BudgetExceeded as exc:
+        raise HTTPException(
+            503,
+            f"the live path stopped itself at its own ceiling: {exc} "
+            "Raise LIVE_MAX_CALLS or LIVE_MAX_SPEND_USD deliberately.",
+        ) from None
+    except ScopeViolation as exc:
+        raise HTTPException(500, f"scope tripwire fired: {exc}") from None
+    except RuntimeError as exc:
+        # No credential, no pinned model, or the provider refused outright.
+        raise HTTPException(503, f"the live path cannot serve: {exc}") from None
+    except psycopg.Error as exc:
+        raise HTTPException(500, f"database error: {type(exc).__name__}") from None
+    except OSError as exc:
+        # urllib raises HTTPError/URLError, both OSError, and `GeminiProvider`
+        # re-raises the non-retryable ones as they come. Unhandled, a rejected
+        # key would surface as a traceback and a 500 — our fault, when the fact
+        # is that the provider said no.
+        raise HTTPException(
+            502, f"the model provider rejected the request: {exc}"
+        ) from None
+
+    return QueryResponse(
+        mode="live",
+        question=request.question,
+        sql=outcome.result["executed_sql"] if outcome.result else None,
+        generated_sql=outcome.generated_sql,
+        refusal=outcome.refusal,
+        error=outcome.error,
+        answer=_answer_of(outcome.result) if outcome.result else None,
     )

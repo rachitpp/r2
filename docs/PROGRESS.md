@@ -23,10 +23,18 @@ returns an answer beside the query that produced it.
   The approval card (the design plan's signature surface) is Phase 4 and is not
   built. `docs/DESIGN-TOKENS.md` was proposed and then built from — say if the
   palette or type should change and it is a config edit, not a rewrite.
+- **Live model path: built, opt-in, and unexercised against a real model.**
+  `DEMO_MODE=false` (`make serve-live`) generates the SQL instead of reading it
+  from a file. Every branch of it is exercised against a stub — no key, no quota,
+  runs in CI — except the scope tripwire firing on generated SQL, which is tested
+  at the `readonly_sql` level rather than through the endpoint. **No call to a
+  real provider has ever been made from this code**; that link is wired rather
+  than demonstrated.
 
 **Two ADR-0001 thresholds fired and the ADR is now resolved: keep generated
 SQL.** The reasoning is in the ADR and is reversible — read it before building
-on it.
+on it. **The canned demo path is load-bearing for that resolution**, so the
+live path was added beside it and did not replace it.
 
 State and corrections: `docs/HANDOFF.md`. Fix-list history:
 `evals/FIX-LIST-v2.md`.
@@ -36,7 +44,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
-| 1 Structured Q&A | **near done** | Measurement done (47×3, instrument v2). Query API + web query view working end to end — **demo beat 1 runs**. Remaining: live model path, and polish. Budget long overrun; see HANDOFF |
+| 1 Structured Q&A | **definition of done met; phase not closed** | Measurement done (47×3, instrument v2). Query API + web query view working end to end — **demo beat 1 runs**. Live path built, opt-in, never yet called a real model. Not closed because ADR-0001's own three follow-ups remain, and they spend quota — yours to authorise. Budget long overrun; see HANDOFF |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -45,34 +53,48 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 ## Last session
 
 _Date:_ 2026-08-08
-_What landed:_ The instrument was fixed, measured, and then measured properly.
+_What landed:_ The live model path — built against a stub, never yet run against
+a model.
 
-- **Instrument v2 applied.** Reference corrections, tie-completion in
-  `scoring.py`, and one context gap closed in `business_context.md`. Prompt
-  re-frozen `de60dd5e3dde7787` → `415953964db74b80`.
-- **The attribution, held fixed.** Correcting only the instrument and reusing
-  the *same* model answers moved not-view-covered **23/33 → 29/33**. Six of the
-  ten original failures were never the model's.
-- **full×3 measured.** not-view-covered **88.9% (88/99, CI 81–94%)**, overall
-  91.7%, view-covered 100%, **cross-run variance 10.6%**. ~$2.79 all in.
-- **Query API, demo half.** `POST /query` returns the answer beside the SQL.
-  No key, no quota. `make serve`.
-- **Design plan proposed, then built from.** Two separable surfaces; the query
-  view is built, the approval card is Phase 4.
-- **ADR-0001 resolved: keep generated SQL.** Two thresholds fired and the
-  catalog was not built — the reasoning turns on demo mode already removing
-  threshold 3's stated harm, and it is reversible on one specific new fact.
+- **`POST /query` generates SQL when `DEMO_MODE=false`.** `api/src/pos_copilot/live.py`,
+  `make serve-live`. Scope reaches the prompt before any SQL exists, the guard
+  (rule 4) runs before a connection is opened, and the model's own SQL comes back
+  in `generated_sql` beside the wrapped `sql` that ran.
+- **Refusals and failures are separate response fields.** `refusal` is the model
+  declining (either sentinel); `error` is the guard rejecting the query or
+  Postgres refusing it. A failed generated query is a **200 carrying `error`**,
+  not a 500 — the request was fine and the system did the right thing.
+- **A ceiling, per rule 2.** Process-wide, 50 calls / $1.00 by default, and the
+  model call is serialised because `Pacer` and `Budget` are not thread-safe and
+  `model.py` is serial by design.
+- **`/health` now reports whether live mode can actually serve.** It answered
+  `ok` with no credential before, which is this project's defect class in the one
+  endpoint whose job is reporting state.
+- **The web input is typed, with the catalogue as suggestions**, so the live path
+  is reachable from the browser without the UI branching on a mode it is not
+  allowed to know (`CONVENTIONS.md`). Provenance is stated per answer from the
+  response's own `mode` field.
 
-_Four defects I introduced and then found:_ bigint division in q047's `ORDER BY`
-(every ratio floored to 0, so the "ranking" was alphabetical and every test
-still passed); double-rounding in `tolerance.py`; a wireframe asserting an API
-contract it had never been run against; and a `--only` run silently overwriting
-the full results file.
+_Three defects found on the way, two of them mine:_ **`make serve` could not
+serve in a shell that had not exported `.env` itself** — `-include .env` makes
+*make* variables, not environment ones, so the API got no
+`READONLY_DATABASE_URL` and answered every query with a 500 while `/health` still
+said `ok`. (Last session's end-to-end check passed because that shell had the
+variables; a fresh clone would not have.) `export FOO` for an unset variable
+exports it **empty**, so
+`int(os.environ.get("LIVE_MAX_CALLS", "50"))` raised on every live request
+(`api/src/pos_copilot/env.py` is the fix, and `int("")` was latent in
+`resolve_provider` and the eval runner too); and an `OSError` from a rejected key
+would have surfaced as a traceback, since urllib's errors are not `RuntimeError`.
 
-_What didn't:_ the live model path, and the approval card (Phase 4).
+_What didn't:_ **no live call has ever been made.** The credential resolves and
+`/health` reports `vertex / gemini-3.6-flash`, but every test uses a stub, so the
+last link is wired and unproven. One call is ~$0.02 and is yours to authorise.
+The approval card is still Phase 4.
 _Anything half-finished someone would trip over:_ No. The `is_active` gate is
 the one live hazard and fires only on a seed change.
-_Is the system in a working state?_ Yes. 180 passed, 29 skipped; ruff clean.
+_Is the system in a working state?_ Yes. 228 passed with a database; 195 passed
+and 33 skipped without one; ruff clean; `make web-check` clean.
 
 ## Next session should
 
@@ -83,11 +105,14 @@ _Is the system in a working state?_ Yes. 180 passed, 29 skipped; ruff clean.
    and broke in the third.
 2. **Review `web/` running** (`make serve` + `make web`) and the design it was
    built from. Palette and type are a `tailwind.config.ts` edit, not a rewrite.
-3. ~~Build `web/`~~ **— done.** Review it running (`make serve` + `make web`)
-   and say what should change; the palette and type are a `tailwind.config.ts`
-   edit, not a rewrite.
-4. **Then the live model path**, which waits on the prompt being stable rather
-   than on quota.
+3. **Fire one live call** (`make serve-live`, ask anything) if you want the last
+   link proven. ~$0.02, spends real Vertex quota; everything up to the network
+   hop is already tested.
+4. **Then one batched quota sitting**, because the cache voids once either way:
+   q036's fix in `business_context.md`, the targeted questions for q017 and q026,
+   and the **second `full×3`** that ADR-0001 names as what would reverse it.
+   ~$0.99 and ~2.3 days at 20 RPD — yours to authorise, per
+   `evals/FIX-LIST-v2.md`.
 
 **Check deliverable against budget before starting**, not at phase close — see
 `docs/HANDOFF.md`.
@@ -109,6 +134,14 @@ _Injection specimens:_ Phase 3, not started.
 - **q036's refusal is not reliable** — two of three. It is the behaviour the
   project's argument rests on.
 - **No retry loop exists**, so ADR-0001 threshold 4 has never been measured.
+- **On the live path, a scoped query's `WHERE` clause is the model's to write.**
+  The scope reaches the prompt carrying the predicate itself
+  (`store_id = 1 (Kothrud, Pune)`), and `check_scope` is a tripwire behind it —
+  but that tripwire can only fire when `store_id` is among the result columns.
+  Pattern-matching the generated SQL for the predicate was deliberately not
+  done: that is instance eight's defect (regexes guessing at SQL structure). The
+  real fix is a per-store database role, and it is not Phase 1. Demo mode is not
+  affected — there the predicate is substituted, not requested.
 
 ## Vertex: verified working, one surprise
 

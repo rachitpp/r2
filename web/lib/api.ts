@@ -31,7 +31,17 @@ export type QueryResponse = {
    *  answer was a refusal — and the UI says "no query was run" rather than
    *  dropping the panel. */
   sql: string | null;
+  /** What the model wrote, before the guard's wrapper. Live mode only, and
+   *  present even when that SQL was refused or failed — a query you cannot see
+   *  is a query you cannot check. */
+  generated_sql: string | null;
+  /** The model declining. A correct answer of a different kind, so it renders
+   *  in ink and never in oxide. */
   refusal: string | null;
+  /** The generated query was refused by the guard or rejected by Postgres.
+   *  Never merged with `refusal`: "the data cannot answer this" and "the model
+   *  wrote a bad query" are different facts, and only the second is a fault. */
+  error: string | null;
   answer: Answer | null;
 };
 

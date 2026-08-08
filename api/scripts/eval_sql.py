@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from pos_copilot import env
 from pos_copilot.model import (
     Budget,
     BudgetExceeded,
@@ -152,7 +153,7 @@ def run(args: argparse.Namespace) -> int:
         for q in questions:
             prompt = bundle.render(
                 question=q["question"],
-                as_of_date=os.environ.get("AS_OF_DATE", "2026-06-30"),
+                as_of_date=env.text("AS_OF_DATE", "2026-06-30"),
                 user_role=q.get("user_role", "owner"),
                 store_scope=q.get("store_scope", "all stores"),
             )
@@ -172,7 +173,7 @@ def run(args: argparse.Namespace) -> int:
                         execution = execute(
                             conn,
                             sql,
-                            max_rows=int(os.environ.get("SQL_MAX_ROWS", "100")),
+                            max_rows=env.integer("SQL_MAX_ROWS", 100),
                             visible_store_ids=scope_ids(q),
                         )
                 except UnsafeQuery as exc:

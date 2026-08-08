@@ -17,12 +17,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import random
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
+
+from pos_copilot import env
 
 CACHE_DIR = Path(__file__).resolve().parents[3] / "evals" / ".cache"
 
@@ -388,26 +389,26 @@ def resolve_provider(role: str = "PLAN") -> Provider:
     Model selection goes through role config and is never hardcoded at a call
     site (CONVENTIONS → API and agent).
     """
-    model = os.environ.get(f"MODEL_{role}")
+    model = env.text(f"MODEL_{role}")
     if not model:
         raise RuntimeError(
             f"MODEL_{role} is not set. Pin an exact model string — never a "
             "floating alias — so a result file describes a specific model."
         )
-    rpm = int(os.environ.get("VERTEX_RPM", os.environ.get("GEMINI_RPM", "10")))
+    rpm = env.integer("VERTEX_RPM", env.integer("GEMINI_RPM", 10))
 
     # Vertex first (ADR-0010). AI Studio is the documented fallback and is
     # capped at 20 requests per day per model, which no measurement survives.
-    credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    credentials = env.text("GOOGLE_APPLICATION_CREDENTIALS")
     if credentials and Path(credentials).exists():
         return VertexProvider(
             model=model,
             credentials_path=credentials,
-            location=os.environ.get("VERTEX_LOCATION", "global"),
+            location=env.text("VERTEX_LOCATION", "global"),
             pacer=Pacer(rpm=rpm),
         )
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = env.text("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
             "No credential. Set GOOGLE_APPLICATION_CREDENTIALS to the service "

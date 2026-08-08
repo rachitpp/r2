@@ -25,7 +25,9 @@ Phase 0 is complete.
 The eval has been diagnosed, fixed, and re-measured at 47 questions × 3 runs.
 **`web/` now exists and demo beat 1 runs end to end** — a question asked in the
 browser returns the answer beside the SQL that produced it, with no key and no
-quota. `make serve` and `make web`.
+quota. `make serve` and `make web`. **The live model path is built beside it**
+(`DEMO_MODE=false`, `make serve-live`) and has never called a real model — see
+its section below before touching it.
 
 > ### PHASE 1 IS MEASURED, AND TWO ADR-0001 THRESHOLDS FIRE
 >
@@ -179,22 +181,41 @@ under this seed.
 
 ---
 
-## Why the live model path waits for the v2 sitting
+## The live model path — built, opt-in, and never yet called a real model
 
-**The primary reason is not quota.** It is that **q004's fix edits
-`business_context.md`, which changes the prompt, which changes what the live
-path produces.** Building and testing a generation path against a prompt already
-known to be about to change means validating the wrong artifact — the tests
-would pass against something that no longer exists the moment the batch lands.
+It waited on q004's fix editing `business_context.md`, on the grounds that
+building a generation path against a prompt known to be about to change means
+validating the wrong artifact. **That fix landed** (prompt re-frozen
+`415953964db74b80`), so the path was built: `api/src/pos_copilot/live.py`,
+`DEMO_MODE=false`, `make serve-live`.
 
-Quota is the *second* argument: the live path competes with the ~47-call
-re-measure for 20 requests/day.
+**Three things about it that a later session needs.**
 
-The ordering matters because it decides whether the sequencing still holds if
-quota stops being scarce. **It does.** A credit balance turning up would remove
-the second argument and leave the first untouched — so the live path waits for
-the v2 sitting either way, and specifically for the q004 fix to land, not merely
-for calls to become cheap.
+**1. It does not replace the canned demo path, and must not.** ADR-0001's
+resolution rests on demo mode answering from a fixed file with zero model calls
+— that is what removes threshold 3's stated harm. The live path is a second,
+labelled path beside it. Replacing the demo path with generation reopens the ADR.
+
+**2. The next `business_context.md` edit does not block it, and the old argument
+does not recur.** q036's fix will change the prompt again, but the path renders
+prompts from files at request time and every test in it is a plumbing test
+against `StubProvider` — no test asserts anything about what the model produces,
+because that is the eval's job (ADR-0005). What the old argument forbade was
+validating *generation quality* against a doomed prompt; nothing here does that.
+
+**3. The last link is unproven.** The credential resolves, `/health` reports
+`vertex / gemini-3.6-flash`, and no call to a real provider has ever been made
+from this code. Everything up to the network is tested; the network hop is not.
+One call is ~$0.02.
+
+**Its known limit, which is real:** for a scoped role, the `WHERE` clause is the
+model's to write. The scope string carries the predicate (`store_id = 1
+(Kothrud, Pune)`, the shape the 47×3 run measured) and `check_scope` sits behind
+it, but that tripwire only fires when `store_id` is among the result columns.
+Pattern-matching the SQL for the predicate is instance eight's defect and was
+deliberately not done; the real fix is a per-store database role, which is not
+Phase 1. **Demo mode is unaffected** — there the predicate is substituted rather
+than requested.
 
 ---
 
@@ -215,7 +236,7 @@ label of one that is (commits against progress notes).
 | Phase 1 | budgeted | actual | state |
 |---|---|---|---|
 | eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
-| API query endpoint | part of ~32h | **demo half done** | `POST /query` serves answer + SQL with no key and no quota; live model path returns 501 |
+| API query endpoint | part of ~32h | **both halves done** | `POST /query` serves answer + SQL with no key and no quota; the live path generates instead, opt-in, and has never called a real model |
 | `web/` — Next.js, tokens, typed client | part of ~32h | **query view done** | Built from `docs/DESIGN-TOKENS.md`, which was proposed and not formally agreed — say if the palette or type should change |
 
 > **Rule: check deliverable-against-budget at the point where it can still
@@ -329,10 +350,14 @@ which is why the check is mechanical and not a judgement call.
   `location=global` only.
 - **Every eval runs against `full`**, never `small` — they are independent
   datasets, not subset and superset.
-- **Re-scoring is free; re-running is not.** Every response is cached under
-  prompt fingerprint `de60dd5e3dde7787`. Reference fixes re-score at zero cost.
-  **Any edit to `business_context.md` or the prompt voids all 47** — roughly
-  $0.99 and ~2.3 days at 20 RPD.
+- **Re-scoring is free; re-running is not.** Responses are cached under the
+  prompt fingerprint, and the live one is **`415953964db74b80`** — 141 responses,
+  the 47×3 run. (`de60dd5e3dde7787` is the pre-v2 prompt and its 47 responses are
+  still on disk; this line named it as current until 2026-08-08, which was
+  wrong.) Reference fixes re-score at zero cost. **Any edit to
+  `business_context.md` or the prompt voids all 47** — roughly $0.99 and ~2.3
+  days at 20 RPD. The live path is not cached at all, deliberately: see its
+  section above.
 - **`AS_OF_DATE = 2026-06-30`, never wall-clock.** `current_date` is forbidden
   in generated SQL.
 - **Credentials never enter the repo.** `make hooks` installs a pre-commit

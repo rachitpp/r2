@@ -7,17 +7,37 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
-        eval-sql eval-sql-stub eval-expectations seed-if-missing hooks
+        eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
+        serve serve-live web web-check
 
 -include .env
 
 POSTGRES_USER ?= postgres
 POSTGRES_DB   ?= pos
+POSTGRES_PORT ?= 5432
 SEED_SIZE     ?= small
 API_PORT ?= 8000
 TEMPLATE_DB   := $(POSTGRES_DB)_template
 POS_APP_PASSWORD      ?= pos_app_dev
 POS_READONLY_PASSWORD ?= pos_readonly_dev
+
+# What the serving layer reads from its environment.
+#
+# `-include .env` makes these *make* variables, not environment ones, so a
+# recipe that does not pass them on gets none of them: `make serve` in a shell
+# that has never sourced .env was answering every query with
+# "READONLY_DATABASE_URL is not set" while still reporting healthy. Exporting
+# them is what makes the target able to do the thing it is named for.
+READONLY_DATABASE_URL ?= postgresql://pos_readonly:$(POS_READONLY_PASSWORD)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
+AS_OF_DATE   ?= 2026-06-30
+SQL_MAX_ROWS ?= 100
+DEMO_MODE    ?= true
+export READONLY_DATABASE_URL AS_OF_DATE SQL_MAX_ROWS DEMO_MODE
+
+# Model config, for the local targets that spend quota. Never reaches CI: CI
+# runs with no key, and every target that needs one is here (rule 1).
+export MODEL_PLAN MODEL_CLASSIFY GEMINI_API_KEY GOOGLE_APPLICATION_CREDENTIALS
+export VERTEX_LOCATION VERTEX_RPM GEMINI_RPM LIVE_MAX_CALLS LIVE_MAX_SPEND_USD
 
 # Every psql invocation goes through this. It defaults to running inside the
 # db container so no local psql client is needed; CI overrides it with a bare
@@ -158,6 +178,17 @@ serve: ## Run the query API (demo mode by default — no key, no quota)
 	@# PYTHONPATH rather than a build backend: pyproject.toml declares none on
 	@# purpose, and pytest reaches src/ the same way.
 	cd api && PYTHONPATH=src $(UV) run uvicorn pos_copilot.app:app --reload --port $(API_PORT)
+
+serve-live: ## Run the query API on the LIVE model path (SPENDS YOUR OWN QUOTA)
+	@# A separate target, not a flag on `serve`, because the spend should be
+	@# something you typed. The ceiling is in api/src/pos_copilot/live.py and
+	@# defaults to 50 calls / $1.00 — raise LIVE_MAX_CALLS deliberately.
+	@if [ -z "$$MODEL_PLAN" ]; then \
+	  echo "MODEL_PLAN is not set. Pin an exact model string in .env — a"; \
+	  echo "floating alias makes a result file describe nothing."; exit 1; \
+	fi
+	@echo "==> live: $$MODEL_PLAN, ceiling $${LIVE_MAX_CALLS:-50} calls / \$$$${LIVE_MAX_SPEND_USD:-1.00}"
+	cd api && PYTHONPATH=src DEMO_MODE=false $(UV) run uvicorn pos_copilot.app:app --reload --port $(API_PORT)
 
 test: ## Run pytest
 	cd api && $(UV) run pytest
