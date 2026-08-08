@@ -161,12 +161,12 @@ def run(args: argparse.Namespace) -> int:
                 store_scope=q.get("store_scope", "all stores"),
             )
 
-            cached = cache.get(fingerprint, q["id"], run_index)
+            cached = cache.get(fingerprint, q["id"], run_index, q["question"])
             if cached is None:
                 budget.check(prompt)
                 cached = provider.generate(prompt)
                 budget.record(prompt)
-                cache.put(fingerprint, q["id"], run_index, cached)
+                cache.put(fingerprint, q["id"], run_index, cached, q["question"])
 
             sql = strip_fences(cached)
             execution, error = None, None
@@ -227,7 +227,8 @@ def run(args: argparse.Namespace) -> int:
     if args.runs > 1:
         print(f"{'cross-run variance':<18} {variance:.1%} {unstable or ''}")
     if cache.enabled:
-        print(f"{'cache':<18} {cache.hits} hits, {cache.misses} misses")
+        stale = f", {cache.stale} STALE (question changed since)" if cache.stale else ""
+        print(f"{'cache':<18} {cache.hits} hits, {cache.misses} misses{stale}")
     print("=" * 66)
 
     # A run that made no calls did not measure anything new, and cross-run
@@ -258,6 +259,28 @@ def run(args: argparse.Namespace) -> int:
     first, last = args.run_offset, args.run_offset + args.runs - 1
     subset = bool(args.only or args.limit)
     canonical = not subset and args.run_offset == 0
+    question_ids = [q["id"] for q in questions]
+
+    # A name rule alone is not enough, because "canonical" is a shape and not an
+    # identity: a re-score over six runs of a DIFFERENT prompt is also a full set
+    # at offset 0, and would take this name from the run that earned it. So the
+    # existing file gets read, and a disagreement about what was measured sends
+    # this run to its own name instead of over the top of that one.
+    canonical_path = RESULTS_DIR / f"{stamp}-sql.json"
+    displaced = ""
+    if canonical and canonical_path.exists():
+        prior = json.loads(canonical_path.read_text(encoding="utf-8"))
+        if prior.get("prompt_fingerprint") != fingerprint or (
+            prior.get("question_ids") not in (None, question_ids)
+        ):
+            canonical = False
+            displaced = (
+                f"\nNOTE: {canonical_path.name} already holds a different "
+                f"measurement (prompt {prior.get('prompt_fingerprint')}, "
+                f"{prior.get('questions')} questions). Writing beside it rather "
+                "than over it."
+            )
+
     name = (
         f"{stamp}-sql.json"
         if canonical
@@ -265,6 +288,8 @@ def run(args: argparse.Namespace) -> int:
         f"{'-subset' if subset else ''}.json"
     )
     out = RESULTS_DIR / name
+    if displaced:
+        print(displaced)
     out.write_text(
         json.dumps(
             {
@@ -278,7 +303,7 @@ def run(args: argparse.Namespace) -> int:
                 "questions": len(questions),
                 # Which ones, not just how many: a results file that records a
                 # count cannot be told apart from one that ran a different 47.
-                "question_ids": [q["id"] for q in questions],
+                "question_ids": question_ids,
                 "stats": stats,
                 "cross_run_variance": variance,
                 "unstable_questions": unstable,

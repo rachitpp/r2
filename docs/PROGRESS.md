@@ -15,7 +15,9 @@ the history. This file answers one question: what does the next session need?
 silent-wrong and cross-run variance **and** a question asked in the web app
 returns an answer beside the query that produced it.
 
-- **Harness: done.** 47 questions × 3 runs against instrument v2.
+- **Harness: done, and now measured four times** — 49 questions × 3 runs on the
+  current prompt, plus six runs of the previous one. The four samples disagree
+  with each other in ways that matter; see *Last session*.
 - **Web app: the query view exists and works.** `web/` is a Next.js App Router
   app with the proposed palette and type in `tailwind.config.ts`, a typed client
   mirroring the FastAPI models, and the answer-beside-SQL view. `make web` with
@@ -23,18 +25,19 @@ returns an answer beside the query that produced it.
   The approval card (the design plan's signature surface) is Phase 4 and is not
   built. `docs/DESIGN-TOKENS.md` was proposed and then built from — say if the
   palette or type should change and it is a config edit, not a rewrite.
-- **Live model path: built, opt-in, and unexercised against a real model.**
+- **Live model path: built, opt-in, and proven against the real model.**
   `DEMO_MODE=false` (`make serve-live`) generates the SQL instead of reading it
-  from a file. Every branch of it is exercised against a stub — no key, no quota,
-  runs in CI — except the scope tripwire firing on generated SQL, which is tested
-  at the `readonly_sql` level rather than through the endpoint. **No call to a
-  real provider has ever been made from this code**; that link is wired rather
-  than demonstrated.
+  from a file. Every branch is exercised against a stub in CI — no key, no quota —
+  and three real Vertex calls (~$0.06) confirmed an answer, a refusal and a
+  clerk-scoped query end to end.
 
-**Two ADR-0001 thresholds fired and the ADR is now resolved: keep generated
-SQL.** The reasoning is in the ADR and is reversible — read it before building
-on it. **The canned demo path is load-bearing for that resolution**, so the
-live path was added beside it and did not replace it.
+**ADR-0001 is resolved — keep generated SQL — but do not cite "two thresholds
+fired" any more.** Threshold 3's firing at 10.6% was a sampling artifact: a strict
+replication of the same prompt and questions returned 4.3%, and the metric has no
+fixed value until the run count is fixed. The resolution's conclusion survives; two
+of its three reasons do not. **The canned demo path is still load-bearing** for the
+part that does survive, so the live path was added beside it and did not replace it.
+Read the ADR's *Review* and *Replication* sections before quoting any of it.
 
 State and corrections: `docs/HANDOFF.md`. Fix-list history:
 `evals/FIX-LIST-v2.md`.
@@ -44,7 +47,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
-| 1 Structured Q&A | **definition of done met; phase not closed** | Measurement done (47×3, instrument v2). Query API + web query view working end to end — **demo beat 1 runs**. Live path built, opt-in, never yet called a real model. Not closed because ADR-0001's own three follow-ups remain, and they spend quota — yours to authorise. Budget long overrun; see HANDOFF |
+| 1 Structured Q&A | **definition of done met; phase not closed** | Both halves done — demo beat 1 runs, live path proven. ADR-0001's three follow-ups are measured and its threshold 3 did not survive replication. Not closed because two instrument decisions are owed a second pair of eyes (whether q017/q049 come out of the silent-wrong count; what replaces threshold 3) and q017/q026's references need fixing or retiring. Budget long overrun; see HANDOFF |
 | 2 Corpus ingestion | not started | |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
@@ -53,8 +56,46 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 ## Last session
 
 _Date:_ 2026-08-08
-_What landed:_ The live model path — built against a stub, never yet run against
-a model.
+_What landed:_ The live path, proven live. ADR-0001's three follow-ups, measured.
+And **threshold 3 does not survive being measured twice.**
+
+### The measurement, four samples of it
+
+| sample | prompt | questions × runs | not-view-covered | variance |
+|---|---|---|---|---|
+| first triple, runs 0–2 | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
+| **strict replication, runs 3–5** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
+| pooled, runs 0–5 | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | 12.8% |
+| follow-up | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+
+**Two triples of the identical prompt over the identical questions returned 10.6%
+and 4.3%**, with the 10% decision line between them. The metric is also monotone in
+run count, so the six-run pool reads 12.8% by construction. **Threshold 3 has no
+fixed value until the run count is fixed, and ADR-0001 never fixed it** — so the
+firing that drove the whole resolution was a sampling artifact. What should replace
+the threshold is written into the ADR.
+
+- **q017 was never a model failure**, and six runs prove it rather than argue it:
+  `wrong ×3, correct ×3` on one prompt. The failures wrote
+  `HAVING count(*) FILTER (late) > 0`; the passes wrote
+  `HAVING avg(actual) > avg(contracted)`. Two defensible readings of a question
+  that never said which — an under-determined question, not an incapable model.
+- **The 100% on view-covered was an artifact too.** q032 fails once in six runs;
+  65/66.
+- **q026 is the one stable failure**, alternating `execution_error` / `wrong_rows`
+  across all six runs, never correct. Timeouts are real; its `wrong_rows` disagree
+  with a reference `FIX-LIST-v2.md` item 16 already flagged.
+- **q036's fix worked: refusal 3/3, up from 2/3 — and q047 stayed correct 3/3**, so
+  the causation section did not teach blanket refusal. Context edit, no few-shot
+  pair, per the ADR's rule.
+- **q049 was mine and is withdrawn.** It scored `wrong_rows` 3/3 while returning
+  values numerically identical to its own reference — two labelled rows against one
+  row of two columns, 2dp against 1dp. **q050 replaces it**, asked as set
+  membership against a stated 25% threshold. Its premise was wrong too: the 7.1s
+  timeout I quoted was my own rewrite of the correlated form, not what the model
+  writes, which runs in 1.5s.
+
+### Everything else that landed
 
 - **`POST /query` generates SQL when `DEMO_MODE=false`.** `api/src/pos_copilot/live.py`,
   `make serve-live`. Scope reaches the prompt before any SQL exists, the guard
@@ -87,42 +128,63 @@ exports it **empty**, so
 `resolve_provider` and the eval runner too); and an `OSError` from a rejected key
 would have surfaced as a traceback, since urllib's errors are not `RuntimeError`.
 
-_What didn't:_ **no live call has ever been made.** The credential resolves and
-`/health` reports `vertex / gemini-3.6-flash`, but every test uses a stub, so the
-last link is wired and unproven. One call is ~$0.02 and is yours to authorise.
-The approval card is still Phase 4.
-_Anything half-finished someone would trip over:_ No. The `is_active` gate is
-the one live hazard and fires only on a seed change.
-_Is the system in a working state?_ Yes. 228 passed with a database; 195 passed
-and 33 skipped without one; ruff clean; `make web-check` clean.
+**The live path is proven live.** Three real Vertex calls, ~$0.06: net revenue for
+May 2026 came back as 8,064,347.42, matching the demo path's figure for the same
+month; "how many customers do we have" came back as
+`-- INSUFFICIENT SCHEMA: customer data is not tracked in the database`; and a
+clerk-scoped question produced `WHERE store_id = 2` in the model's own SQL with the
+tripwire silent. `web/` verified serving through the Next rewrite proxy.
+
+_What didn't:_ the approval card (Phase 4). Nothing else was deferred.
+_Anything half-finished someone would trip over:_ No. Two gates are live and both
+are documented in HANDOFF — `is_active`, and the new `business_date`/`sold_at`
+blind spot.
+_Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
+`make web-check` clean.
 
 ## Next session should
 
-1. **Review the ADR-0001 resolution, and overturn it if you disagree.** It was
-   resolved by the agent that ran the measurement, which the ADR says outright.
-   The load-bearing claim is that demo mode already removes threshold 3's stated
-   harm. **q036 is the item to weigh:** the causation refusal held in two runs
-   and broke in the third.
-2. **Review `web/` running** (`make serve` + `make web`) and the design it was
-   built from. Palette and type are a `tailwind.config.ts` edit, not a rewrite.
-3. **Fire one live call** (`make serve-live`, ask anything) if you want the last
-   link proven. ~$0.02, spends real Vertex quota; everything up to the network
-   hop is already tested.
-4. **Then one batched quota sitting**, because the cache voids once either way:
-   q036's fix in `business_context.md`, the targeted questions for q017 and q026,
-   and the **second `full×3`** that ADR-0001 names as what would reverse it.
-   ~$0.99 and ~2.3 days at 20 RPD — yours to authorise, per
-   `evals/FIX-LIST-v2.md`.
+1. **Rule on one judgement, because it changes whether threshold 1 fires.** As
+   measured, three distinct questions produced a silent-wrong. q049 is withdrawn
+   (mine, and its answer was numerically correct). q017's reference is unverified
+   by this project's own stopping rule, and six runs show the model choosing both
+   readings. That leaves **q026 alone — and one silent-wrong is "a signal to
+   diagnose", not a firing threshold.** Withdrawing a failure is the move that most
+   needs a second pair of eyes, so it is recorded in ADR-0001 and not applied.
+2. **Decide what replaces threshold 3.** It has no fixed value until the run count
+   is fixed. The ADR proposes either a per-question stability rate at an exact run
+   count, or measuring the thing the threshold was actually worried about: whether a
+   specific answer a reader sees changes between showings.
+3. **Fix q017 and q026's references, or retire the questions.** q017 needs to say
+   whether "delivers later than contracted" means on average or ever. q026 needs
+   its festive window read from the `festivals` table like q024 and q025
+   (`FIX-LIST-v2.md` item 16, still unapplied) — and its timeout is a real model
+   failure worth keeping as a diagnostic either way.
+4. **At the next prompt unfreeze, correct the `business_date`/`sold_at` claim** in
+   both context documents, batched so the void is spent once. Details and the
+   wording to use are in HANDOFF. It is not urgent: the false claim steers the model
+   to the right column anyway.
+5. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
+   `tailwind.config.ts` edit, not a rewrite.
 
 **Check deliverable against budget before starting**, not at phase close — see
 `docs/HANDOFF.md`.
 
 ## Measured numbers
 
-_SQL (n=47 questions × 3 runs, instrument v2, prompt `415953964db74b80`):_
-not-view-covered **88.9% (88/99, CI 81–94%)**, overall 91.7% (121/132),
-view-covered 100% (33/33), **cross-run variance 10.6%**, silent-wrong in 5
-distinct questions. Attempts-to-correct not measured — no retry loop exists.
+_SQL, current prompt `f3b7a9193a56f10d` (n=49 questions × 3 runs, 147 responses):_
+not-view-covered **91.4% (96/105, CI 84.5–95.4%)** — the interval still straddles
+85% — overall 93.5% (129/138), view-covered 100% (33/33), **cross-run variance
+2.0%**, silent-wrong in 3 distinct questions of which one (q049) is withdrawn.
+Withdrawing it gives 94.1% (96/102, CI 87.8–97.3%), which clears 85%.
+
+_SQL, previous prompt `415953964db74b80` (n=47, six runs, 282 responses):_
+not-view-covered **91.9% (182/198)**, view-covered 98.5% (65/66), variance 10.6%
+and 4.3% on its two independent triples, 12.8% pooled. **Do not quote the pooled
+interval as if it were tight** — six runs of the same 47 questions are clustered,
+so Wilson understates it.
+
+_Attempts-to-correct:_ still not measured; no retry loop exists.
 
 _Extraction:_ Phase 2, not started.
 _Injection specimens:_ Phase 3, not started.

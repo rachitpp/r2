@@ -10,7 +10,7 @@ section is the point of it. An eval set that has never been found wrong has
 usually never been used.
 
     evals/
-      sql/questions.jsonl   45 questions + generated expected result sets
+      sql/questions.jsonl   49 questions + generated expected result sets
       sql/README.md         field-by-field schema and trap coverage
       results/              dated JSON, one per run, with prompt hashes
       .cache/               model responses, gitignored, regenerable
@@ -412,9 +412,33 @@ two to stop looking.
 
 > **A reference is verified when every predicate *and its grain* traces to
 > specific words in the question, every number the question names appears in it,
-> no `LIMIT` cut falls inside a tie, and the question, the reference, the
-> `intent` and the `traps` all describe the same thing. Model agreement is not
-> verification and does not discharge this.**
+> **the question determines the SHAPE of its answer — how many rows, and what
+> identifies one**, no `LIMIT` cut falls inside a tie, and the question, the
+> reference, the `intent` and the `traps` all describe the same thing. Model
+> agreement is not verification and does not discharge this.**
+
+**The shape clause was added on 2026-08-08, by breaking it.** q049 was written
+to probe q026's failure and scored `wrong_rows` three times while returning
+**numerically identical values to its own reference**: the reference gave one row
+of two columns, the model gave two labelled rows, and it rounded to 2dp where the
+reference used 1dp. Every predicate traced. Every grain traced. There was no
+`LIMIT` and therefore no tie. The rule as written passed it, and the question
+still failed to determine its own answer — so a correct answer was recorded as a
+silent-wrong three times, in the one number ADR-0001's tightest threshold reads.
+
+Declaring `result_shape` and `answer_columns` does not discharge this clause
+either: **the model never sees those fields.** Only the question text reaches it,
+so only the question text can determine the shape.
+
+**Checked as a class, and there is one latent case left.** Of the 49 questions,
+three declare two or more measures with no identifying column: q035 is a false
+alarm (`promotion` identifies the row), q024 is safe because `ranked_all` scores
+by position so identity is carried by order — **and q009 has exactly q049's
+ambiguity.** "How many units did we move last month gross, and how many net of
+returns?" can be answered as one row of two columns or as two labelled rows, and
+it passes today because the model happens to choose the first. That is luck, not
+determinacy. **q024 shows the fix the project already found:** put the answer in
+an order the question fixes and keep the invented label out of `answer_columns`.
 
 **Three of those clauses were added by running it.** The first prospective run
 found five references whose `LIMIT` falls inside a tie — where the tiebreak
@@ -561,7 +585,9 @@ q027 q028 q030 q032 q034 q037 q038 q039 q041 q042 q044 **q047**.
 **25 of 49 spent in a rotation.** Five rotations, six defect classes, ~30 model
 calls.
 
-**q048 and q049 are not rotation questions** and are not counted above. They were
+**q048 and q050 are not rotation questions** and are not counted above. (q049 was
+written the same day and **withdrawn the same day** — see the shape clause above.)
+They were
 written on 2026-08-08 as ADR-0001's prescribed response to its two consistent
 failures — *targeted questions probing the observed failure mode* — so their
 purpose is the opposite of a rotation's: the failure they probe is already known,
@@ -574,13 +600,31 @@ the original 47.
     make eval-sql-stub                          # no key, no quota, no network
     make eval-sql EVAL_ARGS="--limit 5"         # the staging gate — required
     make eval-sql EVAL_ARGS="--runs 3"          # the full run
+    make eval-sql EVAL_ARGS="--runs 3 --run-offset 3"   # a SECOND triple
 
-Responses are cached on `(prompt fingerprint, question id, run index)`. The
-fingerprint covers `sql_generate.md` and every injected context file, so editing
-`business_context.md` invalidates the cache — correctly, since the model would
-then be sent something different.
+Responses are cached on `(prompt fingerprint, question id, run index)` plus a
+hash of the question text. The fingerprint covers `sql_generate.md` and every
+injected context file, so editing `business_context.md` invalidates the cache —
+correctly, since the model would then be sent something different. The question
+hash covers the remaining input: **replacing a question used to leave its old
+answers live**, and a re-score would have judged them against the new question.
 
 `run_index` is in the key because cross-run variance needs three genuinely
 separate responses. Note that with sampling parameters deprecated and ignored
 (ADR-0006), that number measures the model's own nondeterminism rather than
 prompt instability.
+
+**`--run-offset` is what makes a replication possible, and it exists because it
+was missing.** `--runs 3` iterates run indices 0–2, so repeating it under an
+unchanged prompt is a **re-score of the first triple, not a second sample**: every
+response comes from cache, no calls are made, and the same variance figure comes
+back looking like confirmation. ADR-0001's reversal condition — "a second full×3"
+— was therefore unfalsifiable as written. A genuine second triple is
+`--runs 3 --run-offset 3`, and the runner now says so out loud when a multi-run
+scoring made no calls.
+
+**Only a canonical full run at offset 0 writes `results/<date>-sql.json`.** A
+subset or an offset triple writes `<date>-sql-<fingerprint>-runs<first>-<last>.json`,
+because a `--limit 5` smoke test replacing a 141-response result file is a data
+loss that looks like a successful run. Results files also record *which* question
+ids they ran, so two files cannot silently describe different sets.

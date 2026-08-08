@@ -22,42 +22,51 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 **Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
 Phase 0 is complete.
 
-The eval has been diagnosed, fixed, and re-measured at 47 questions × 3 runs.
+The eval has been diagnosed, fixed, and measured four times — 49 questions × 3
+runs on the current prompt and six runs of the previous one.
 **`web/` now exists and demo beat 1 runs end to end** — a question asked in the
 browser returns the answer beside the SQL that produced it, with no key and no
 quota. `make serve` and `make web`. **The live model path is built beside it**
-(`DEMO_MODE=false`, `make serve-live`) and has never called a real model — see
-its section below before touching it.
+(`DEMO_MODE=false`, `make serve-live`) and has been proven against the real model:
+three Vertex calls, ~$0.06, an answer and a refusal and a clerk-scoped query.
 
-> ### PHASE 1 IS MEASURED, AND TWO ADR-0001 THRESHOLDS FIRE
+> ### PHASE 1 IS MEASURED FOUR TIMES, AND THE SAMPLES DISAGREE
 >
-> **47 questions x 3 runs, instrument v2.** not-view-covered **88.9%
-> (88/99, CI 81–94%)**, overall 91.7%, view-covered 100%. Cross-run variance
-> **10.6%**. 141 responses, ~$2.79 all in.
+> | sample | prompt | questions × runs | not-view-covered | variance |
+> |---|---|---|---|---|
+> | first triple, runs 0–2 | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
+> | **replication, runs 3–5** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
+> | pooled, runs 0–5 | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | 12.8% |
+> | current | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
 >
-> **Threshold 1 fires** — five distinct questions produce a silent-wrong in at
-> least one run (q016, q017, q026, q036, q043). **Threshold 3 fires** — 10.6%
-> against a 10% line, narrowly. Threshold 2 does **not**: the interval straddles
-> 85% and the estimate is above it. Threshold 4 is unmeasured; no retry loop
-> exists.
+> **Threshold 3's firing was a sampling artifact.** Two triples of the identical
+> prompt over the identical questions returned 10.6% and 4.3%, with the 10% line
+> between them. The metric also counts questions whose outcome *ever* differed, so
+> it rises with the run count by construction — 12.8% pooled over six runs. It has
+> no fixed value until the run count is fixed, and the ADR never fixed it. **Do not
+> quote "two thresholds fired".**
 >
-> **Do not act on this before reading ADR-0001's own instruction.** Threshold 1
-> requires each silent-wrong to be investigated individually and makes that
-> investigation the *input* to the decision. All five are now model failures —
-> the instrument is fixed — but two of them (q016, q043) passed in at least one
-> run, so they are unstable rather than settled.
+> **Threshold 1 is a judgement, not a count, and it is unresolved.** As measured on
+> the current prompt, three distinct questions produced a silent-wrong: q017, q026,
+> q049. **q049 is withdrawn** — a question of ours whose reference was
+> under-determined; the model's answer was numerically identical to it. **q017's
+> reference is unverified** by our own stopping rule, and six runs show the model
+> choosing both defensible readings, three times each. That leaves **q026** — and
+> one silent-wrong is "a signal to diagnose", not a firing threshold. Accepting or
+> rejecting those two withdrawals is the next session's call.
 >
-> **q036 is the one that matters most.** It is the causation trap, and the
-> refusal held twice and broke once. A refusal that is right two times in three
-> is not a safety property.
+> **Threshold 2 has never fired and has never been resolvable on one triple.** The
+> pooled six-run interval (87.3–95.0%) is the first to exclude 85%, but it is
+> optimistically narrow — six runs of the same 47 questions are clustered, so Wilson
+> understates it. The defensible claim: no sample has put accuracy below 85%, and
+> the point estimate has landed between 88.9% and 93.9% every time.
 >
-> **The ADR is now resolved: keep generated SQL**, and the catalog is not
-> built. The load-bearing reason is that threshold 3's stated harm — *"fatal for
-> a repeated demo"* — was already designed out: demo mode answers from a fixed
-> file with zero model calls, so the demo is deterministic by construction and
-> the variance lives on the opt-in live path. **Resolved by the agent that ran
-> the measurement, which the ADR says outright, and reversible on one specific
-> new fact: a second full×3 putting variance clearly above 10%.**
+> **Threshold 4 is still unmeasured.** No retry loop exists.
+>
+> **q036 is fixed and it was the real finding.** The causation refusal now holds
+> **3/3** where it was 2/3, and q047 — the answerable twin the fix could have
+> destroyed — stayed correct 3/3. The fix was a `business_context.md` section, not
+> a few-shot pair, per the ADR's own rule.
 >
 > ---
 >
@@ -68,9 +77,10 @@ its section below before touching it.
 > not-view-covered from **23/33 to 29/33**. That is the honest attribution: six
 > of the ten original failures were never the model's.
 >
-> **Variance is now measured rather than argued.** Five of 47 questions changed
-> outcome between identical runs. That is why a single run was never quotable,
-> and why `full×3` was deferred rather than dropped.
+> **And the direction has still never once reversed.** Eleven axes now. The two
+> found on 2026-08-08 were a false schema comment about `expected_on` that licensed
+> q017's failure, and a question of our own that scored a correct answer wrong three
+> times.
 
 **The whole instrument batch is applied**, including the forks: tie-completion
 lives in `scoring.py`, q042 was made consistent with its six siblings rather
@@ -111,9 +121,16 @@ data columns, so q042 was never a "label" case at all. Two further axes exist:
 `reference_sql` was **never edited**. Rotation 4 fixed its *question*, which had
 not named the period the reference already filtered on.
 
-It now fails for an unrelated reason and the failure is **the model's**: it used
+It then failed for an unrelated reason and the failure was **the model's**: it used
 `subtotal` where `business_context.md` says plainly to use `total` for *what a
-customer paid*. Second unambiguous model failure, after q026.
+customer paid*.
+
+**That is no longer the present state, and the correction is instructive.** Across
+six runs of the previous prompt q043 is `correct` once and `wrong_rows` five times;
+on the current prompt it is **correct 3/3**. So "second unambiguous model failure"
+described one triple, not the system — the same mistake threshold 3 made. Nothing
+in the causation fix has any obvious bearing on `subtotal` versus `total`, so treat
+the improvement as unexplained rather than earned.
 
 ### 3. The stopping rule was falsified and is replaced
 
@@ -125,8 +142,18 @@ null one.
 
 > **New rule: a reference is verified when every predicate *and its grain*
 > traces to specific words in the question, every number the question names
-> appears in it, no `LIMIT` cut falls inside a tie, and question, reference,
-> `intent` and `traps` agree. Model agreement does not discharge this.**
+> appears in it, **the question determines the shape of its answer — how many
+> rows and what identifies one**, no `LIMIT` cut falls inside a tie, and
+> question, reference, `intent` and `traps` agree. Model agreement does not
+> discharge this.**
+
+**The shape clause was added 2026-08-08, by breaking it.** q049 passed every other
+clause and still failed three times while returning values numerically identical to
+its own reference — one row of two columns against two labelled rows, 1dp against
+2dp. Declaring `result_shape` and `answer_columns` does not discharge it: **the
+model never sees those fields.** Checked as a class, q009 is the one latent case
+left in the set; q024 shows the fix, which is to let order carry identity and keep
+the invented label out of `answer_columns`. Full write-up in `evals/README.md`.
 
 **It has been run once, prospectively, and it worked.** Across all 47 references
 it found **five whose `LIMIT` falls inside a tie** — the tiebreak deciding
@@ -147,7 +174,7 @@ readings *no context document could settle*; this one settles in a sentence
 it?). It therefore means **`business_context.md` is incomplete**.
 
 **Consequence that drives sequencing:** its fix edits `business_context.md`,
-which changes the prompt fingerprint and **voids all 47 cached responses**.
+which changes the prompt fingerprint and **voids every cached response**. (Done on 2026-08-08; it cost 147 calls to re-measure.)
 
 ### 5. Instrument v2 is applied, measured, and ADR-0001 is resolved
 
@@ -178,6 +205,46 @@ under this seed.
 > every cached generated query for `is_active`, before regenerating
 > expectations.** This is the flag; it is deliberate, and it is the kind of
 > thing a later phase trips over.
+
+## The second blind spot: `business_date` vs `sold_at` — GATED, and impossible in kind
+
+Found 2026-08-08 by checking the schema comments mechanically, after one of them
+turned out to be false about the data (`expected_on`). Any defect found once is a
+candidate class until someone checks, so all 52 `COMMENT ON` statements were
+scanned for claims that assert a data property, and the 18 that do were tested.
+
+**Five held.** `sales.subtotal = sum(sale_lines.line_total)` (0 violations in
+217,513 sales), `inventory.on_hand = movements − sale_lines` (0 in 1,800),
+`v_supplier_terms_current` = the rows with no end date (exact), supplier terms
+never overlap (0), and staff display names are role-and-ordinal — `Owner`,
+`Manager 01`, `Clerk 01-01`, none person-like, as ADR-0002 requires.
+
+**One is false.** `sales.business_date` is documented as "not always equal to the
+UTC date of `sold_at`", and `business_context.md` line 61 goes further: `sold_at::date`
+"will disagree with `business_date` for late-evening transactions" and aggregating
+on it is "quietly a little wrong". **They never disagree — 0 of 217,513.** And this
+is structural, not seed luck: IST is UTC+5:30 and the stores trade 08:00–21:59
+local, which is 02:30–16:29 UTC, so the calendar date cannot differ. No reseeding
+produces a counter-example without trading past midnight or moving the chain to a
+timezone behind UTC.
+
+**Consequence: the `business-date-vs-sold-at` trap tag cannot fail.** A query that
+aggregates on `sold_at::date` returns identical numbers here, so the instrument is
+structurally unable to detect the mistake it is tagged as testing — the same shape
+as `is_active` above, and instance eleven of the recurring class.
+
+**Deliberately not fixed, for one reason: correcting either document changes the
+prompt and voids the 147 responses measured today.** The false claim steers the
+model toward `business_date`, which is the right column regardless, so it costs no
+accuracy — it costs honesty, and one eval tag.
+
+> **GATE: at the next prompt unfreeze, correct both documents in the same batch.**
+> Keep the instruction, replace the justification: the two coincide in *this*
+> dataset because of the trading hours and the timezone, which makes the mistake
+> invisible here rather than harmless, and it would surface immediately for a
+> store trading past midnight or in a timezone behind UTC. Then either retire the
+> `business-date-vs-sold-at` tag or say in `evals/README.md` that it is
+> unmeasurable, so it stops reading as coverage.
 
 ---
 
@@ -236,7 +303,7 @@ label of one that is (commits against progress notes).
 | Phase 1 | budgeted | actual | state |
 |---|---|---|---|
 | eval harness + diagnosis | part of ~32h | large multiple | enumeration closed |
-| API query endpoint | part of ~32h | **both halves done** | `POST /query` serves answer + SQL with no key and no quota; the live path generates instead, opt-in, and has never called a real model |
+| API query endpoint | part of ~32h | **both halves done** | `POST /query` serves answer + SQL with no key and no quota; the live path generates instead, opt-in, and is proven against the real model (3 calls, ~$0.06) |
 | `web/` — Next.js, tokens, typed client | part of ~32h | **query view done** | Built from `docs/DESIGN-TOKENS.md`, which was proposed and not formally agreed — say if the palette or type should change |
 
 > **Rule: check deliverable-against-budget at the point where it can still
@@ -274,7 +341,7 @@ So it is deferred to **Phase 1 close**, with a cheap substitute first:
 
 ## What the instrument is and how it fails
 
-The eval measures execution accuracy over 47 natural-language questions against
+The eval measures execution accuracy over 49 natural-language questions against
 a Postgres retail schema, scored by deterministic result-set comparison — no
 LLM-as-judge. Reported three ways: overall, view-covered, not-view-covered, with
 thresholds read off the **not-view-covered** number.
@@ -286,12 +353,35 @@ has favoured the reference and run against the model.** The cause is structural
 retrospect. Inverted authoring is the preventive fix; the predicate trace is the
 verification one.
 
-**The recurring defect class, eight instances:** *a check that is not running,
+**The recurring defect class, ten instances:** *a check that is not running,
 wearing the label of a check that is.* It has appeared in a column name, an
 empty expectation, the matcher, the pre-commit hook, a passing eval row, a
 **process rule** (the old stopping rule — worst, because it licensed the others
-to stop looking), the conjunct splitter, and finally **the probes built to hunt
-the class itself**.
+to stop looking), the conjunct splitter, and **the probes built to hunt the class
+itself**.
+
+**Nine and ten, both found 2026-08-08, both in the measurement apparatus:**
+
+- **ADR-0001's reversal test could not fire.** It named "a second full×3" as the
+  one fact that would overturn keeping generated SQL. Responses are cached on
+  (prompt fingerprint, question id, run index) and the runner iterated indices
+  0…runs-1, so repeating the command under an unchanged prompt replays the first
+  triple from cache, makes zero calls, and hands back the same 10.6% as
+  confirmation. The reversal condition of the project's most consequential
+  decision was unfalsifiable by construction. `--run-offset` fixes it, and the
+  runner now says so when a multi-run scoring made no calls.
+- **Cache invalidation was blind to the question text.** The docstring said
+  editing any prompt or context file invalidates the cache — true, and it read
+  as complete. The question itself is also an input to the prompt and is not in
+  the key, so replacing a question left its old answers live for the next
+  re-score to judge against the new question. `question_sha` now closes it,
+  with the pre-existing records grandfathered so the fix costs nothing.
+
+**Also fixed, same day:** `evals/results/<date>-sql.json` was written
+unconditionally, so a `--limit 5` smoke test could replace a 141-response result
+file, and two runs on one day collided. Only a canonical full run at offset 0
+keeps that name now, and results files record *which* question ids they ran, not
+just how many.
 
 ### Instance eight changes a standing claim — read this before repeating it
 
@@ -334,6 +424,7 @@ the argument for doing it:
 | q005 — stale `intent` | yes | **1** |
 | q024 — stale `traps` tag | yes | **0 — retracted**, the convention is universal |
 | `is_active` — model-side unstated predicate | **impossible in kind** | a reference-side rule cannot see a predicate the model adds |
+| `expected_on` — a schema comment asserting a data property that is false | yes, 2026-08-08 | **2 of 18 checkable claims** — `business_date` "not always equal to the UTC date of `sold_at`" is also false, and 5 other claims held. See the second blind spot above |
 
 **The prior was uninformative in both directions.** One singleton became five;
 two stayed singletons; one went to zero and had to be retracted. Nothing about
@@ -355,8 +446,8 @@ which is why the check is mechanical and not a judgement call.
   the 47×3 run. (`de60dd5e3dde7787` is the pre-v2 prompt and its 47 responses are
   still on disk; this line named it as current until 2026-08-08, which was
   wrong.) Reference fixes re-score at zero cost. **Any edit to
-  `business_context.md` or the prompt voids all 47** — roughly $0.99 and ~2.3
-  days at 20 RPD. The live path is not cached at all, deliberately: see its
+  `business_context.md` or the prompt voids every cached response** — 49 questions x
+  3 runs is 147 calls and ~$3.30 through Vertex. The live path is not cached at all, deliberately: see its
   section above.
 - **`AS_OF_DATE = 2026-06-30`, never wall-clock.** `current_date` is forbidden
   in generated SQL.

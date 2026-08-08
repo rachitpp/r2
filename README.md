@@ -37,13 +37,57 @@ Measured, not estimated. Methodology in [`corpus/README.md`](corpus/README.md).
     Hallucination      _._%    (___/___)
     Miss               _._%    (___/___)
 
-**Text-to-SQL** _(n=__ questions, 3 runs each)_
-<!-- TODO Phase 1 -->
+**Text-to-SQL** _(n=49 questions × 3 runs = 147 responses, 2026-08-08, prompt
+`f3b7a9193a56f10d`, `gemini-3.6-flash` via Vertex, ~$3.32)_
 
-    Execution accuracy      __._%
-    Silent-wrong rate       _._%
-    Cross-run variance      _._%
-    Median attempts         _.__
+    Execution accuracy      91.4%  (96/105 not-view-covered, 95% CI 84.5-95.4%)
+                            100%   (33/33 view-covered)
+                            93.5%  (129/138 overall, 95% CI 88.1-96.5%)
+    Silent-wrong            3 questions of 49 (q017, q026, q049)
+    Cross-run variance      2.0%   (1 question of 49 changed outcome)
+    Median attempts         not measured — no retry loop exists
+
+Read the interval, not the point estimate: 84.5–95.4% **straddles** the 85% line
+this project set for itself, so the headline supports "measure again", not "good
+enough". Every number here is scored by deterministic result-set comparison — no
+LLM-as-judge.
+
+**One of those three silent-wrongs is a defect in the question, found after the
+run.** q049's reference returns one row of two columns; the model returned the
+same two numbers as two labelled rows, rounded to 2dp instead of 1dp, and was
+scored wrong three times for it. Withdrawing it gives 94.1% (96/102, CI
+87.8–97.3%), which clears 85% — one under-determined question out of 35 moved the
+interval across the decision line, which is the most useful thing in this block.
+It is reported this way rather than silently corrected, and the replacement
+question is measured in the next run, not this one.
+
+**The cross-run variance figure is the least trustworthy number in this block, and
+measuring it four times is how that was established.** A strict replication — same
+prompt, same 47 questions, fresh runs 3–5, nothing replayed — returned **4.3%**
+where the first triple returned **10.6%**:
+
+| sample | prompt | not-view-covered | variance |
+|---|---|---|---|
+| first triple (runs 0–2) | `415953…` | 88.9% (88/99) | 10.6% |
+| **strict replication (runs 3–5)** | `415953…` | 93.9% (93/99) | **4.3%** |
+| pooled (runs 0–5) | `415953…` | 91.9% (182/198) | 12.8% |
+| current (runs 0–2) | `f3b7a9…` | 91.4% (96/105) | 2.0% |
+
+Two triples of the identical prompt over the identical questions, a factor of 2.5
+apart, with the project's own 10% decision line sitting between them. The metric is
+also monotone in the number of runs — it counts questions whose outcome ever
+differed — so pooling six runs reads *higher* by construction, not because the
+system got less stable. A threshold stated as "variance > 10%" measures the
+sampling budget as much as the model, which is why the decision it was built to
+support now rests on accuracy instead. Reasoning and what should replace it:
+[`docs/adr/0001-text-to-sql-vs-query-catalog.md`](docs/adr/0001-text-to-sql-vs-query-catalog.md).
+
+Two more things one triple could not have shown. **q017 is not a model failure:**
+across six runs of the same prompt it is wrong three times and right three times,
+writing `HAVING count(*) FILTER (late) > 0` when it fails and
+`HAVING avg(actual) > avg(contracted)` when it passes — two defensible readings of
+a question that never said which. **And the 100% on view-covered questions was an
+artifact:** one of them fails once in six runs, so the honest figure is 65/66.
 
 Hallucination rate matters more than headline accuracy. A pipeline at 85% with
 zero hallucinations beats one at 92% with 5%, because the second lies confidently
