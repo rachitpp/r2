@@ -1,20 +1,28 @@
 # Fix list for the instrument v2 sitting
 
-**Decision artifact. Nothing here is applied.** Complete as of 2026-08-07:
+**Decision artifact. Nothing here is applied.** **ENUMERATION TERMINATED** —
 47 questions diagnosed, all 30 passes audited, all 47 `intent` fields checked,
-and the predicate trace run to stationarity over **four** iterations — every
-known singleton has now been checked as a class.
+every known singleton checked as a class, and the predicate trace run to
+**stationarity at iteration 5**: a full re-run under one validated parser added
+no new clauses and no new findings.
 
 Reasoning for each item is in `evals/DIAGNOSIS-2026-08-07.md`. This page exists
-so the decision can be taken without re-reading it.
+so the decision can be taken without re-reading it. **Every status, severity and
+cost below is as of iteration 5.**
+
+> **Numbering is stable, and two numbers are vacant on purpose.** **13** was the
+> `is_active` gate, renumbered to 20 so the list reads in order. **15** was
+> retracted, not deleted — see below. Numbers are not reused, so references from
+> the diagnosis file stay valid.
 
 ---
 
 ## The run is void by enumeration, not by budget
 
 The fix cap was 10 per round, with 1 spent. Enumeration completed the list and
-**pushed it past the cap on its own** — the pass audit added q008, q005's stale
-`intent`, and the `is_active` blind spot to a list already at 10 with one spare.
+**pushed it past the cap on its own** — first the pass audit (q008, q005's stale
+`intent`, the `is_active` blind spot), then the predicate trace (items 14–19),
+then the class checks (21, 22). **Twenty live items against a cap of ten.**
 
 That matters for how the cap's rule reads. It says void the run **deliberately,
 not by accumulation**. Nobody spent a budget to get here: the list exceeded the
@@ -45,14 +53,14 @@ affected questions. Those are flagged at the item, not assumed away.
 
 | # | defect | questions | what's wrong |
 |---|---|---|---|
-| 1 | Ordering by a rounded column | q031, q047 | `round(…,1)` manufactures a tie the data does not contain, then `sku` breaks it — inverting the true order. STP-0028 (12.0368%) is genuinely worse than STP-0007 (12.0467%). |
+| 1 | Ordering by a rounded column *(see also 19, 21)* | q031, q047 | `round(…,1)` manufactures a tie the data does not contain, then `sku` breaks it — inverting the true order. STP-0028 (12.0368%) is genuinely worse than STP-0007 (12.0467%). |
 | 2 | LIMIT boundary inside a tie | q012 | Six products clear the line, then **five tie** for four remaining slots. The tiebreak changes *membership*, so the question has no single correct answer set. |
 | 3 | Under-determined filter grain | q011 | Reference filters velocity **per store**, then sums stockout **chain-wide** — a mixed grain the question never asks for. |
 | 4 | Reference narrower than its question | q015 | Filtered on payment terms *changing*, so a supplier who renegotiated with terms held at 30 was excluded. The question asks who renegotiated. |
 | 5 | Grouping distinct entities by name | q035 | `GROUP BY pr.name` merges 46 promotions into 32 names. "Atta, Rice & Dal — 25% off" is three separate campaigns. |
 | 6 | Contradicts a published definition | q045, q019 | q045 required `below_reorder_point` when the context defines *about to run out* as cover < 7 (that is *running low*). q019 narrowed a period the question left unstated, when the context says unstated means all history. |
-| 7 | Ratio magnitude | q047 | Model returned the share as `0.0501`, reference as `5.0`. "Share" fixes neither. |
-| 8 | Row identity | q024, q042 | `ST-01` vs `Kothrud`; `festival_id` vs an invented `'Holi 2025'`. **The originally-drafted label fix would have left q042 failing.** |
+| 7 | Ratio magnitude | q047 | Model returned the share as `0.0501`, reference as `5.0`. "Share" fixes neither. Iteration 5: the references are *consistent* on magnitude (7 of 8 agree with the model) — q047 is the single genuine under-determination, not a reference-set defect. |
+| 8 | Row identity — **reframed by item 22**, read them together | q024, q042 | `ST-01` vs `Kothrud`; `festival_id` vs an invented `'Holi 2025'`. **The originally-drafted label fix would have left q042 failing.** |
 | 9 | Unstated predicate in reference | q008 | `HAVING sum(units_sold) > 200`, a floor the question never mentions. Inert today (lowest nearby is 1,713) but wrong. |
 | 10 | Stale `intent` | q005 | Says `on_hand <= 5`; question and reference say `<= 2`. **Isolated — all 47 `intent` fields were checked and this is the only one.** |
 
@@ -124,14 +132,14 @@ The tag is correct.
 **It was found incidentally and misread. The class check is what corrected it** —
 the same mechanism that turned q012 from one question into five.
 
+### FREE — found by iteration 4's class checks
+
+| # | defect | questions | fix form | cost |
+|---|---|---|---|---|
+| 21 | **q031 — "worst-margin" fixes neither percentage nor absolute.** The two readings return **disjoint** top-10 sets (STP-* vs DRY-/FNV-/BSK-*, zero overlap). **LATENT, not manifest** — corrected at iteration 5: the model ranked on the margin *ratio*, exactly as the reference does, so neither party diverged and the run was unaffected. The disjointness is a statement about *exposure*, not about severity observed. | q031 | `questions.jsonl` — name the measure | **FREE** |
+| 22 | **The reference set is internally inconsistent about naming an entity.** Six references identify a supplier or store by `.name`; **q042 alone uses `.code`**. The model was consistent and was scored wrong only on the outlier. **Supersedes item 8's framing** — the defect is the reference set, not the questions. | q042 (+ q013, q014, q015, q017, q030, q040 as the consistent group) | `questions.jsonl` **or** `scoring.py` | **FREE** either way |
+
 ### NOT FIXED — recorded and gated
-
-| # | item | why not |
-|---|---|---|
-| 21 | **q031 — "worst-margin" fixes neither percentage nor absolute.** The two readings return **disjoint** top-10 sets (STP-* vs DRY-/FNV-/BSK-*, zero overlap). **LATENT, not manifest** — corrected at iteration 5: the model ranked on the margin *ratio*, exactly as the reference does, so neither party diverged and the run was unaffected. Severe only if a model ever reads it the other way. | q031 | `questions.jsonl` — name the measure | **FREE** |
-| 22 | **The reference set is internally inconsistent about naming an entity.** Six references identify a supplier or store by `.name`; **q042 alone uses `.code`**. The model consistently used `.name` and was scored wrong only on the outlier. Fixing q042 to match its siblings is the smaller change; the alternative is accepting either identifier in `scoring.py`. | q042 (+ q030, q013, q014, q015, q017, q040 as the consistent group) | `questions.jsonl` **or** `scoring.py` | **FREE** either way |
-
-### NOT FIXED — recorded and gated (continued)
 
 | # | item | why not |
 |---|---|---|
@@ -143,7 +151,10 @@ the same mechanism that turned q012 from one question into five.
 
 The order is forced by the two costs, and getting it wrong costs a run.
 
-1. **Apply items 1–11 together** (references + scoring contract). All free.
+1. **Apply every free item together** — **1–11, 14, 16, 17, 18, 19, 21, 22.**
+   (12 is voiding and waits; 13 and 15 are vacant; 20 is gated.) An earlier
+   revision of this line said "items 1–11", which predates the trace and would
+   have left nine fixes unapplied.
 2. **Re-score against the existing cache.** Zero model calls. This yields the
    corrected v2 number for the *same* responses — the cleanest available
    comparison, because the model's answers are held fixed while the instrument
@@ -151,7 +162,7 @@ The order is forced by the two costs, and getting it wrong costs a run.
 3. **Then apply item 12** (q004 / `business_context.md`), accepting the void.
 4. **Re-measure once** against v2.
 
-> **Do not bundle item 12 with items 1–11.** Doing so throws away the free
+> **Do not bundle item 12 with the free batch.** Doing so throws away the free
 > re-score at step 2 — the only measurement that isolates instrument change from
 > model change — and buys nothing, since the voiding cost is identical either
 > way.
@@ -205,6 +216,9 @@ for checking mechanically rather than judging.
    enumeration is complete, then all fixes land in one batch. Keeps the
    expensive-to-guess property that was the cap's real contribution; drops the
    arbitrary number that no longer protects a comparison; scales past ten.
-3. Run the **predicate-to-words trace** across all 47 references. It is the new
-   stopping rule and **has not yet been run prospectively against anything**.
+3. ~~Run the predicate-to-words trace across all 47 references.~~ **Done — run
+   to stationarity at iteration 5**, which is where items 14–22 came from. It is
+   also what retracted item 15 and downgraded item 21. It is
+   the new stopping rule and it is now the thing to re-run *after* the batch
+   lands, not before.
 4. Sequence as above.
