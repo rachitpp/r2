@@ -145,7 +145,15 @@ same role.
    among 13) and **q033 ranking on a rounded column**; **overturned q039's
    "sound" verdict**; and **retracted** the q024 `traps` finding, which follows
    the set's universal twin convention. Grain and `ranked_all` ties swept clean.
-   Items 14–20 in `evals/FIX-LIST-v2.md`.
+   Items 14–22 in `evals/FIX-LIST-v2.md`. **A fourth iteration then ran the
+   three singletons the ledger still listed as unchecked** — declaring
+   stationarity with those outstanding had been premature. Period-narrowing is a
+   class of 2 (both already listed); **row identity reframes** — the model
+   diverged in only 2 of 12, so the defect is the reference set being
+   *internally inconsistent* (q042 alone names a store by `code`, six others use
+   `name`); and ratio magnitude found **q031, new and severe** — "worst-margin"
+   fixes neither percentage nor absolute, and the two readings return
+   **disjoint** answer sets.
 5. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
    before any component is written (CONVENTIONS → Frontend).
 

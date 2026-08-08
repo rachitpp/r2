@@ -674,14 +674,85 @@ mechanically.
 | q024 — stale `traps` | done | **0 — RETRACTED**, the convention is universal |
 | ties in `ranked_all` | done | **0** — q029, q030, q033, q034 all fully distinct |
 | unstated predicate in a reference | done | **≥8** — q001, q004, q045, q008, q047, q020, q014, q032 |
-| **q019 — narrowing an unstated period** | **NOT DONE** | q026's hardcoded window is a candidate; never swept |
-| **q024/q042 — row identity** | **NOT DONE** | |
-| **q047 — ratio magnitude** | **NOT DONE** | |
+| q019 — narrowing an unstated period | done (iter 4) | **2** — q019 + q026; both already on the fix list. q022 flagged and benign |
+| q024/q042 — row identity | done (iter 4) | **2 manifest of 12 flagged** — and it **reframes**: the model diverged only twice, so the defect is the reference set being *internally inconsistent*, not the questions being under-determined |
+| q047 — ratio magnitude | done (iter 4) | **2** — q047 plus **q031, new**, whose two readings return *disjoint* answer sets |
 | `is_active` — model-side unstated predicate | **impossible** | structurally invisible to a reference-side rule |
 
-Three singletons remain unchecked. On this session's record — one became five,
-one became three, two stayed at one, one went to zero — **the prior is genuinely
-uninformative**, which is the argument for checking rather than guessing.
+**All singletons are now checked.** The record: one became five, one became
+three, two became two, two stayed at one, one went to zero. **The prior is
+genuinely uninformative** — which is the whole argument for checking
+mechanically rather than reasoning about likelihood.
+
+Only `is_active` remains unresolvable, and it is unresolvable *in kind*: a
+reference-side rule cannot see a predicate the model adds.
+
+### Iteration 4 — the last three singletons, checked
+
+Stationarity was declared at iteration 3 **while the ledger still listed three
+singletons unchecked**. That was premature: a run cannot be stationary when
+three candidate classes have never been swept. Iteration 4 ran them, and it
+added findings — so iteration 3 was not the terminus.
+
+**Class 1 — narrowing an unstated period. Result: 2, both already on the list.**
+q019 (pins Jul 1 – Nov 30 for a question naming no period) and q026 (pins the
+festive window instead of reading `festivals`). q022 flagged and is **benign** —
+its pinned `2025-09-22` is the reform date, named in the question by event
+rather than by date. The class is real but adds nothing new.
+
+**Class 2 — row identity. Result: reframed, and it is not what it looked like.**
+Twelve references carry one identifier where another exists. But checking what
+the model actually did changes the diagnosis: **it diverged in only 2 of 12**
+(q042, q024) and both already failed. In the other ten it reached for the same
+column the reference did.
+
+The model is **consistent**: it names a supplier or store by `.name`, every
+time. So is the reference set — in six places. **q042 is the only reference in
+the set that identifies a store by `code`.**
+
+> The defect is not that the question is under-determined. It is that **the
+> reference set is internally inconsistent**, and the model was punished on the
+> single outlier for doing what the other six references do.
+
+That is a sharper and more fixable statement than "row identity is
+under-determined", and it only became visible by asking what the model chose
+rather than what the question permitted.
+
+**Class 3 — ratio magnitude. Result: 2, and q031 is NEW and severe.** q047 is
+known. **q031** asks for "the 10 worst-margin product lines" and the reference
+answers in `margin_pct`; "margin" fixes neither percentage nor absolute
+currency. The two readings do not merely reorder — they return **disjoint
+answer sets**:
+
+| reading | top of the answer |
+|---|---|
+| `margin_pct` (reference) | STP-0004, STP-0020, STP-0013, STP-0007, STP-0028, STP-0008 |
+| absolute margin | DRY-0010, FNV-0004, DRY-0009, FNV-0012, FNV-0007, BSK-0025 |
+
+**Not one product in common.** q031 already carried the rounded-`ORDER BY`
+defect; this is a second, larger one in the same question.
+
+### Instance eight: five probes, one root cause
+
+Every probe written this session that **guessed at SQL structure with a regex**
+broke, and broke silently:
+
+| probe | how it broke |
+|---|---|
+| clause extractor | took the first textual `WHERE` — the one inside `FILTER (WHERE …)` |
+| rounded-column check | regex could not survive nested parens; missed both known instances |
+| period probe | excused a literal whenever the year *and any month* appeared — so a question naming September excused a reference pinning July |
+| identity probe | `([^,]+?) AS col` cannot span `round(x / NULLIF(y, 0), 1)` |
+| identity probe again | attributed `p.name` to `stores` by matching the first table in a dict instead of resolving the alias |
+
+Fixing it five times in five regexes is how the sixth one breaks. Replaced with
+**one paren- and literal-aware SELECT-list parser**, validated against known
+expressions from q024, q031, q042 and q047, and reused everywhere.
+
+**Two of the five were caught by the known-positive assertion**, not by
+inspection — the probe refused to report a result because it had missed a defect
+it was required to find. That is the rule from the previous iteration working as
+intended, on the very next probes written after it.
 
 ### Verdict on the rule
 

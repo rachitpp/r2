@@ -1,7 +1,9 @@
 # Fix list for the instrument v2 sitting
 
 **Decision artifact. Nothing here is applied.** Complete as of 2026-08-07:
-47 questions diagnosed, all 30 passes audited, all 47 `intent` fields checked.
+47 questions diagnosed, all 30 passes audited, all 47 `intent` fields checked,
+and the predicate trace run to stationarity over **four** iterations — every
+known singleton has now been checked as a class.
 
 Reasoning for each item is in `evals/DIAGNOSIS-2026-08-07.md`. This page exists
 so the decision can be taken without re-reading it.
@@ -31,7 +33,9 @@ sequencing.
 | **FREE** | `questions.jsonl`, `scoring.py`, `tolerance.py` | Re-score against the existing cache. **£0, minutes.** |
 | **VOIDING** | `business_context.md`, `sql_generate.md` | Changes the prompt fingerprint, **voids all 47 cached responses**. ~$0.99 and ~2.3 days at 20 RPD. |
 
-**Only one item is voiding.** Everything else re-scores free.
+**Only item 12 (q004) is unavoidably voiding.** Everything else re-scores free
+*as proposed* — but items 14 and 22 each have an alternative form that voids the
+affected questions. Those are flagged at the item, not assumed away.
 
 ---
 
@@ -121,6 +125,13 @@ The tag is correct.
 the same mechanism that turned q012 from one question into five.
 
 ### NOT FIXED — recorded and gated
+
+| # | item | why not |
+|---|---|---|
+| 21 | **q031 — "worst-margin" fixes neither percentage nor absolute.** The reference answers in `margin_pct`; the two readings return **disjoint** top-10 sets (STP-* vs DRY-/FNV-/BSK-*, zero overlap). Second defect in this question, and larger than its rounded-`ORDER BY` one. | q031 | `questions.jsonl` — name the measure | **FREE** |
+| 22 | **The reference set is internally inconsistent about naming an entity.** Six references identify a supplier or store by `.name`; **q042 alone uses `.code`**. The model consistently used `.name` and was scored wrong only on the outlier. Fixing q042 to match its siblings is the smaller change; the alternative is accepting either identifier in `scoring.py`. | q042 (+ q030, q013, q014, q015, q017, q040 as the consistent group) | `questions.jsonl` **or** `scoring.py` | **FREE** either way |
+
+### NOT FIXED — recorded and gated (continued)
 
 | # | item | why not |
 |---|---|---|
