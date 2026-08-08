@@ -379,7 +379,16 @@ one you used** so the answer can be checked.
 | running low | at or below the reorder point | The store's own policy, per store |
 
 If a question gives its own number — "under 5 units", "more than 2 a day" — that
-number wins.
+number **replaces** the working definition. It does not stack on top of it. A
+question asking for "less than three days of cover" wants exactly that, not
+"less than three days of cover *and* below the reorder point" — adding the
+default back silently narrows the answer to something nobody asked for.
+
+**A restock or reorder question includes lines already at zero.** They are the
+most urgent thing on the list, not an edge case to exclude: a product at zero
+has run out, which is the failure the reorder point exists to prevent. Exclude
+them only when the question says so — "about to run out" is a different phrase
+and does mean stock still on hand.
 
 ## Two defaults worth stating
 

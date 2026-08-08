@@ -24,18 +24,26 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 The 47×1 SQL eval has been measured, fully diagnosed, and **all 30 passes
 audited**.
 
-> ### THERE IS NO HEADLINE NUMBER. Do not quote one.
+> ### INSTRUMENT v2 IS MEASURED — and one number is still not enough
 >
-> The raw figure from the 47×1 run is **retired** and deliberately not repeated
-> here. It is wrong in **both directions and by unknown amounts**: at least
-> **11 instrument defects deflate it**, while **q039 and q008 inflate it** —
-> they pass only because the model happened to match an arbitrary `sku`
-> tiebreak. Neither direction dominates and neither magnitude is known.
+> **not-view-covered: 84.8% (28/33, 95% CI 69–93%).** Overall 88.6% (39/44),
+> view-covered 100% (11/11). 47 calls, ~$0.93, prompt `415953964db74b80`.
 >
-> That is the asymmetric-matcher risk the eval design warned about, actually
-> realised. **No accuracy number exists for this project until the v2
-> re-measure.** It must not appear in a commit message, the README, or any
-> portfolio text before then.
+> The interval **includes 85%**, so ADR-0001 threshold 2 does **not** fire and
+> text-to-SQL is not decided against.
+>
+> **How much of the old figure was the instrument, measured properly.** Holding
+> the model's answers completely fixed and correcting only the instrument moved
+> not-view-covered from **23/33 to 29/33**. That is the honest attribution: six
+> of the ten original failures were never the model's.
+>
+> **Still do not quote a single run.** Between that re-score and v2 — same
+> instrument, fresh responses — **two questions flipped each way**: q004 and
+> q043 started passing, q016 and q017 started failing. Neither new failure has
+> anything to do with the context edit; q016 simply omitted `sku` from its
+> SELECT and q017 used `po.expected_on` instead of the terms in force. **That is
+> run-to-run variance of ±2 questions, observed rather than argued**, and it is
+> why `full×3` is owed before any figure goes in the README.
 
 **Thirteen mechanical fixes are applied and re-scored** (2026-08-08, zero model
 calls, no regressions). The **four forks and the v2 framing call are not** — they

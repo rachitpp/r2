@@ -9,8 +9,7 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. ENUMERATION TERMINATED; awaiting the instrument v2
-decision.** The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
+**Phase 1 — Structured Q&A. INSTRUMENT v2 MEASURED.** The 47×1 run is measured, all 14 failures diagnosed, all 30 passes
 audited, all 47 `intent` fields checked, and the predicate trace run to
 **stationarity at iteration 5** — a full re-run under one validated parser added
 no new clauses and no new findings. Every known singleton has been checked as a
