@@ -22,22 +22,24 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 **Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
 Phase 0 is complete.
 
-The eval has been diagnosed, fixed, and measured four times — 49 questions × 3
-runs on the current prompt and six runs of the previous one.
+The eval has been diagnosed, fixed, and measured **six times** — three triples of
+the current prompt and three of the previous one.
 **`web/` now exists and demo beat 1 runs end to end** — a question asked in the
 browser returns the answer beside the SQL that produced it, with no key and no
 quota. `make serve` and `make web`. **The live model path is built beside it**
 (`DEMO_MODE=false`, `make serve-live`) and has been proven against the real model:
 three Vertex calls, ~$0.06, an answer and a refusal and a clerk-scoped query.
 
-> ### PHASE 1 IS MEASURED FOUR TIMES, AND THE SAMPLES DISAGREE
+> ### PHASE 1 IS MEASURED SIX TIMES, AND THE SAMPLES DISAGREE
 >
 > | sample | prompt | questions × runs | not-view-covered | variance |
 > |---|---|---|---|---|
-> | first triple, runs 0–2 | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
-> | **replication, runs 3–5** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
-> | pooled, runs 0–5 | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | 12.8% |
-> | current | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+> | first triple (0–2) | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
+> | **replication (3–5)** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
+> | _pooled, not a triple (0–5)_ | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | _12.8%_ |
+> | triple, pre-fixes (0–2) | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+> | re-score after fixes (0–2) | `f3b7a9…` | 49 × 3 | 97.1% — **biased, do not quote** | 0.0% |
+> | **CURRENT: clean triple (3–5)** | `f3b7a9…` | 49 × 3 | **91.4% (96/105, CI 85–95)** | **12.2%** |
 >
 > **Threshold 3's firing was a sampling artifact.** Two triples of the identical
 > prompt over the identical questions returned 10.6% and 4.3%, with the 10% line
@@ -46,14 +48,15 @@ three Vertex calls, ~$0.06, an answer and a refusal and a clerk-scoped query.
 > no fixed value until the run count is fixed, and the ADR never fixed it. **Do not
 > quote "two thresholds fired".**
 >
-> **Threshold 1 is a judgement, not a count, and it is unresolved.** As measured on
-> the current prompt, three distinct questions produced a silent-wrong: q017, q026,
-> q049. **q049 is withdrawn** — a question of ours whose reference was
-> under-determined; the model's answer was numerically identical to it. **q017's
-> reference is unverified** by our own stopping rule, and six runs show the model
-> choosing both defensible readings, three times each. That leaves **q026** — and
-> one silent-wrong is "a signal to diagnose", not a firing threshold. Accepting or
-> rejecting those two withdrawals is the next session's call.
+> **Threshold 1 FIRES: five distinct silent-wrongs** — q011, q026, q034, q043,
+> q047 — in the clean triple. **None of them is stable**: every one is correct in at
+> least one of the same three runs, and four were correct 3/3 in the triple before.
+> Which five questions fail is not stable between triples either.
+>
+> **It was ruled "does not fire" earlier the same day and that lasted an hour.** The
+> ruling rested on re-measuring only the three questions that had just been fixed,
+> which read 97.1% with zero silent-wrongs; the clean triple over the identical set
+> read 91.4% with five. **Never re-measure only what failed** — see ADR-0001.
 >
 > **Threshold 2 has never fired and has never been resolvable on one triple.** The
 > pooled six-run interval (87.3–95.0%) is the first to exclude 85%, but it is
@@ -63,10 +66,14 @@ three Vertex calls, ~$0.06, an answer and a refusal and a clerk-scoped query.
 >
 > **Threshold 4 is still unmeasured.** No retry loop exists.
 >
-> **q036 is fixed and it was the real finding.** The causation refusal now holds
-> **3/3** where it was 2/3, and q047 — the answerable twin the fix could have
-> destroyed — stayed correct 3/3. The fix was a `business_context.md` section, not
-> a few-shot pair, per the ADR's own rule.
+> **q036 is fixed and it holds: refusal 6/6** across both triples of the current
+> prompt, up from 2/3. The way it could have been worse than the defect was
+> over-refusal, and there is **zero `refused_wrongly` anywhere in the clean triple**
+> — q047's one failure is `wrong_rows`, not a refusal. The fix was a
+> `business_context.md` section, not a few-shot pair, per the ADR's own rule.
+>
+> **q017 is fixed too, and by the cleanest test available: the question changed and
+> the reference did not.** Correct 6/6 on the current prompt, from `wrong ×3`.
 >
 > ---
 >
@@ -126,11 +133,12 @@ It then failed for an unrelated reason and the failure was **the model's**: it u
 customer paid*.
 
 **That is no longer the present state, and the correction is instructive.** Across
-six runs of the previous prompt q043 is `correct` once and `wrong_rows` five times;
-on the current prompt it is **correct 3/3**. So "second unambiguous model failure"
-described one triple, not the system — the same mistake threshold 3 made. Nothing
-in the causation fix has any obvious bearing on `subtotal` versus `total`, so treat
-the improvement as unexplained rather than earned.
+six runs of the previous prompt q043 is `correct` once; across six of the current
+one it is correct four times — `correct 3/3` in one triple and
+`correct, wrong_rows, wrong_rows` in the next. So "second unambiguous model
+failure" described one triple, not the system — the same mistake threshold 3 made.
+**q043 is unstable, not fixed and not broken**, and nothing in the causation fix
+has any obvious bearing on `subtotal` versus `total`.
 
 ### 3. The stopping rule was falsified and is replaced
 

@@ -83,9 +83,20 @@ How to work in this repo.
 - Model selection goes through role config — `PLAN`, `EXTRACT`, `CLASSIFY` —
   resolved from env. Never hardcode a model string at a call site.
 - `DEMO_MODE` is API-side only. The web app must not know whether a run is live or
-  replayed.
-- Generate `web/src/lib/api-types.ts` from the FastAPI OpenAPI schema rather than
-  hand-writing types twice.
+  replayed. **It may still report which one answered**, from the `mode` field on a
+  response it already has — that is describing what happened, not branching on
+  configuration, and hiding it would make the page unable to say whether a number
+  came from a model or a file.
+- Generate the web client's types from the FastAPI OpenAPI schema rather than
+  hand-writing them twice. **Not followed as of 2026-08-09, deliberately:**
+  `web/lib/api.ts` (not `web/src/lib/api-types.ts` — the path in this line was
+  never right) is hand-written, because generating it means an npm dependency and
+  a codegen step, and dependencies get asked about rather than added in passing.
+  **The drift it guards against is covered instead by
+  `api/tests/test_web_contract.py`**, which asserts the TypeScript types and the
+  served OpenAPI schema declare identical fields, needs no dependency, and was
+  verified to fail on a real added field rather than trusted because it was green.
+  Replace it with codegen when someone wants the dependency.
 
 ## Prompts
 

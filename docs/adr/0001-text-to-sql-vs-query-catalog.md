@@ -344,6 +344,123 @@ The defensible claim is the modest one: **no measurement taken has put accuracy
 below 85%, and the point estimate has landed between 88.9% and 93.9% on every
 sample.**
 
+## Two decisions taken 2026-08-09, and what reverses each
+
+Both were left open for a second pair of eyes and then explicitly delegated. Both
+were resolved by measuring rather than by ruling.
+
+### 1. Threshold 1 does not fire, and the test was controlled
+
+Rather than withdraw the failing questions and count what was left — which is
+score management however good the reasons — each was made to determine its own
+answer and then re-measured. Nine calls, ~$0.21.
+
+| | change made | before | after |
+|---|---|---|---|
+| **q017** | question only; reference untouched. It now says *average* delivery time against *average* contracted lead time, which the old wording left open | `wrong_rows ×3` | **`correct ×3`** |
+| **q026** | question names the four ramps and the baseline; reference reads the window from the `festivals` table instead of hardcoding it (`FIX-LIST-v2` item 16) | `exec_error, wrong_rows, exec_error` | **`exec_error ×3`** |
+| **q049** | withdrawn; **q050** replaces it as set membership against a stated threshold | `wrong_rows ×3` | **`correct ×3`** (q050) |
+
+**q017 settles the argument.** The reference was not changed — only the question
+was — and the same model on the same prompt went from three failures to three
+passes. It was the ambiguity, not the capability. ADR-0001 called this one of two
+"consistent failures … specific and addressable"; it was neither consistent nor
+the model's, and the six-run data had already shown it choosing each reading three
+times.
+
+**q026 is the genuine failure and it is not a silent one.** With the window and
+baseline determined, it times out three times out of three. An execution error is
+visible, recoverable, and explicitly the failure mode this project prefers —
+`sql_generate.md` asks for wrong-and-obvious over wrong-and-plausible. **It is not
+a silent-wrong and threshold 1 does not count it.**
+
+> **So: zero silent-wrongs on the current set, and threshold 1 does not fire.**
+> **What reverses this:** any silent-wrong in the clean triple of the current set,
+> or a later run. This disposition rests on three questions having been rewritten
+> in response to their own failures, which is the correct fix for an
+> under-determined question and is also the shape of instrument tuning — so it is
+> recorded here rather than folded quietly into a number.
+
+> ### RETRACTED THE SAME DAY. The clean triple fired the reversal condition above.
+>
+> **Threshold 1 fires: five distinct questions produced a silent-wrong** — q011,
+> q026, q034, q043, q047 — in a fresh triple of the current set at `--run-offset 3`
+> (147 calls, 0 cache hits, ~$3.32).
+>
+> **The "zero silent-wrongs" reading was a selection effect, and the size of it is
+> the lesson.** Only the three questions that had failed were re-measured, so
+> failures got a second draw and successes did not. Re-scoring on that basis gave
+> **97.1% and 0.0% variance**. The clean triple over the identical set gave
+> **91.4% and 12.2%** — the same point estimate as the first triple, 5.7 points
+> below the flattering one. The questions that came back clean were the ones that
+> had been re-rolled; the ones that had not were where the instability was.
+>
+> **q017's result survives, and it is the one that mattered.** It is correct in all
+> six runs of the current set. Making the question determinate fixed it, which is
+> the finding — ADR-0001's "consistent model failure" was the wording.
+>
+> **What actually fires threshold 1 is instability, not incapacity.** Every one of
+> the five is `correct` in at least one run of the same triple, and four of them
+> were correct three times out of three in the previous one. This is the same
+> texture the six-run study of the old prompt showed: **roughly five or six of
+> ~49 questions flip on any given draw**, and which five is not stable either.
+>
+> **A conclusion drawn from re-measuring only what failed lasted about an hour.**
+> That it was written with an explicit reversal condition is the only reason the
+> retraction is this cheap — and it is the argument for writing them that way.
+
+### 2. Threshold 3 is retired as a trigger, and kept as a diagnostic
+
+**It cannot resolve its own line at this sample size, and that is now measured
+rather than argued.** Two triples of the identical prompt over the identical
+questions returned 10.6% and 4.3%, landing on opposite sides of the 10% line. The
+metric is also monotone in the run count, so the same system reads 12.8% over six
+runs. This ADR already made exactly this argument about accuracy — *"at n≈40 a
+rate is a worse instrument than it looks"*, bounds tight enough to resolve five
+points "need several hundred questions, which is a benchmark, not this project" —
+and the argument applies with more force to a rate computed over 47 questions and
+three draws.
+
+**Decision: cross-run variance is reported with its run count and never triggers
+the catalog on its own.**
+
+**What replaces it, for the concern it was actually about.** The stated harm was
+*"non-determinism is fatal for a repeated demo"*, and demo mode answers from a
+fixed file, so that harm is gone by construction. The harm that remains is on the
+live path and is narrower: **an answer that is wrong in some runs and right in
+others.** That is strictly worse than a stable wrong answer, because it cannot be
+caught by reviewing the query once. **Threshold 1 already covers it** — a
+silent-wrong counts if it appears in *at least one* run — so the concern is
+already triggered by the threshold that measures harm rather than by a rate that
+measures the sampling budget.
+
+**What reverses this:** a variance measure that is stable across independent
+triples of the same prompt. If two triples ever agree closely, the metric is
+resolvable after all and can carry a line again.
+
+> **Strengthened the same day.** Two triples of the *current* prompt over the
+> *current* 49 questions returned **0.0% and 12.2%** — a wider disagreement than
+> the 10.6%/4.3% pair that prompted the retirement, and now across four
+> independent triples the metric has read 0.0, 2.0, 4.3, 10.6 and 12.2 percent on
+> a system that did not change. (The 0.0% is itself the selection-effect
+> re-score, which is part of the point: the metric is as sensitive to how you
+> sample as to what you are sampling.)
+
+### One thing the timeouts are not: my fault
+
+q026 times out in five of six runs and q050 in two of three, and both were
+measured while a test suite and two dev servers were using the same Postgres.
+That is a real confound and it was checked rather than assumed: **the exact SQL
+from both failing q050 runs was re-executed against an idle database and both hit
+the 5s statement timeout at 5.005s.** The run that succeeded used a different
+idiom — a `DISTINCT` set of festive dates joined once — where the two that failed
+tested festival membership with a correlated `EXISTS` per row over 419,513 rows.
+
+So the finding is about the idiom and its grain: **`EXISTS` per row survives at
+chain grain (1.5s) and dies at category grain**, and the model picks between the
+two formulations from run to run. That is the only stable model-side failure in
+the set, and it is a visible one.
+
 **Build the catalog if any threshold fires:**
 
 1. **Any silent-wrong result — investigated individually, regardless of rate.**
@@ -357,7 +474,7 @@ sample.**
    the measurement decides. If it **straddles** 85%, the result is
    inconclusive — and the response is more questions *targeted at the observed
    failure modes*, not more questions in general.
-3. **Cross-run variance > 10%** — non-determinism is fatal for a repeated demo.
+3. ~~**Cross-run variance > 10%**~~ — **RETIRED 2026-08-09 as a trigger** (reported, never fires on its own): two triples of the same prompt returned 10.6% and 4.3%, and the metric rises with the run count by construction. See "Two decisions taken 2026-08-09".
 4. **Median attempts-to-correct > 1.3** — a retry loop is a quota problem stacked
    on an accuracy problem.
 

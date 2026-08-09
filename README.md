@@ -37,49 +37,64 @@ Measured, not estimated. Methodology in [`corpus/README.md`](corpus/README.md).
     Hallucination      _._%    (___/___)
     Miss               _._%    (___/___)
 
-**Text-to-SQL** _(n=49 questions × 3 runs = 147 responses, 2026-08-08, prompt
+**Text-to-SQL** _(n=49 questions × 3 runs = 147 responses, 2026-08-09, prompt
 `f3b7a9193a56f10d`, `gemini-3.6-flash` via Vertex, ~$3.32)_
 
-    Execution accuracy      91.4%  (96/105 not-view-covered, 95% CI 84.5-95.4%)
-                            100%   (33/33 view-covered)
-                            93.5%  (129/138 overall, 95% CI 88.1-96.5%)
-    Silent-wrong            3 questions of 49 (q017, q026, q049)
-    Cross-run variance      2.0%   (1 question of 49 changed outcome)
+    Execution accuracy      91.4%  (96/105 not-view-covered, 95% CI 85-95%)
+                            97.0%  (32/33 view-covered)
+                            92.8%  (128/138 overall, 95% CI 87-96%)
+    Silent-wrong            5 questions of 49 (q011, q026, q034, q043, q047)
+    Execution errors        2 questions (q026, q050) — statement timeouts
+    Cross-run variance      12.2%  (6 questions changed outcome across 3 runs)
     Median attempts         not measured — no retry loop exists
 
-Read the interval, not the point estimate: 84.5–95.4% **straddles** the 85% line
-this project set for itself, so the headline supports "measure again", not "good
-enough". Every number here is scored by deterministic result-set comparison — no
+Read the interval, not the point estimate: 85–95% sits **on** the 85% line this
+project set for itself, so the headline supports "measure again", not "good
+enough". Every number is scored by deterministic result-set comparison — no
 LLM-as-judge.
 
-**One of those three silent-wrongs is a defect in the question, found after the
-run.** q049's reference returns one row of two columns; the model returned the
-same two numbers as two labelled rows, rounded to 2dp instead of 1dp, and was
-scored wrong three times for it. Withdrawing it gives 94.1% (96/102, CI
-87.8–97.3%), which clears 85% — one under-determined question out of 35 moved the
-interval across the decision line, which is the most useful thing in this block.
-It is reported this way rather than silently corrected, and the replacement
-question is measured in the next run, not this one.
+**Not one of those five silent-wrongs is a stable failure.** Every one is correct
+in at least one of the three runs, and four of the five were correct three times
+out of three in the previous triple. The failure mode this project is built to
+find is not "the model cannot do this" — it is "the model does this correctly
+most of the time", which is harder to catch and worse to ship.
+
+**This block previously read 97.1% with zero silent-wrongs, and that number was
+wrong in an instructive way.** After fixing three questions whose references were
+under-determined, only those three were re-measured — so failures got a second
+draw and successes did not. A clean triple over the identical set came back 5.7
+points lower, with variance at 12.2% rather than 0.0%, and the instability turned
+out to be in the questions that had *not* been re-rolled. Re-measuring only what
+failed is the cheapest way to publish a wrong number, and it looks like diligence
+while you do it.
 
 **The cross-run variance figure is the least trustworthy number in this block, and
-measuring it four times is how that was established.** A strict replication — same
-prompt, same 47 questions, fresh runs 3–5, nothing replayed — returned **4.3%**
-where the first triple returned **10.6%**:
+measuring it five times is how that was established.** Every row below is the same
+system, scored the same way:
 
-| sample | prompt | not-view-covered | variance |
-|---|---|---|---|
-| first triple (runs 0–2) | `415953…` | 88.9% (88/99) | 10.6% |
-| **strict replication (runs 3–5)** | `415953…` | 93.9% (93/99) | **4.3%** |
-| pooled (runs 0–5) | `415953…` | 91.9% (182/198) | 12.8% |
-| current (runs 0–2) | `f3b7a9…` | 91.4% (96/105) | 2.0% |
+| sample | prompt | questions | not-view-covered | variance |
+|---|---|---|---|---|
+| first triple (0–2) | `415953…` | 47 | 88.9% (88/99) | 10.6% |
+| **strict replication (3–5)** | `415953…` | 47 | 93.9% (93/99) | **4.3%** |
+| _pooled, not a triple (0–5)_ | `415953…` | 47 | 91.9% (182/198) | _12.8%_ |
+| triple (0–2) | `f3b7a9…` | 49 † | 91.4% (96/105) | 2.0% |
+| after the question fixes (0–2) | `f3b7a9…` | 49 | 97.1% (102/105) | 0.0% |
+| **clean triple (3–5)** | `f3b7a9…` | 49 | **91.4% (96/105)** | **12.2%** |
 
-Two triples of the identical prompt over the identical questions, a factor of 2.5
-apart, with the project's own 10% decision line sitting between them. The metric is
-also monotone in the number of runs — it counts questions whose outcome ever
-differed — so pooling six runs reads *higher* by construction, not because the
-system got less stable. A threshold stated as "variance > 10%" measures the
-sampling budget as much as the model, which is why the decision it was built to
-support now rests on accuracy instead. Reasoning and what should replace it:
+† that triple included q049, later withdrawn, and the pre-rewrite wording of q017
+and q026 — so it is the same prompt but not quite the same question set.
+
+**Five triples of a system that did not change, and the variance metric read 0.0,
+2.0, 4.3, 10.6 and 12.2 percent.** Two of those are strict replications — same
+prompt, same questions, different draws — and each pair lands on opposite sides of
+the project's own 10% decision line. The pooled row is not a triple and is not
+comparable: the metric counts questions whose outcome *ever* differed, so more runs
+read higher by construction rather than because anything got less stable.
+
+A threshold stated as "variance > 10%" therefore measures the sampling budget as
+much as the model, and it has been **retired as a trigger** — reported with its
+run count, never firing on its own. Reasoning, and what covers the harm it was
+actually about:
 [`docs/adr/0001-text-to-sql-vs-query-catalog.md`](docs/adr/0001-text-to-sql-vs-query-catalog.md).
 
 Two more things one triple could not have shown. **q017 is not a model failure:**

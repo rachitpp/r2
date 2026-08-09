@@ -28,6 +28,30 @@
 > the two genuine model failures, q026 and q043, which no instrument fix
 > reaches.
 >
+> ### UPDATE 2026-08-09 — that list is closed, and its last line was wrong
+>
+> **q004 was applied** in the instrument v2 batch, and the quota it needed was
+> spent (prompt re-frozen twice since; 288 responses bought). **The tie class is
+> handled** — tie-completion lives in `scoring.py`, and q042 now scores as "a
+> valid completion of ties the question does not break".
+>
+> **"The two genuine model failures, q026 and q043, which no instrument fix
+> reaches" did not survive contact with more runs, and neither half of it held.**
+>
+> - **q043** is `correct 3/3` on the current prompt and was `correct` once in six
+>   runs of the previous one. It described one triple, not the system.
+> - **q026** was reached by an instrument fix — **item 16, the one deferred as
+>   "needs *the festive season* defined in data terms"**. Defining it *was* the
+>   fix: the question now names the Navratri, Dussehra, Dhanteras and Diwali ramps
+>   and the reference reads their dates from the `festivals` table like q024 and
+>   q025. Its silent-wrong disappeared; what is left is a statement timeout in all
+>   three runs, which is a visible failure and not a silent one.
+>
+> **Item 16 is therefore applied**, and the deferral note above should be read as
+> history. The remaining q026 finding — that the model's festive-membership idiom
+> is too expensive at category grain — is real, stable, and the only failure of any
+> kind left in the set.
+>
 > **It was thirteen, not the sixteen claimed.** Three of the "unambiguous"
 > sixteen were not: q026 needs *the festive season* defined in data terms,
 > q014's fix requires editing a question — which desynchronises its cached

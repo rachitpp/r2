@@ -15,9 +15,10 @@ the history. This file answers one question: what does the next session need?
 silent-wrong and cross-run variance **and** a question asked in the web app
 returns an answer beside the query that produced it.
 
-- **Harness: done, and now measured four times** — 49 questions × 3 runs on the
-  current prompt, plus six runs of the previous one. The four samples disagree
-  with each other in ways that matter; see *Last session*.
+- **Harness: done, and now measured six times** — three triples of the current
+  prompt and three of the previous one. **The samples disagree with each other in
+  ways that decide things**, which is the session's main finding; see
+  *Last session*. Quote the clean triple (runs 3–5 of `f3b7a9…`) and nothing else.
 - **Web app: the query view exists and works.** `web/` is a Next.js App Router
   app with the proposed palette and type in `tailwind.config.ts`, a typed client
   mirroring the FastAPI models, and the answer-beside-SQL view. `make web` with
@@ -55,45 +56,57 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 
 ## Last session
 
-_Date:_ 2026-08-08
-_What landed:_ The live path, proven live. ADR-0001's three follow-ups, measured.
-And **threshold 3 does not survive being measured twice.**
+_Date:_ 2026-08-08 → 2026-08-09
+_What landed:_ The live path, proven live. ADR-0001's follow-ups, measured. And
+**the eval measured six times, which is how two of this session's own conclusions
+were caught being wrong.**
 
-### The measurement, four samples of it
+### Six samples, and the metric that could not survive them
 
 | sample | prompt | questions × runs | not-view-covered | variance |
 |---|---|---|---|---|
-| first triple, runs 0–2 | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
-| **strict replication, runs 3–5** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
-| pooled, runs 0–5 | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | 12.8% |
-| follow-up | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+| first triple (0–2) | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
+| **strict replication (3–5)** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
+| _pooled, not a triple (0–5)_ | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | _12.8%_ |
+| triple, pre-fixes (0–2) | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+| re-score after the fixes (0–2) | `f3b7a9…` | 49 × 3 | 97.1% (102/105) — **biased** | 0.0% |
+| **clean triple (3–5)** | `f3b7a9…` | 49 × 3 | **91.4% (96/105, CI 85–95)** | **12.2%** |
 
-**Two triples of the identical prompt over the identical questions returned 10.6%
-and 4.3%**, with the 10% decision line between them. The metric is also monotone in
-run count, so the six-run pool reads 12.8% by construction. **Threshold 3 has no
-fixed value until the run count is fixed, and ADR-0001 never fixed it** — so the
-firing that drove the whole resolution was a sampling artifact. What should replace
-the threshold is written into the ADR.
+**Five triples of a system that did not change read 0.0, 2.0, 4.3, 10.6 and 12.2
+percent variance.** Two are strict replications, and each pair straddles the 10%
+line. **Threshold 3 is retired as a trigger.**
 
-- **q017 was never a model failure**, and six runs prove it rather than argue it:
-  `wrong ×3, correct ×3` on one prompt. The failures wrote
-  `HAVING count(*) FILTER (late) > 0`; the passes wrote
-  `HAVING avg(actual) > avg(contracted)`. Two defensible readings of a question
-  that never said which — an under-determined question, not an incapable model.
-- **The 100% on view-covered was an artifact too.** q032 fails once in six runs;
-  65/66.
-- **q026 is the one stable failure**, alternating `execution_error` / `wrong_rows`
-  across all six runs, never correct. Timeouts are real; its `wrong_rows` disagree
-  with a reference `FIX-LIST-v2.md` item 16 already flagged.
-- **q036's fix worked: refusal 3/3, up from 2/3 — and q047 stayed correct 3/3**, so
-  the causation section did not teach blanket refusal. Context edit, no few-shot
-  pair, per the ADR's rule.
+**And the 97.1% row is the session's most expensive lesson.** After fixing three
+under-determined questions I re-measured only those three — so failures got a
+second draw and successes did not. It read 97.1% with **zero** silent-wrongs. The
+clean triple over the identical set came back **91.4% with five**, and the
+instability was in the questions that had *not* been re-rolled. **Threshold 1
+fires; the "it does not fire" ruling I recorded lasted about an hour**, and only
+because it was written with an explicit reversal condition.
+
+- **q017 was never a model failure, and the controlled test proves it.** I changed
+  only the question — naming *average* delivery time against *average* contracted
+  lead time — and left the reference untouched. It went from `wrong ×3` to
+  **correct 6/6** across both triples. Six runs of the old prompt had already shown
+  it choosing each reading three times: `HAVING count(*) FILTER (late) > 0` when it
+  failed, `HAVING avg(actual) > avg(contracted)` when it passed.
+- **q036's causation fix is confirmed: refusal 6/6**, up from 2/3, and **zero
+  `refused_wrongly` anywhere in the clean triple** — so the section did not teach
+  blanket refusal, which was the way it could have been worse than the defect.
+- **q026 and q050 are the one stable model-side finding.** Festival membership as a
+  correlated `EXISTS` per row runs 1.5s at chain grain and blows the 5s timeout at
+  category grain; the model picks between that and a set-based join run to run. The
+  exact failing SQL was re-executed against an **idle** database — 5.005s — so this
+  is not test-suite load being blamed on the model.
+- **The 100% on view-covered was an artifact.** q032 fails once in six runs of the
+  old prompt; 65/66.
 - **q049 was mine and is withdrawn.** It scored `wrong_rows` 3/3 while returning
-  values numerically identical to its own reference — two labelled rows against one
-  row of two columns, 2dp against 1dp. **q050 replaces it**, asked as set
-  membership against a stated 25% threshold. Its premise was wrong too: the 7.1s
-  timeout I quoted was my own rewrite of the correlated form, not what the model
-  writes, which runs in 1.5s.
+  values numerically identical to its own reference. **q050 replaces it.** Its
+  premise was wrong too: the 7.1s I quoted was my own rewrite of the correlated
+  form, not what the model writes.
+- **Not one of the five silent-wrongs is stable.** Every one is correct in at least
+  one run of the same triple. The failure this project exists to catch is not "the
+  model cannot" but "the model usually can".
 
 ### Everything else that landed
 
@@ -144,26 +157,30 @@ _Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
 
 ## Next session should
 
-1. **Rule on one judgement, because it changes whether threshold 1 fires.** As
-   measured, three distinct questions produced a silent-wrong. q049 is withdrawn
-   (mine, and its answer was numerically correct). q017's reference is unverified
-   by this project's own stopping rule, and six runs show the model choosing both
-   readings. That leaves **q026 alone — and one silent-wrong is "a signal to
-   diagnose", not a firing threshold.** Withdrawing a failure is the move that most
-   needs a second pair of eyes, so it is recorded in ADR-0001 and not applied.
-2. **Decide what replaces threshold 3.** It has no fixed value until the run count
-   is fixed. The ADR proposes either a per-question stability rate at an exact run
-   count, or measuring the thing the threshold was actually worried about: whether a
-   specific answer a reader sees changes between showings.
-3. **Fix q017 and q026's references, or retire the questions.** q017 needs to say
-   whether "delivers later than contracted" means on average or ever. q026 needs
-   its festive window read from the `festivals` table like q024 and q025
-   (`FIX-LIST-v2.md` item 16, still unapplied) — and its timeout is a real model
-   failure worth keeping as a diagnostic either way.
+**Both decisions that were open have been taken, and one of them was retracted the
+same day.** Threshold 3 is retired as a trigger (reported, never fires alone).
+Threshold 1 was ruled "does not fire" on the strength of re-measuring only the
+fixed questions, and the clean triple fired its own reversal condition within the
+hour: **five distinct silent-wrongs, none of them stable.** Both are in ADR-0001.
+
+1. **Decide whether five unstable silent-wrongs mean anything the catalog would
+   fix.** This is the live question. Threshold 1 fires, but every failure is
+   correct in at least one run of the same triple, and which five questions fail
+   changes between triples. A query catalog trades that for a coverage ceiling.
+   The ADR's argument for generated SQL never depended on the failures being rare —
+   it depended on the context document doing the work, which two more fixes today
+   confirmed.
+2. **Do not re-measure only the questions that failed.** Today's most expensive
+   lesson: it read 97.1% / 0.0% variance against a clean 91.4% / 12.2%.
+3. **q026 and q050 are the one stable model-side finding.** Festival membership
+   written as a correlated `EXISTS` per row runs 1.5s at chain grain and exceeds the
+   5s timeout at category grain; the model picks between that and a set-based join
+   from run to run. Verified against an idle database. A `business_context.md` line
+   about set-based membership would probably fix it — and would be a context edit,
+   which is what this project's evidence says works.
 4. **At the next prompt unfreeze, correct the `business_date`/`sold_at` claim** in
-   both context documents, batched so the void is spent once. Details and the
-   wording to use are in HANDOFF. It is not urgent: the false claim steers the model
-   to the right column anyway.
+   both context documents, batched so the void is spent once. Wording is in HANDOFF.
+   Not urgent: the false claim steers the model to the right column anyway.
 5. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
    `tailwind.config.ts` edit, not a rewrite.
 
@@ -172,11 +189,19 @@ _Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
 
 ## Measured numbers
 
-_SQL, current prompt `f3b7a9193a56f10d` (n=49 questions × 3 runs, 147 responses):_
-not-view-covered **91.4% (96/105, CI 84.5–95.4%)** — the interval still straddles
-85% — overall 93.5% (129/138), view-covered 100% (33/33), **cross-run variance
-2.0%**, silent-wrong in 3 distinct questions of which one (q049) is withdrawn.
-Withdrawing it gives 94.1% (96/102, CI 87.8–97.3%), which clears 85%.
+_SQL, current prompt `f3b7a9193a56f10d`, current 49 questions, **clean triple
+(runs 3–5, 147 fresh responses, 2026-08-09)**:_ not-view-covered **91.4% (96/105,
+CI 85–95%)**, overall 92.8% (128/138), view-covered 97.0% (32/33), **cross-run
+variance 12.2%**, silent-wrong in 5 distinct questions (q011, q026, q034, q043,
+q047) — **none of them stable; each is correct in at least one of the three runs.**
+Execution errors in q026 and q050, both statement timeouts, both verified against
+an idle database so the attribution is the model's idiom and not test-suite load.
+
+**Quote this triple, not runs 0–2 of the same prompt.** Those read 97.1% and 0.0%
+variance because only the three questions that had failed were re-measured after
+being fixed — failures got a second draw and successes did not. The clean triple
+over the identical set is 5.7 points lower, and the instability turned out to sit
+in the questions that had *not* been re-rolled.
 
 _SQL, previous prompt `415953964db74b80` (n=47, six runs, 282 responses):_
 not-view-covered **91.9% (182/198)**, view-covered 98.5% (65/66), variance 10.6%
