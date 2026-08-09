@@ -8,7 +8,7 @@ SHELL := /bin/bash
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
-        serve serve-live web web-check
+        serve serve-live web web-check corpus corpus-verify
 
 -include .env
 
@@ -204,11 +204,45 @@ fmt: ## ruff format
 # cleanly while corpus/CHECKSUMS.txt is absent and fail loudly once it is not —
 # a permanently-passing no-op would be worse than having no check at all.
 
+corpus: ## Generate the synthetic corpus from the seeded database
+	@# Needs the `corpus` dependency group (reportlab, pymupdf, pillow). They are
+	@# generation-only and are NOT runtime dependencies of api/.
+	cd api && $(UV) run --group corpus python scripts/corpus_generate.py \
+	  --database-url "$${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/$(POSTGRES_DB)}"
+
+corpus-verify: ## Regenerate into a temp dir and assert byte-identity
+	@# The claim is that the corpus is reproducible, so it gets asserted rather
+	@# than stated. PDF writers stamp timestamps and random /ID values by
+	@# default; both are pinned, and this is what catches it if that regresses.
+	@tmp=$$(mktemp -d); \
+	  mkdir -p $$tmp/sources; \
+	  (cd api && $(UV) run --group corpus python scripts/corpus_generate.py \
+	     --database-url "$${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/$(POSTGRES_DB)}" \
+	     --out $$tmp >/dev/null) && \
+	  if diff -r -q corpus/sources $$tmp/sources && \
+	     diff -q corpus/MANIFEST.csv $$tmp/MANIFEST.csv; then \
+	    echo "corpus is byte-identical on regeneration"; rm -rf $$tmp; \
+	  else \
+	    echo "CORPUS IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
+	  fi
+
 verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
+	@# `cd corpus` matters: the paths inside CHECKSUMS.txt are relative to it,
+	@# following seed/CHECKSUMS.txt's convention. Run from the repo root this
+	@# read every path as missing — so this target could only ever have skipped
+	@# or failed, never passed, and it skipped for the whole of Phase 0 and 1.
 	@if [ ! -f corpus/CHECKSUMS.txt ]; then \
 	  echo "skip: corpus/CHECKSUMS.txt does not exist yet (Phase 2)"; \
 	else \
-	  sha256sum -c corpus/CHECKSUMS.txt; \
+	  ( cd corpus && sha256sum -c --quiet CHECKSUMS.txt ) || exit 1; \
+	  listed=$$(grep -c . corpus/CHECKSUMS.txt); \
+	  found=$$(( $$(find corpus/sources -name '*.pdf' | wc -l) + 1 )); \
+	  if [ "$$listed" != "$$found" ]; then \
+	    echo "corpus has $$found artifacts but CHECKSUMS.txt lists $$listed —"; \
+	    echo "an unlisted document is one the pipeline parses and nothing checks."; \
+	    exit 1; \
+	  fi; \
+	  echo "corpus matches CHECKSUMS.txt, and holds nothing it does not list"; \
 	fi
 
 verify-parse: ## Re-run Docling on the committed sample and assert byte-identity

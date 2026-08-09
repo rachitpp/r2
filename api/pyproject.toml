@@ -24,6 +24,11 @@ dependencies = [
 ]
 
 [dependency-groups]
+corpus = [
+    "pillow>=12.3.0",
+    "pymupdf>=1.28.2",
+    "reportlab>=5.0.0",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.8",
