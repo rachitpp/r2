@@ -438,20 +438,27 @@ These are unresolved by design. If you hit one, stop.
   right for text-to-SQL. If real amendments exist, the answer is a narrow
   `supplier_term_clauses` table for clause-level provenance with `supplier_terms`
   kept as the queryable projection — not a reshape. Still needs deciding.
-- **Available RAM.** Determines the local model tier: 16GB+ runs an 8B at Q4_K_M
-  for `CLASSIFY` and `EXTRACT`; 8–12GB runs a 3–4B and sends `PLAN` to API; under
-  8GB means no local generation. Embeddings stay local at every tier.
-- **Which free-tier provider** for `PLAN`. Not chosen. Check current limits before
-  committing — they change monthly.
-- **Text-to-SQL outcome.** Deliberately open. Settled by Phase 1 measurement
-  against the four thresholds in `PLAN.md`.
-- **Design tokens.** Palette, type pairing, and the approval-card wireframe are not
-  chosen. Propose before building any component (`CONVENTIONS.md` → Frontend).
+- **Available RAM** — now only for the `CLASSIFY` Ollama fallback and Phase 3's
+  local embeddings, since ADR-0010 routes `PLAN`, `CLASSIFY` and `EXTRACT` through
+  Vertex. Embeddings stay local at every tier and need little.
+- **Data residency.** Vertex serves `gemini-3.6-flash` from `location=global`
+  **only** — 404 in us-central1 and asia-south1, measured. The first extraction run
+  therefore sends real document content to an unpinned region. **Needs answering
+  before any document is sent, not after.**
+- **The canonical Vertex terms.** ADR-0009 rests on "customer data stays out of the
+  foundation model training corpus", confirmed from Google Cloud documentation
+  because the Service Specific Terms would not load. If they disagree, ADR-0009 is
+  void. Read them before the first extraction run.
 - **Whether the corpus covers perishables.** If yes, the dynamic pricing cut flips
   and it belongs in Phase 6.
-- **Role-scoping policy.** Decided as own-store only, two DB roles, no
-  column-level cost/margin restriction. Cost-hiding stays additive. The
-  `sql_generate.md § Access scope` TODO is Phase 1's to fill in.
+- **The approval-card wireframe** (Phase 4). Palette and type are settled — proposed
+  in `docs/DESIGN-TOKENS.md` and built from; say if they should change and it is a
+  `tailwind.config.ts` edit.
+
+**Resolved since this list was written — removed, not forgotten:** the
+text-to-SQL outcome (ADR-0001, resolved; Phase 1 closed), role-scoping (decided,
+and `sql_generate.md § Access scope` is filled in), the `PLAN` provider (ADR-0010
+routes everything through Vertex), and the palette and type pairing.
 
 **Resolved — don't re-ask:** hours (session-based, see `PLAN.md`), document
 clearance (personal, publishable; PII scan still required in Phase 2), frontend
