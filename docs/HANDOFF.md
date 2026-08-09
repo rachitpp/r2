@@ -19,8 +19,11 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 
 ## Where the project is
 
-**Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
-Phase 0 is complete.
+**Phase 1 — Structured Q&A. CLOSED 2026-08-09.** Phase 0 is complete. **Phase 2 is
+next and is blocked on the corpus, which does not exist yet** — `corpus/` holds a
+README and `PIPELINE.json`. Closing Phase 1 does not claim the eval is clean: it
+claims the deliverable works, the measurement has been taken six times, and the
+remainder is debt that does not block anything. The debt is in `PROGRESS.md`.
 
 The eval has been diagnosed, fixed, and measured **six times** — three triples of
 the current prompt and three of the previous one.

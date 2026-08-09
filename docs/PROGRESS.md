@@ -9,11 +9,27 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. Both halves of the definition of done are met.**
+**Phase 1 — Structured Q&A. CLOSED 2026-08-09. Phase 2 is next and is blocked on
+you: the corpus does not exist yet.**
 
 `docs/PLAN.md` says Phase 1 is done when the harness prints execution accuracy,
 silent-wrong and cross-run variance **and** a question asked in the web app
-returns an answer beside the query that produced it.
+returns an answer beside the query that produced it. Both hold, and the second was
+re-verified end to end after the last change.
+
+**Why it is being closed with known defects open rather than kept open until they
+are gone.** Three consecutive sessions went into the instrument, ~$9.83 and 447
+model calls, against a phase budgeted ~32h that is at a large multiple of it. The
+deliverable has been working for two days. Everything still open is instrument
+refinement whose value is now clearly diminishing: the last full measurement cycle
+bought one genuine finding (the timeout idiom) and one retraction of my own. The
+budget rule in `HANDOFF.md` says to check this **at the point where it can still
+change what you do** — this is that point, and what it changes is: stop measuring.
+
+**What is NOT being claimed by closing it:** that the eval is clean. Threshold 1
+fires, five questions produce unstable silent-wrongs, and two documented blind
+spots (`is_active`, `business_date`/`sold_at`) cannot be detected by the instrument
+at all. All of it is carried below as named debt, none of it blocks Phase 2.
 
 - **Harness: done, and now measured six times** — three triples of the current
   prompt and three of the previous one. **The samples disagree with each other in
@@ -48,8 +64,8 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 | Phase | Status | Note |
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
-| 1 Structured Q&A | **definition of done met; phase not closed** | Both halves done — demo beat 1 runs, live path proven. ADR-0001's three follow-ups are measured and its threshold 3 did not survive replication. Not closed because two instrument decisions are owed a second pair of eyes (whether q017/q049 come out of the silent-wrong count; what replaces threshold 3) and q017/q026's references need fixing or retiring. Budget long overrun; see HANDOFF |
-| 2 Corpus ingestion | not started | |
+| 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
+| 2 Corpus ingestion | **next, and blocked on you** | `corpus/` holds a README and PIPELINE.json — no documents. Hour one is a PII scan and the amendments-vs-supersessions check, both of which need real files. Three open questions wait on it: corpus size, amendments, and data residency for `location=global` |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -157,35 +173,37 @@ _Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
 
 ## Next session should
 
-**Both decisions that were open have been taken, and one of them was retracted the
-same day.** Threshold 3 is retired as a trigger (reported, never fires alone).
-Threshold 1 was ruled "does not fire" on the strength of re-measuring only the
-fixed questions, and the clean triple fired its own reversal condition within the
-hour: **five distinct silent-wrongs, none of them stable.** Both are in ADR-0001.
+**Phase 1 is closed. Do not reopen the eval to chase the remaining items** — they
+are listed under *Named debt* and each is cheap to do **inside** a later phase that
+touches the prompt anyway. Reopening it on its own is what the last three sessions
+did, at ~$9.83 and diminishing returns.
 
-1. **Decide whether five unstable silent-wrongs mean anything the catalog would
-   fix.** This is the live question. Threshold 1 fires, but every failure is
-   correct in at least one run of the same triple, and which five questions fail
-   changes between triples. A query catalog trades that for a coverage ceiling.
-   The ADR's argument for generated SQL never depended on the failures being rare —
-   it depended on the context document doing the work, which two more fixes today
-   confirmed.
-2. **Do not re-measure only the questions that failed.** Today's most expensive
-   lesson: it read 97.1% / 0.0% variance against a clean 91.4% / 12.2%.
-3. **q026 and q050 are the one stable model-side finding.** Festival membership
-   written as a correlated `EXISTS` per row runs 1.5s at chain grain and exceeds the
-   5s timeout at category grain; the model picks between that and a set-based join
-   from run to run. Verified against an idle database. A `business_context.md` line
-   about set-based membership would probably fix it — and would be a context edit,
-   which is what this project's evidence says works.
-4. **At the next prompt unfreeze, correct the `business_date`/`sold_at` claim** in
-   both context documents, batched so the void is spent once. Wording is in HANDOFF.
-   Not urgent: the false claim steers the model to the right column anyway.
-5. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
+**The one thing that unblocks the project is the corpus, and only you can supply
+it.** When documents land, Phase 2's hour one is fixed by `PLAN.md`: a PII scan
+before the first commit, and a check for whether the corpus contains amendments
+rather than clean supersessions — that second one changes the data model, so it
+happens before anything is built. Three questions in *Open questions* below are
+waiting on the same delivery, and one of them — data residency, because Vertex
+serves this model from `location=global` only — needs answering **before** real
+documents are sent anywhere.
+
+If you want to spend a session on Phase 1 anyway, in value order:
+
+1. **One `business_context.md` line about set-based festival membership.** It is
+   the only stable model-side failure left, the fix is a context edit (which is
+   what this project's evidence says works), and it can ride along with the
+   `business_date`/`sold_at` correction so one cache void covers both.
+2. **Decide whether five *unstable* silent-wrongs mean anything a catalog would
+   fix.** Threshold 1 fires, but every failure is correct in at least one run of
+   the same triple and the set of failing questions changes between triples. The
+   ADR's case for generated SQL never rested on failures being rare — it rested on
+   the context document doing the work, which two more fixes confirmed.
+3. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
    `tailwind.config.ts` edit, not a rewrite.
 
-**Check deliverable against budget before starting**, not at phase close — see
-`docs/HANDOFF.md`.
+**And the rule that cost the most to learn: never re-measure only the questions
+that failed.** It read 97.1% with zero silent-wrongs against a clean 91.4% with
+five.
 
 ## Measured numbers
 
