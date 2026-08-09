@@ -447,8 +447,16 @@ These are unresolved by design. If you hit one, stop.
   before any document is sent, not after.**
 - **The canonical Vertex terms.** ADR-0009 rests on "customer data stays out of the
   foundation model training corpus", confirmed from Google Cloud documentation
-  because the Service Specific Terms would not load. If they disagree, ADR-0009 is
-  void. Read them before the first extraction run.
+  rather than the terms themselves. If they disagree, ADR-0009 is void. Read them
+  before the first extraction run.
+  **Retried 2026-08-09 and narrowed, not resolved:** `cloud.google.com/terms/service-terms`
+  *does* load now — the earlier "would not load" is stale — but the fetched text
+  carries no Vertex or generative-AI clause at all, only data location (§1) and
+  Pre-GA terms (§5). The data-governance page has moved to
+  `docs.cloud.google.com/vertex-ai/generative-ai/docs/data-governance` and returns
+  only its navigation shell to a fetcher, because the body is client-rendered. **So
+  it needs a browser, not a tool** — and the specific thing to look for is the
+  "Zero Data Retention" section that page's title advertises.
 - **Whether the corpus covers perishables.** If yes, the dynamic pricing cut flips
   and it belongs in Phase 6.
 - **The approval-card wireframe** (Phase 4). Palette and type are settled — proposed
