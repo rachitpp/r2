@@ -31,7 +31,7 @@ How to work in this repo.
       scripts/       Seed generator, scoring, eval runners
     web/             Next.js + Tailwind, TypeScript
       package.json  package-lock.json
-    corpus/          Real documents and pipeline output. See CLAUDE.md rule 8.
+    corpus/          Synthetic documents and pipeline output. See CLAUDE.md rule 8.
       sources/       contracts/ policies/ invoices/ catalogs/
       parsed/        Docling output — committed
       extracted/     Raw schema-guided extraction — committed, never hand-edited

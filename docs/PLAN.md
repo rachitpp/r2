@@ -47,12 +47,25 @@ they are not written here:**
 
 ### Phase 2 — Corpus ingestion and extraction measurement (~30h)
 
-First hour, two checks. **PII scan:** these are personal documents, so the risk is
-home address, phone number, bank details on invoices, signatures, ID numbers — not
-commercial sensitivity. One pass before first commit; anything found either gets
-the document excluded or the field redacted at source. **Amendments:** check
-whether the corpus contains amendments rather than clean supersessions, since that
-changes the data model.
+**AMENDED 2026-08-09: the corpus is synthetic**, generated from the seeded
+database rather than collected. Two consequences for this phase, and the second is
+the expensive one.
+
+**The PII scan is now vacuous and must not be reported as a result.** It was there
+because personal records carry home addresses, phone numbers, bank details and ID
+numbers; generated documents carry none unless a generator writes them. Keep the
+scan as a standing check against the generator inventing something person-like —
+`sale_operators` already forbids person-like staff names for the same reason — and
+say in the corpus README that it passed trivially. A scan that cannot fail must not
+be counted as a scan that passed.
+
+**Amendments are now a choice, not a finding.** The question was whether real
+suppliers issue amendments rather than reissuing whole terms, because that decides
+between a wide `supplier_terms` table and a narrow `supplier_term_clauses` one.
+Generating the corpus means answering it by decree, which is worth much less — so
+generate **both shapes**: most suppliers reissuing cleanly, and at least two
+issuing clause-level amendments, so the pipeline is exercised against the harder
+case rather than the one we picked.
 
 Then: Docling parse over real sources, committed. Extraction schema per document
 type. Schema-guided extraction, deterministic, raw output committed. Correction
@@ -69,8 +82,9 @@ specimens constructed and committed.
    returns "no document in force", distinct from "not found".
 5. At least one injection specimen has a committed trace showing the naive
    implementation following it.
-6. `KNOWN_ISSUES.md` is non-empty. Flawless handling of 41 real documents means
-   the sample was too easy.
+6. `KNOWN_ISSUES.md` is non-empty. **For a synthetic corpus this is a weaker
+   check and needs saying so:** flawless handling of documents we generated means
+   the injected difficulty was too gentle, not that the pipeline is good.
 7. PII scan complete and recorded in the corpus README.
 
 ### Phase 3 — Grounded document Q&A (~20h) → SECOND DEMO
@@ -176,10 +190,11 @@ the agent** — the pause is the point.
 
 ## Publishing
 
-Repo + recorded video + local demo mode. No publicly hosted live instance: a
-public chat endpoint over the corpus is an open-ended query interface into
-personal documents, and free-tier limits mean two simultaneous visitors get an
-error.
+Repo + recorded video + local demo mode. No publicly hosted live instance:
+free-tier limits mean two simultaneous visitors get an error, and an open-ended
+public chat endpoint is a standing invitation to spend someone else's quota. **The
+corpus being synthetic (amended 2026-08-09) removes the confidentiality reason for
+this, not the other two.**
 
 Three tiers in the README, labelled by what each gets you:
 

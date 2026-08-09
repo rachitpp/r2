@@ -132,9 +132,10 @@ Cached trajectories load through the same code path that would call a model.
 `DEMO_MODE=false`, and `docker compose up`. Optionally
 `docker compose --profile local-models up` to run generation locally via Ollama.
 
-No hosted instance. A public chat endpoint over this corpus would be an
-open-ended query interface into personal documents, and free-tier limits mean two
-simultaneous visitors get an error.
+No hosted instance. Free-tier limits mean two simultaneous visitors get an error,
+and an open-ended public chat endpoint over any corpus is a standing invitation to
+use someone else's quota. The corpus being synthetic removes the confidentiality
+reason for this, not the other two.
 
 ## How it works
 
@@ -182,10 +183,20 @@ without one only got failure down to 50%. Context does the work.
 
 ## Corpus
 
-Real documents, published with permission. Personal records screened for PII
-before first commit. Composition, what makes them hard, and known extraction
-failures are in [`corpus/README.md`](corpus/README.md) —
-[`KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md) is deliberately non-empty.
+**Synthetic, and generated from the seeded database** — supplier contracts
+correspond to `supplier_terms` periods, invoices to `purchase_orders`, catalogs to
+`supplier_prices`, so a document and the row it describes cannot disagree. That is
+what makes the temporal demo honest: "what were the terms before the
+renegotiation" is answerable from the documents *and* checkable against the data.
+
+**It is not a corpus of real documents, and the extraction numbers should be read
+with that in front of them.** The difficulty in it is difficulty that was chosen —
+scanned pages, skewed tables, a supplier template that puts totals above line
+items — so the measurement says the pipeline handles the failures we thought of,
+which is a weaker claim than surviving documents nobody designed. Composition, the
+injected difficulty, and known extraction failures are in
+[`corpus/README.md`](corpus/README.md) — [`KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md)
+is deliberately non-empty.
 
 Raw pipeline output in [`corpus/extracted/`](corpus/extracted/) is never
 hand-edited. Hand fixes live in [`corpus/corrections/`](corpus/corrections/) with
