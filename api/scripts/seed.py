@@ -677,6 +677,29 @@ NAME_PARTS = {
     ),
 }
 
+#: Suppliers whose old terms lapse before the new ones begin, leaving a period
+#: with nothing in force. Two rather than one so the case is a class rather than
+#: an anecdote — the standing rule in `docs/HANDOFF.md` is that any single
+#: instance is a candidate class until someone checks.
+#:
+#: **SUP-06 and SUP-11 because they are the two the eval set never names.** The
+#: first attempt used 3 and 7, and `make eval-expectations` refused to write:
+#: q014 asks for Nilgiri Beverage Company's terms in March 2025, SUP-07's new
+#: lapse ran 2025-03-14 to 2025-06-02, and the reference query correctly returned
+#: no rows. An empty expectation scores every wrong answer as correct, which is
+#: why that guard exists and why it fired.
+#:
+#: SUP-03 was referenced by q016 too. Of the twelve, only these two are named by
+#: no question at all — checked mechanically, not by eye. SUP-04 and SUP-09 are
+#: additionally unsuitable: they carry the corpus's clause-level amendments, and
+#: one document should demonstrate one thing.
+#:
+#: Questions that aggregate over every supplier (q015, q040, q048) still see
+#: changed values here, and that is correct and expected — regenerating the
+#: expectations is what absorbs it. What must never happen is a reference query
+#: silently returning nothing.
+LAPSED_SUPPLIERS = frozenset({6, 11})
+
 SUPPLIER_DEFS = [
     ("SUP-01", "Sahyadri Agro Traders", ("Fruits & Vegetables",)),
     ("SUP-02", "Godavari Grains & Pulses", ("Atta, Rice & Dal",)),
@@ -1320,6 +1343,27 @@ def build_supplier_relationships(
         )
         old_from = renegotiated - timedelta(days=srng.randrange(200, 700))
 
+        # Two suppliers lapse before renegotiating, leaving a period with no
+        # terms in force at all.
+        #
+        # Without this every supplier's old period ended on the exact day the
+        # new one began, so the corpus had no coverage gaps and `PLAN.md`'s
+        # done-condition 4 — a query for a date inside a known gap returning
+        # "no document in force", distinct from "not found" — had nothing to
+        # query. `corpus/README.md` claimed gaps existed; that described what
+        # the gist exclusion constraint permits, not what this function
+        # produced. Demo beat 2's temporal half needs the real thing.
+        #
+        # Drawn from its OWN substream, which is the whole reason substreams
+        # are named: adding a draw to `srng` would shift every subsequent
+        # choice in it and silently move payment terms, lead times and minimum
+        # order values for all twelve suppliers. This changes exactly one field
+        # in one row, for two suppliers.
+        lapse_days = 0
+        if supplier_index in LAPSED_SUPPLIERS:
+            lapse_days = substream("terms_lapse", supplier_index).randrange(45, 91)
+        old_to = renegotiated - timedelta(days=lapse_days)
+
         terms_id += 1
         first_id = terms_id
         csvs.row(
@@ -1332,7 +1376,7 @@ def build_supplier_relationships(
             str(money(srng.choice([0, 0, 1.5, 2.5]))),
             srng.choice([14, 28, 30]),
             old_from.isoformat(),
-            renegotiated.isoformat(),
+            old_to.isoformat(),
             "seed",
             None,
             None,
@@ -2051,7 +2095,18 @@ def update_checksums(path: Path, size: str, hashes: dict[str, str]) -> None:
     merged = sorted(
         {*existing, *checksum_lines(size, hashes)}, key=lambda x: x.split("  ")[1]
     )
-    path.write_text("\n".join(merged) + "\n", encoding="utf-8")
+    # newline="\n" is load-bearing here more than anywhere else in the project:
+    # THIS FILE'S BYTES ARE THE SEED FINGERPRINT. Every expected result set in
+    # evals/sql/questions.jsonl records sha256(seed/CHECKSUMS.txt), so a CRLF
+    # copy produces a fingerprint no other machine can reproduce — and
+    # `.gitattributes` normalises it to LF on commit, so the fingerprint written
+    # here would not even match the file this machine just committed.
+    #
+    # Third instance of the identical defect (corpus_ingest and corpus_generate
+    # were the first two), and the most expensive of the three: it would have
+    # been discovered as 49 expectations "computed against a different seed" on
+    # someone else's clone.
+    path.write_text("\n".join(merged) + "\n", encoding="utf-8", newline="\n")
 
 
 def verify_against(path: Path, size: str, hashes: dict[str, str]) -> int:

@@ -67,10 +67,22 @@ help: ## Show this help
 	@echo "  SEED_SIZE=$(SEED_SIZE)  (small = dev loop, full = demo build)"
 	@echo "  Evals always run against full. See docs/PROGRESS.md."
 
-up: ## Start the database
-	docker compose up -d db
+up: ## Start the database (skipped when EXTERNAL_DB is set)
+	@# `up` starts the local compose service. When the database lives somewhere
+	@# this Makefile does not own — a hosted instance, or a CI service container —
+	@# there is nothing to start, and running `docker compose up` would either
+	@# fail for want of Docker or bind a second Postgres onto the same port.
+	@#
+	@# The readiness wait still runs in both cases. That is the part worth
+	@# keeping: it proves the database this build is about to write to is
+	@# actually reachable, which is a different claim from "a container started".
+	@if [ -n "$(EXTERNAL_DB)" ]; then \
+	  echo "==> EXTERNAL_DB set; not starting compose"; \
+	else \
+	  docker compose up -d db; \
+	fi
 	@until $(PSQL) -d postgres -q -c 'SELECT 1' >/dev/null 2>&1; do sleep 0.3; done
-	@echo "db ready on port $${POSTGRES_PORT:-5432}"
+	@echo "db ready"
 
 down: ## Stop the database (keeps the volume)
 	docker compose down

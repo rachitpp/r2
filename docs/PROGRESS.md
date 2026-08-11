@@ -15,13 +15,17 @@ extraction is not built, and that is the gate.**
 Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
 it is what the eval numbers in the README rest on.
 
-**Where Phase 2 stands against `PLAN.md`'s seven done-conditions:** three hold
-(1 reproducible parse asserted in CI, 6 `KNOWN_ISSUES.md` non-empty, 7 the PII
-scan recorded honestly as vacuous). **Condition 4 is half-done and blocked by the
-corpus itself** — `TIMELINE.md` exists and is hand-verified, but the gap query it
-requires has nothing to query: *the corpus has no coverage gaps.* Three do not
-hold: no extraction, no gold set, no injection specimen, and the README's
-four-number block is blank.
+**Where Phase 2 stands against `PLAN.md`'s seven done-conditions: four hold.**
+1 (reproducible parse asserted in CI), 4 (`TIMELINE.md` hand-verified **and** a
+date inside a real gap returns nothing in force), 6 (`KNOWN_ISSUES.md` non-empty),
+7 (PII scan recorded honestly as vacuous). Three do not: no extraction, no gold
+set, no injection specimen, and the README's four-number block is blank.
+
+**Condition 4 was closed on 2026-08-11 by regenerating the seed.** The corpus had
+no coverage gaps at all — every predecessor ended the day its successor began —
+while `corpus/README.md` asserted it did. `LAPSED_SUPPLIERS` in `seed.py` now
+lapses SUP-06 for 48 days and SUP-11 for 78, drawn from their own RNG substream so
+one field in one row per supplier moved and nothing else in the seed did.
 
 - **Corpus: done.** 40 synthetic documents generated from the seeded database —
   24 contracts (including 2 clause-level amendments), 10 invoices, 3 catalogs,
@@ -107,7 +111,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. Extraction not started, and it is the gate. 2 of 7 done-conditions hold. Data residency for `location=global` still unanswered and still blocks the first run |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. Data residency and the canonical Vertex terms still block the first paid run |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -118,6 +122,80 @@ _Date:_ 2026-08-11
 _What landed:_ The environment stood up on Windows, and **four checks that were
 not running turned out to be wearing the label of checks that were.** No model
 calls, no spend.
+
+### The database exists, on Neon, and done-condition 4 is closed
+
+**Tooling, none of it needing admin:** psql 18.4 (EDB binaries zip, client files
+only, extracted to `%LOCALAPPDATA%\pgclient` — the winget installer wanted UAC and
+the full archive breaks Windows' 260-char path limit on bundled pgAdmin), and GNU
+Make 4.4.1 via `ezwinports.make`. Local Python reproduces the pinned seed
+byte-identically, so **Docker is not needed on this machine.**
+
+**The PG16 assumption held.** All three migrations applied cleanly on
+**PostgreSQL 18.4** — `btree_gist`, the generated `daterange` columns and both
+gist exclusion constraints. `PROGRESS` recorded that design as "verified against
+PG16"; it survives two major versions.
+
+**Done-condition 4 is closed**, and the route there is the finding:
+
+1. The seed was regenerated with `LAPSED_SUPPLIERS`. First attempt used SUP-03
+   and SUP-07; `make eval-expectations` **refused to write** because q014 asks for
+   Nilgiri Beverage Company's terms in March 2025 and SUP-07's lapse covered that
+   date, so its reference query correctly returned nothing. An empty expectation
+   scores every wrong answer as correct. SUP-06 and SUP-11 are the only two
+   suppliers no eval question names — established mechanically.
+2. **2 of 49 expectations moved**: q017 and q048, only in the rows for the two
+   lapsed suppliers. Ten other suppliers byte-identical in q048.
+3. `make corpus` changed **exactly 2 of 40 PDFs**.
+4. The `is_active` gate was re-checked as `HANDOFF.md` requires: 600/600 products
+   still active, and the edit touched only `supplier_terms`.
+
+**Neon's free tier cannot run this project's database design at `full`** — 512 MB
+cap against a 263 MB database, so the template-plus-clone `make reset` and
+ADR-0005 both need does not fit. See *Named debt*.
+
+### The Docling parse is platform-dependent, and I said otherwise
+
+Re-parsing the whole corpus on Windows against the Linux-generated committed
+output: **4 of the 38 documents whose PDFs had not changed parsed differently.**
+Three are heading-versus-paragraph flips. The fourth, `invoice-sup-12-5436` —
+the `table-spans-page-break` document — **lost its table entirely**, parsing to
+the bare word `Supplier`. Re-parsing twice on Windows gives identical output, so
+it is a platform split, not randomness.
+
+**I claimed the opposite earlier in this session**, from one document and then
+from `verify-parse`'s 3/3. Those three happen to be platform-stable; ~10% of the
+corpus is not. That is `verify-parse`'s sample hiding the property it names — the
+recurring class, in a check written the same day, by me.
+
+**ADR-0006's "deterministic parse layer" should be scoped to "within a pinned
+environment".** The seed layer already runs in a digest-pinned image for exactly
+this reason; the parse layer pins Docling's version but not its environment. CI
+runs one platform, so this is not assertable there at all.
+
+The Windows parse was **discarded rather than committed**, so `corpus/parsed/`
+stays single-provenance and keeps the table. The cost: `contract-sup-06-20240928`
+and `contract-sup-11-20230907` still hold the parse of their *previous* PDFs.
+**Recorded in `corpus/KNOWN_ISSUES.md` entry 2, and owed before extraction reads
+them.**
+
+### Two more instances of the newline defect, and two probes of mine that could not fail
+
+`seed.py` and `eval_expectations.py` both wrote artifacts without `newline="\n"` —
+**instances three and four.** The `seed.py` one is the worst-placed in the
+project: that file's bytes *are* the seed fingerprint, so with `.gitattributes`
+normalising to LF on commit it would have written a fingerprint not matching the
+file it committed, surfacing on someone else's clone as "49 expectations computed
+against a different seed".
+
+And twice the broken thing was my own verification: a diff keyed on
+`expected_rows` when the field is `expected` (reporting a confident "0 of 49
+changed"), and a grep over `evals/.cache/`, which does not exist here at all.
+**Both returned clean results while checking nothing.**
+
+`corpus/README.md` also published `scanned-200dpi-skewed | 4` when the manifest
+has always had 5 — checked against HEAD, so it shipped wrong rather than drifted.
+Now asserted against the manifest.
 
 ### The parse layer was never actually verified
 
@@ -312,6 +390,24 @@ silent-wrongs against a clean 91.4% with five.
 
 ## Measured numbers
 
+> ### ⚠️ STALE as of 2026-08-11 — the seed moved underneath them
+>
+> Every figure below was measured against seed fingerprint `206fb7a8e55164f9`.
+> The seed is now **`e1ca4fb60f9e710e`** (the SUP-06 and SUP-11 lapses), and
+> **two expected result sets changed**: q017 and q048, both of which read
+> `supplier_terms` by period, and only in the rows for those two suppliers.
+>
+> **Re-scoring is not free here, contrary to the standing note below.** That note
+> assumes `evals/.cache/` is present; it is gitignored and exists only on the
+> machine that ran the original measurement. On this one it does not exist, so
+> restoring these numbers means **re-running** — 147 calls, ~$3.30, and a Vertex
+> service account. `CONVENTIONS.md` allows exactly two responses to this: re-run,
+> or mark stale. This is the mark.
+>
+> The likely size of the error is small and bounded — two questions, one changed
+> value each — but "likely small" is not a measurement, and the README quotes
+> these figures as if they were.
+
 _SQL, current prompt `f3b7a9193a56f10d`, current 49 questions, **clean triple
 (runs 3–5, 147 fresh responses, 2026-08-09)**:_ not-view-covered **91.4% (96/105,
 CI 85–95%)**, overall 92.8% (128/138), view-covered 97.0% (32/33), **cross-run
@@ -339,6 +435,17 @@ _Injection specimens:_ Phase 3, not started.
 
 ## Named debt carried forward
 
+- **The eval response cache is not on this machine, and is not portable.**
+  `evals/.cache/` is gitignored, so the 147 responses behind the published
+  accuracy numbers exist only where they were generated. "Re-scoring is free" is
+  true only there. Anywhere else, re-scoring means re-running: 147 calls, ~$3.30.
+  Any future seed or prompt change should assume that cost rather than the free one.
+- **A hosted Postgres cannot run this project's database design at `full`.**
+  Neon's free tier caps a project at 512 MB; the seeded database is 263 MB, so
+  the template-plus-clone that `make reset` and ADR-0005's test isolation both
+  depend on does not fit. `make db` therefore fails at its final step, and the
+  33 DB-marked tests cannot run at `full` there. Worked around by renaming the
+  seeded template into place. `small` would fit; evals may not use it.
 - **`make corpus` leaves `CHECKSUMS.txt` stale until `make ingest` runs.**
   Generation writes the sources-and-manifest listing; `corpus_ingest` refreshes
   the whole thing on a canonical run, because it is the last stage that writes
@@ -549,23 +656,6 @@ Phase 1's eval set if it is going to happen at all.
 
 These are unresolved by design. If you hit one, stop.
 
-- **Regenerate the corpus with a coverage gap, or retire done-condition 4?**
-  There are no gaps: 24 contracts, 12 suppliers, every predecessor ending the day
-  its successor begins. `PLAN.md` requires "a query for a date inside a known gap
-  returns *no document in force*, distinct from *not found*", and no such date
-  exists. Three options, and the first is the recommendation:
-  1. **Regenerate with a deliberate lapse** for one or two suppliers. Demo beat 2
-     is a named deliverable and this is the half that makes it interesting. It
-     also lets the dropped `bilingual-mr-en` difficulty ride along, since both
-     need the same regeneration.
-  2. Retire the condition and say in `PLAN.md` why — the corpus can show
-     "not found" (only SUP-01 has catalogs) but not "no document in force".
-  3. Accept the pre-history case (any date before a supplier's first contract) as
-     satisfying it, which is weaker than it sounds and worth saying out loud.
-
-  **Decide before extraction is paid for.** Regenerating changes the documents,
-  which changes the parse, which voids extracted output. Needs Postgres, so it is
-  blocked on Docker locally too.
 - **Amendments vs. supersessions. Now decidable — nothing is waiting on data.**
   Phase 0's `supplier_terms` is a wide table that supersedes as a set, which is
   right for supersessions and right for text-to-SQL. The corpus contains **2

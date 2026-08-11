@@ -35,13 +35,25 @@ done-condition.** Code is not measurement. Three things gate the first run and a
 three are yours: a GCP budget alert, data residency for `location=global`, and the
 canonical Vertex terms. See `PROGRESS.md` → *Next session should*.
 
-**Phase 2 is at 3 of 7, and one condition is blocked by the corpus itself.
-The corpus has no coverage gaps** — 24 contracts, 12 suppliers, every predecessor
-ending the day its successor begins — so done-condition 4's "query a date inside a
-known gap" has nothing to query. `corpus/README.md` claimed the opposite until
-2026-08-11. Fixing it means regenerating with a deliberate lapse, **which must
-happen before extraction is paid for**, since it voids extracted output. Open
-question in `PROGRESS.md`.
+**Phase 2 is at 4 of 7.** Done-condition 4 was closed on 2026-08-11: the corpus
+had no coverage gaps at all while `corpus/README.md` asserted it did, and the seed
+now lapses SUP-06 for 48 days and SUP-11 for 78. Two expected result sets moved
+(q017, q048) and exactly 2 of 40 PDFs changed.
+
+> **THE PUBLISHED ACCURACY NUMBERS ARE STALE.** They were measured against seed
+> `206fb7a8e55164f9`; the seed is now `e1ca4fb60f9e710e`. Restoring them is **not**
+> a free re-score — `evals/.cache/` is gitignored and exists only on the machine
+> that made it, so it means re-running: 147 calls, ~$3.30, and a Vertex service
+> account. Marked stale in `PROGRESS.md` per `CONVENTIONS.md`. The error is
+> probably small and bounded — two questions, one value each — but "probably" is
+> not a measurement and the README quotes these as if they were.
+
+**The database is on Neon (PostgreSQL 18.4), and its free tier cannot hold this
+project's design at `full`:** 512 MB cap, 263 MB database, so the
+template-plus-clone that `make reset` and ADR-0005's test isolation both need does
+not fit. `make db` fails at its last step and the 33 DB-marked tests cannot run at
+`full` there. Migrations themselves applied cleanly on PG18, which had been an
+assumption since Phase 0.
 
 **Amendments vs. supersessions is decided: clause-level provenance.** Extraction
 records what a document says, never what was in force. No migration was written —

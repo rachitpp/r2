@@ -266,7 +266,16 @@ def main(argv: list[str] | None = None) -> int:
         print("Run `make eval-expectations` and commit the result.")
         return 1
 
-    QUESTIONS.write_text(rendered, encoding="utf-8")
+    # newline="\n": this file carries every expected result set AND the seed
+    # fingerprint each was computed against. Written with CRLF on Windows, git
+    # normalises it to LF on commit (.gitattributes), so the committed bytes
+    # differ from what was verified here — and CI's `git diff --exit-code` on
+    # this path would fail for a reason that looks nothing like line endings.
+    #
+    # Fourth instance of the identical defect: corpus_ingest, corpus_generate
+    # and seed.py were the others. Every one of them writes an artifact whose
+    # bytes something downstream hashes or diffs.
+    QUESTIONS.write_text(rendered, encoding="utf-8", newline="\n")
     rows_total = sum(q["expected"]["row_count"] for q in updated if q.get("expected"))
     print(
         f"wrote {len(updated)} expectations (seed {fingerprint}); "

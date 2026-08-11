@@ -28,25 +28,28 @@ Every document corresponds to a row, and the row is recorded in `MANIFEST.csv` a
 before the renegotiation?" is answerable from the documents *and* checkable against
 `supplier_terms`, because the document was made from that row.
 
-> ### ⚠️ There are no coverage gaps, and this file used to say there were
->
-> The sentence here read: *"`valid_period` already permits gaps, so a date with no
-> contract in force is a real gap in the corpus rather than a staged one — which is
-> what demo beat 2's 'no document in force, distinct from not found' needs."*
->
-> **That described what the generator permits, not what it produced.** Measured
-> 2026-08-11: 12 suppliers, 24 contracts, **two per supplier, and the first ends on
-> the exact day the second begins.** Zero gaps. The only dates with nothing in force
-> are before each supplier's first contract — earliest 2023-09-07 — and
-> "before any contract existed" is a far weaker demonstration than a mid-history
-> lapse, because it is much harder to distinguish from "not found", which is the
-> distinction the beat exists to show.
->
-> **Consequence: `PLAN.md`'s Phase 2 done-condition 4 cannot be satisfied by this
-> corpus as built.** Closing it needs a regeneration that gives one or two suppliers
-> a deliberate lapse, and that must happen *before* any extraction is paid for,
-> since regenerating changes the documents and voids extracted output. See
-> `KNOWN_ISSUES.md`.
+**Two suppliers lapse between agreements**, so a date with no contract in force
+is a real state of this corpus rather than a staged one:
+
+| Supplier | Nothing in force | Days |
+|---|---|---|
+| SUP-06 Jhat Pat Foods | 2025-10-22 → 2025-12-09 | 48 |
+| SUP-11 Arogya Consumer Care | 2025-04-26 → 2025-07-13 | 78 |
+
+That is what demo beat 2's *"no document in force, distinct from not found"*
+needs, and `PLAN.md`'s Phase 2 done-condition 4 rests on it. `TIMELINE.md` has
+the full picture and `api/tests/test_corpus_timeline.py` asserts the lapses are
+still there, so the corpus and the documents describing it cannot drift apart.
+
+> **This file claimed those gaps existed for two weeks before any did.** The
+> sentence read: *"`valid_period` already permits gaps, so a date with no contract
+> in force is a real gap in the corpus rather than a staged one."* It described
+> what the gist exclusion constraint **permits**, not what the generator
+> **produced** — measured 2026-08-11, every predecessor ended on the exact day its
+> successor began, and done-condition 4 was unsatisfiable. Fixed by regenerating
+> the seed with `LAPSED_SUPPLIERS`, and kept visible here because the corrected
+> version of a claim is worth less than the record of how it was wrong. See
+> `KNOWN_ISSUES.md` entry 1.
 
 Invoice totals reconcile against `sum(line_total)` for the same order, so a
 mis-extracted line item is *detectable* rather than merely wrong.
@@ -59,7 +62,7 @@ property, listed per document in `MANIFEST.csv`:
 
 | Property | Documents | What it tests |
 |---|---|---|
-| `scanned-200dpi-skewed` | 4 | **No text layer at all.** Rasterised, rotated by a fraction of a degree, blurred, speckled, JPEG'd. Forces OCR, which is where extraction accuracy is actually decided. |
+| `scanned-200dpi-skewed` | 5 | **No text layer at all.** Rasterised, rotated by a fraction of a degree, blurred, speckled, JPEG'd. Forces OCR, which is where extraction accuracy is actually decided. |
 | `table-spans-page-break` | 2 | A line-item table continuing across a page boundary |
 | `totals-above-line-items` | 1 | A supplier template where the total precedes the rows it summarises |
 | `clause-level-amendment` | 2 | A document that varies three clauses of an earlier agreement and restates nothing else |

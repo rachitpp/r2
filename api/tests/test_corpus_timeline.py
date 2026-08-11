@@ -22,6 +22,7 @@ import datetime as dt
 import itertools
 import re
 from pathlib import Path
+from typing import ClassVar
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CORPUS = REPO_ROOT / "corpus"
@@ -112,6 +113,56 @@ class TestTimelineDescribesTheCorpus:
                 )
 
 
+class TestReadmeDifficultyTable:
+    """`corpus/README.md` publishes a count per injected difficulty.
+
+    It said `scanned-200dpi-skewed | 4` from the day the corpus landed, and the
+    manifest has always had 5 — checked against the manifest at HEAD, so it
+    shipped wrong rather than drifting. Nobody noticed because nothing compared
+    the number to the thing it counts.
+
+    That table is the first thing a reader uses to judge what the extraction
+    numbers are worth, which makes it exactly the wrong place for a figure no
+    check covers.
+    """
+
+    def counts(self) -> dict[str, int]:
+        tally: collections.Counter = collections.Counter()
+        for row in manifest():
+            for mark in (row["injected_difficulty"] or "").split():
+                tally[mark] += 1
+        return dict(tally)
+
+    def test_every_published_count_matches_the_manifest(self):
+        if skip_if_absent():
+            return
+        readme = (CORPUS / "README.md").read_text(encoding="utf-8")
+        wrong = []
+        for mark, actual in self.counts().items():
+            row = re.search(
+                rf"^\|\s*`{re.escape(mark)}`\s*\|\s*(\d+)\s*\|", readme, re.M
+            )
+            if not row:
+                wrong.append(f"{mark}: not in the README table at all")
+            elif int(row.group(1)) != actual:
+                wrong.append(
+                    f"{mark}: README says {row.group(1)}, manifest has {actual}"
+                )
+        assert not wrong, "corpus/README.md misdescribes the corpus: " + "; ".join(
+            wrong
+        )
+
+    def test_the_documents_with_difficulty_are_counted(self):
+        """The README's prose says ten of the forty carry an injected property."""
+        if skip_if_absent():
+            return
+        marked = sum(1 for r in manifest() if r["injected_difficulty"])
+        readme = (CORPUS / "README.md").read_text(encoding="utf-8")
+        assert f"Ten of the {len(manifest())} documents" in readme or marked == 10, (
+            f"{marked} documents carry an injected property; check the README prose"
+        )
+
+
 class TestTheDetector:
     """The known-positive. Without it, `no gaps` and `no detector` look alike."""
 
@@ -140,29 +191,64 @@ class TestTheDetector:
 
 
 class TestTheGapClaim:
-    def test_coverage_is_still_continuous(self):
-        """If this fails, the corpus changed and three documents must change too.
+    """The corpus now has coverage gaps, and done-condition 4 rests on them.
 
-        TIMELINE.md, corpus/README.md and corpus/KNOWN_ISSUES.md all state that
-        coverage is continuous and that Phase 2 done-condition 4 is therefore
-        unsatisfiable. Introducing a gap is the intended fix — and it makes all
-        three stale in the same moment.
+    This class asserted the opposite until 2026-08-11 — that coverage was
+    continuous — because it was. It failed the moment the seed was regenerated
+    with `LAPSED_SUPPLIERS`, naming the three documents that had to change with
+    it. That is the whole point of writing the invariant down: the corpus and
+    the documents describing it move together or the build stops.
+    """
+
+    #: Which suppliers lapse, and for how long. Mirrors seed.py's
+    #: LAPSED_SUPPLIERS — pinned here so a stray regeneration that quietly drops
+    #: one is a failure rather than a smaller number nobody reads.
+    EXPECTED_GAPS: ClassVar[dict[str, tuple[str, str]]] = {
+        "06": ("2025-10-22", "2025-12-09"),
+        "11": ("2025-04-26", "2025-07-13"),
+    }
+
+    def test_the_gaps_exist_and_are_the_expected_ones(self):
+        if skip_if_absent():
+            return
+        found = {supplier: (ends, starts) for supplier, ends, starts in coverage_gaps()}
+        assert found == self.EXPECTED_GAPS, (
+            f"coverage gaps changed: {found}. `PLAN.md`'s done-condition 4 needs "
+            "a date with no document in force; if these moved, TIMELINE.md, "
+            "corpus/README.md and corpus/KNOWN_ISSUES.md all describe them and "
+            "must move too."
+        )
+
+    def test_a_date_inside_a_gap_has_no_contract_in_force(self):
+        """Done-condition 4, asserted directly against the manifest.
+
+        `[from, to)` — a date on or after the predecessor's end and before the
+        successor's start is covered by neither. This is the distinction demo
+        beat 2 exists to show, and until the lapses landed the corpus could not
+        demonstrate it at all.
         """
         if skip_if_absent():
             return
-        gaps = coverage_gaps()
-        assert not gaps, (
-            f"the corpus now has {len(gaps)} coverage gaps: {gaps[:3]}. "
-            "This is the fix done-condition 4 needs — now update TIMELINE.md, "
-            "corpus/README.md and corpus/KNOWN_ISSUES.md, which all say there "
-            "are none."
-        )
+        probe = dt.date(2025, 11, 1)  # inside SUP-06's lapse
+        in_force = [
+            row
+            for row in contracts_by_supplier()["06"]
+            if dt.date.fromisoformat(row["effective_from"]) <= probe
+            and (
+                not row["effective_to"]
+                or dt.date.fromisoformat(row["effective_to"]) > probe
+            )
+        ]
+        assert not in_force, f"expected no contract in force on {probe}, got {in_force}"
 
     def test_the_timeline_says_so(self):
         if skip_if_absent():
             return
-        text = TIMELINE.read_text(encoding="utf-8").lower()
-        assert "no coverage gaps" in text or "no gaps" in text
+        text = TIMELINE.read_text(encoding="utf-8")
+        for supplier, (ends, starts) in self.EXPECTED_GAPS.items():
+            assert ends in text and starts in text, (
+                f"TIMELINE.md does not show SUP-{supplier}'s lapse {ends} -> {starts}"
+            )
 
     def test_every_supplier_has_an_open_ended_contract(self):
         """What makes coverage continuous through AS_OF_DATE rather than merely

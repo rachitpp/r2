@@ -15,20 +15,32 @@ is in force on that day, not both.
 
 ---
 
-## ⚠️ Coverage is continuous — there are no gaps
+## Two suppliers lapse, and that is what makes demo beat 2 answerable
 
-**Twelve suppliers, twenty-four contracts, two each, and every predecessor ends
-on the exact day its successor begins.** No supplier has a period with nothing in
-force after its first contract starts.
+**Twelve suppliers, twenty-four contracts, two each. Ten renew on the day the
+previous agreement ends; two do not.**
 
-The only dates with no contract in force are **before each supplier's first
-contract**, the earliest being 2023-09-07. That is a real "no document in force"
-state and it is a weak one: it is hard to distinguish from "not found", which is
-the distinction demo beat 2 exists to demonstrate.
+| Supplier | Nothing in force from | Until | Days |
+|---|---|---|---|
+| SUP-06 Jhat Pat Foods | 2025-10-22 | 2025-12-09 | 48 |
+| SUP-11 Arogya Consumer Care | 2025-04-26 | 2025-07-13 | 78 |
 
-**`PLAN.md`'s Phase 2 done-condition 4 therefore cannot be satisfied as built.**
-`README.md` claimed otherwise until 2026-08-11 — it described what the generator
-permits rather than what it produced. See `KNOWN_ISSUES.md`, entry 1.
+A query for **2025-11-01** against SUP-06 finds no contract in force. Not "no
+such supplier" — the supplier exists, has a history either side, and simply had
+no agreement running. That distinction is `PLAN.md`'s Phase 2 done-condition 4
+and demo beat 2's harder half, and **until 2026-08-11 this corpus could not
+demonstrate it at all**: every predecessor ended on the exact day its successor
+began, and `README.md` asserted gaps existed while describing only what the gist
+exclusion constraint *permits*. See `KNOWN_ISSUES.md` entry 1 for that history.
+
+The lapses come from `LAPSED_SUPPLIERS` in `api/scripts/seed.py`, drawn from
+their own RNG substream so no other seeded value moved. SUP-06 and SUP-11 are
+the only two suppliers no eval question names — the first attempt used SUP-03 and
+SUP-07 and broke q014, whose reference query then correctly returned nothing.
+
+Dates before a supplier's first contract are also "nothing in force", but that
+is a much weaker demonstration: it is hard to tell from "not found", which is
+precisely what the beat needs to distinguish.
 
 ## Supplier terms
 
@@ -44,7 +56,7 @@ permits rather than what it produced. See `KNOWN_ISSUES.md`, entry 1.
 | | | 2025-10-18 | — | `contract-sup-04-20251018` · **clause-level amendment** |
 | SUP-05 | Bhusari Foods Pvt Ltd | 2025-01-03 | 2025-09-24 | `contract-sup-05-20250103` |
 | | | 2025-09-24 | — | `contract-sup-05-20250924` |
-| SUP-06 | Jhat Pat Foods | 2024-09-28 | 2025-12-09 | `contract-sup-06-20240928` |
+| SUP-06 | Jhat Pat Foods | 2024-09-28 | **2025-10-22** | `contract-sup-06-20240928` · **lapses, 48 days** |
 | | | 2025-12-09 | — | `contract-sup-06-20251209` |
 | SUP-07 | Nilgiri Beverage Company | 2024-01-18 | 2025-06-02 | `contract-sup-07-20240118` |
 | | | 2025-06-02 | — | `contract-sup-07-20250602` |
@@ -54,7 +66,7 @@ permits rather than what it produced. See `KNOWN_ISSUES.md`, entry 1.
 | | | 2025-09-09 | — | `contract-sup-09-20250909` · **clause-level amendment** |
 | SUP-10 | Softwrap Paper Mills | 2025-01-12 | 2025-11-07 | `contract-sup-10-20250112` |
 | | | 2025-11-07 | — | `contract-sup-10-20251107` |
-| SUP-11 | Arogya Consumer Care | 2023-09-07 | 2025-07-13 | `contract-sup-11-20230907` |
+| SUP-11 | Arogya Consumer Care | 2023-09-07 | **2025-04-26** | `contract-sup-11-20230907` · **lapses, 78 days** |
 | | | 2025-07-13 | — | `contract-sup-11-20250713` |
 | SUP-12 | Deepmala Festive Supplies | 2024-08-12 | 2025-12-18 | `contract-sup-12-20240812` |
 | | | 2025-12-18 | — | `contract-sup-12-20251218` |
