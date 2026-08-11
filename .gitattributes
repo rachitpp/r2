@@ -1,0 +1,51 @@
+# Line endings are load-bearing in this repo, not a style preference.
+#
+# Almost every claim this project makes is a SHA-256 taken over file bytes:
+# seed/CHECKSUMS.txt, corpus/CHECKSUMS.txt, the sha256 column in corpus/PARSE.csv,
+# the prompt fingerprint in evals/PROMPT_FREEZE.json, and the seed_fingerprint on
+# every expected result set in evals/sql/questions.jsonl. A CRLF checkout changes
+# every one of those bytes, so the hashes stop matching while the content is
+# identical.
+#
+# Git for Windows defaults to core.autocrlf=true, and until 2026-08-11 there was
+# nothing here to override it. A fresh Windows clone therefore failed two tests
+# with messages that accused the wrong things — "prompt changed since the freeze"
+# and "49 expectations were computed against a different seed". Neither had
+# changed; LF-normalising the bytes reproduced both recorded hashes exactly.
+#
+# `text=auto eol=lf` normalises to LF in the index AND checks out LF on every
+# platform, which is what makes the hashes portable. Do not relax it to `eol=`
+# or remove it: the failure is silent on Linux and misattributed on Windows.
+* text=auto eol=lf
+
+# CSVs are written by a writer that fixes its own line terminator, so git must
+# not have an opinion about them. `-text` passes the bytes through verbatim in
+# both directions.
+#
+# This rule is not defensive tidiness — the blanket rule above breaks the build
+# without it. Python's csv module defaults to lineterminator="\r\n" (RFC 4180),
+# and corpus/MANIFEST.csv and corpus/PARSE.csv are committed with CRLF because
+# nothing overrides it. corpus/CHECKSUMS.txt records the CRLF hash of
+# MANIFEST.csv, so normalising it to LF changes the bytes and fails
+# verify-corpus — the exact check this file exists to keep working. Caught by
+# running `git add --renormalize .` before committing this file, which is worth
+# doing again if these rules ever change.
+#
+# seed/*.csv are LF, because api/scripts/seed.py passes lineterminator="\n"
+# explicitly. The two conventions disagree and the corpus side is the odd one
+# out; reconciling it rewrites MANIFEST.csv and therefore CHECKSUMS.txt, so it
+# is a deliberate regeneration, not a cleanup. `-text` holds both as committed.
+*.csv   -text
+
+# Binary files must never be newline-translated or diffed as text. The corpus
+# PDFs are checksummed in corpus/CHECKSUMS.txt, so a translated byte here would
+# fail verify-corpus rather than pass quietly — but it would fail confusingly.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.onnx  binary
