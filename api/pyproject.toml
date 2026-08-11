@@ -25,6 +25,9 @@ dependencies = [
 
 [dependency-groups]
 corpus = [
+    "docling>=2.118.1",
+    "onnxruntime>=1.28.0",
+    "opencv-python-headless>=5.0.0.93",
     "pillow>=12.3.0",
     "pymupdf>=1.28.2",
     "reportlab>=5.0.0",

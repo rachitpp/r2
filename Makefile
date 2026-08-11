@@ -8,7 +8,7 @@ SHELL := /bin/bash
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
-        serve serve-live web web-check corpus corpus-verify
+        serve serve-live web web-check corpus corpus-verify ingest ingest-verify
 
 -include .env
 
@@ -224,6 +224,21 @@ corpus-verify: ## Regenerate into a temp dir and assert byte-identity
 	    echo "corpus is byte-identical on regeneration"; rm -rf $$tmp; \
 	  else \
 	    echo "CORPUS IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
+	  fi
+
+ingest: ## Parse every corpus document with Docling into corpus/parsed/
+	@# No model calls and no key: parsing is local. The extraction step that
+	@# follows is the one that spends quota.
+	cd api && $(UV) run --group corpus python scripts/corpus_ingest.py
+
+ingest-verify: ## Re-parse into a temp dir and assert byte-identity
+	@tmp=$$(mktemp -d); \
+	  (cd api && $(UV) run --group corpus python scripts/corpus_ingest.py \
+	     --out $$tmp >/dev/null) && \
+	  if diff -r -q corpus/parsed $$tmp; then \
+	    echo "parsed output is byte-identical on re-parse"; rm -rf $$tmp; \
+	  else \
+	    echo "PARSE IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
 	  fi
 
 verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
