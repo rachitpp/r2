@@ -72,11 +72,16 @@ pinned versions in `PIPELINE.json`:
 - It is **stable run-to-run on a single machine**: re-parsing on Windows twice
   gives identical output. This is a platform split, not randomness.
 
-**`verify-parse` cannot see this, and its sample is why.** It re-parses three
-documents and all three happen to be platform-stable, so the check passes while
-the property it names fails — the recurring class, in a check written the same day.
-It also cannot detect it in principle: CI runs one platform, so a cross-platform
-claim is not assertable there at all.
+**`verify-parse` could not see this, and its sample was why.** It re-parsed three
+documents and all three happen to be platform-stable, so the check passed on a
+machine that reproduced only 34 of 38 — the recurring class, in a check written
+the same day.
+
+**Fixed by adding `invoice-sup-12-5436` to the sample**, the document that does
+diverge. `verify-parse` now fails on Windows (`3/4 matched`) and is expected to
+pass only in the reference environment, which makes it an environment gate rather
+than a formality: **run it before trusting any `make ingest` output.** A sample
+that cannot fail is not a sample.
 
 **The real fix is the one the seed layer already has:** `make seed-generate` runs
 inside a digest-pinned `python:3.12-slim` precisely because libm and tzdata
@@ -94,8 +99,22 @@ environment" and the parse should run in one.
 >
 > **So those two `.md` files describe an earlier version of their source.** Not
 > corrupt, not silently wrong — recorded here, and `PARSE.csv` is internally
-> consistent with what is on disk. **Re-run `make ingest` on Linux before
-> extraction reads them**, since extraction would otherwise pull the old dates.
+> consistent with what is on disk. Extraction would otherwise pull the old dates.
+>
+> **To clear it, on the environment that produced the original parse** (the
+> codespace, not a Windows checkout):
+>
+>     cd api && uv sync --all-groups && cd ..
+>     make verify-parse        # MUST pass — this is what proves the environment
+>     make ingest              # re-parses all 40, refreshes PARSE.csv + CHECKSUMS
+>
+> **`make verify-parse` first, and do not skip it.** It is the only thing that
+> distinguishes "this machine reproduces the reference parse" from "this machine
+> produces something plausible". If it fails, that environment is not the
+> reference one and its `make ingest` output must not be committed.
+>
+> `PARSE.csv` will show changed timings for all 40 documents; that is entry 6,
+> not a problem.
 
 ## 3. One amendment declares a clause "as varied" and does not vary it
 

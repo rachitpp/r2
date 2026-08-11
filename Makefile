@@ -218,8 +218,15 @@ fmt: ## ruff format
 # cleanly while corpus/CHECKSUMS.txt is absent and fail loudly once it is not —
 # a permanently-passing no-op would be worse than having no check at all.
 
-# The three documents verify-parse re-parses. See the target for why these.
-VERIFY_PARSE_DOCS ?= contract-sup-01-20241130,catalog-sup-01-20251103,contract-sup-01-20250629
+# The documents verify-parse re-parses. See the target for why these.
+#
+# invoice-sup-12-5436 is the load-bearing one and was added 2026-08-11 after the
+# original three turned out to share a property that made the check useless: all
+# three parse identically on every platform tried, so verify-parse passed on a
+# machine that reproduced only 34 of 38 documents. This one does NOT — it parses
+# to a markdown table on the reference Linux environment and to the bare word
+# "Supplier" on Windows. A sample that cannot fail is not a sample.
+VERIFY_PARSE_DOCS ?= contract-sup-01-20241130,catalog-sup-01-20251103,contract-sup-01-20250629,invoice-sup-12-5436
 
 corpus: ## Generate the synthetic corpus from the seeded database
 	@# Needs the `corpus` dependency group (reportlab, pymupdf, pillow). They are
