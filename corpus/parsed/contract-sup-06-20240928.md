@@ -1,6 +1,6 @@
 ## SUPPLY AGREEMENT
 
-28 September 2024 to 09 December 2025
+28 September 2024 to 22 October 2025
 
 ## 1. Parties
 
@@ -8,7 +8,7 @@ Kirana Retail Chain (Maharashtra) and Jhat Pat Foods (SUP-06), contact orders@su
 
 ## 2. Term
 
-This agreement is in force from 28 September 2024 to 09 December 2025.
+This agreement is in force from 28 September 2024 to 22 October 2025.
 
 ## 3. Payment terms
 

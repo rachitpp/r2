@@ -1,6 +1,6 @@
 ## SUPPLY AGREEMENT
 
-## 07 September 2023 to 13 July 2025
+07 September 2023 to 26 April 2025
 
 ## 1. Parties
 
@@ -8,7 +8,7 @@ Kirana Retail Chain (Maharashtra) and Arogya Consumer Care (SUP-11), contact ord
 
 ## 2. Term
 
-This agreement is in force from 07 September 2023 to 13 July 2025.
+This agreement is in force from 07 September 2023 to 26 April 2025.
 
 ## 3. Payment terms
 

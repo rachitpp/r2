@@ -211,12 +211,37 @@ def main(argv: list[str] | None = None) -> int:
     empty = [r for r in report if r["chars"] < 50]
     canonical = is_canonical(only=args.only, out=out, corpus=corpus)
 
-    if canonical:
+    # A `--only` run into the canonical location MERGES its rows into PARSE.csv
+    # rather than skipping the report or truncating it.
+    #
+    # The first version truncated: 40 rows became 1, and the report then claimed
+    # the corpus was one document. The fix for that was to skip the write
+    # entirely, which is safe but leaves the opposite defect — the rows for the
+    # documents just re-parsed still describe the *previous* files, so the hash
+    # column stops matching the artifact and `test_recorded_hashes_describe_the
+    # _files_on_disk` fails. Merging is what the report actually needs: every
+    # row describes the file currently on disk, whoever parsed it and whenever.
+    #
+    # Timings across merged rows come from different runs. That is already true
+    # of `parse_seconds` by nature — see KNOWN_ISSUES entry 6 — and is why the
+    # reproducibility checks compare markdown rather than the report.
+    partial_merge = bool(args.only) and out.resolve() == (corpus / "parsed").resolve()
+
+    if canonical or partial_merge:
+        rows = {r["doc_id"]: r for r in report}
+        if partial_merge and (corpus / "PARSE.csv").is_file():
+            with (corpus / "PARSE.csv").open(encoding="utf-8") as handle:
+                for existing in csv.DictReader(handle):
+                    rows.setdefault(existing["doc_id"], existing)
         with (corpus / "PARSE.csv").open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=REPORT_FIELDS)
             writer.writeheader()
-            writer.writerows(sorted(report, key=lambda r: r["doc_id"]))
+            writer.writerows(sorted(rows.values(), key=lambda r: r["doc_id"]))
+        from corpus_checksums import write_checksums
 
+        print(f"checksums  {write_checksums(corpus)} artifacts")
+
+    if canonical:
         pipeline = corpus / "PIPELINE.json"
         spec = json.loads(pipeline.read_text(encoding="utf-8"))
         spec["parse"] = {
@@ -233,14 +258,8 @@ def main(argv: list[str] | None = None) -> int:
         pipeline.write_text(
             json.dumps(spec, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
-
-        # Refresh the checksums here, because this is the last stage that writes
-        # committed artifacts. Leaving it to a step someone has to remember is
-        # how parsed/ went unlisted — and therefore unverified — for the whole
-        # of Phase 2 while verify-corpus reported 41/41.
-        from corpus_checksums import write_checksums
-
-        print(f"checksums  {write_checksums(corpus)} artifacts")
+        # Checksums are refreshed above for both the whole-corpus and the merge
+        # case, because either one changes files that CHECKSUMS.txt covers.
 
     total = sum(float(r["parse_seconds"]) for r in report)
     ocr_docs = [r for r in report if r["ocr_used"]]

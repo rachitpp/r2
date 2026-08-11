@@ -62,10 +62,16 @@ platform and false across one.** Measured 2026-08-11 by re-parsing the whole
 corpus on Windows against output generated on Linux, same Docling 2.118.1, same
 pinned versions in `PIPELINE.json`:
 
-- **4 of the 38 documents whose PDFs had not changed parsed differently.**
-- Three are heading-versus-paragraph flips, in both directions
+- **5 of the 40 documents parse differently.** The first count published here was
+  4 of 38, and it undercounted for an instructive reason: the two documents whose
+  PDFs had just been regenerated were excluded from the comparison because there
+  was nothing to compare them against. Parsing their *previous* PDFs on Windows
+  and diffing against the committed output put `contract-sup-11-20230907` in the
+  divergent set too. **A sample that silently excludes the cases you changed is
+  not measuring the population you think it is.**
+- Four are heading-versus-paragraph flips, in both directions
   (`contract-sup-03-20240726`, `contract-sup-04-20240122`,
-  `contract-sup-08-20250729`).
+  `contract-sup-08-20250729`, `contract-sup-11-20230907`).
 - **One loses a table.** `invoice-sup-12-5436` — the document carrying
   `table-spans-page-break` — parsed to a markdown table on Linux and to the bare
   word `Supplier` on Windows. The hardest table case is the one that degrades.
@@ -89,32 +95,41 @@ differences move its output. The parse layer pins Docling's *version* and not it
 *environment*, so ADR-0006's claim should be scoped to "within a pinned
 environment" and the parse should run in one.
 
-> ### ⚠️ Two parses are stale and owe a re-parse on Linux
+> ### Two documents carry a Windows parse, one of them imperfectly
 >
-> `contract-sup-06-20240928` and `contract-sup-11-20230907` — their PDFs were
-> regenerated on 2026-08-11 for the coverage lapses, but `corpus/parsed/` still
-> holds the parse of the **previous** PDFs. The Windows re-parse was deliberately
-> discarded rather than committed, because taking it would have cost the invoice
-> table above for two documents' worth of freshness.
+> `contract-sup-06-20240928` and `contract-sup-11-20230907` had their PDFs
+> regenerated for the coverage lapses, so their parses had to be redone. **This
+> was necessary rather than cosmetic:** until it was, the lapse existed in the
+> database, the manifest and the PDF but *not* in `corpus/parsed/` — the layer
+> extraction reads and Phase 3 will embed. A document-grounded question would have
+> answered that coverage was continuous, which is precisely the thing
+> done-condition 4 exists to disprove.
 >
-> **So those two `.md` files describe an earlier version of their source.** Not
-> corrupt, not silently wrong — recorded here, and `PARSE.csv` is internally
-> consistent with what is on disk. Extraction would otherwise pull the old dates.
+> Both were re-parsed on Windows, with the platform cost measured first rather
+> than assumed:
 >
-> **To clear it, on the environment that produced the original parse** (the
-> codespace, not a Windows checkout):
+> - **`contract-sup-06-20240928` is faithful.** Parsing its previous PDF here
+>   reproduced the committed output byte for byte, so this machine handles that
+>   document correctly.
+> - **`contract-sup-11-20230907` is not.** Its line 3 loses the `##` heading
+>   marker, exactly as the same test predicted. Twenty-three other contracts carry
+>   that line as a heading; this one now does not.
+>
+> **The dates — the thing the lapse depends on — are correct in both.** What is
+> wrong is one structural marker in one file.
+>
+> **Owed: a `make ingest` on the environment that produced the original parse**
+> (the codespace, not a Windows checkout), which restores SUP-11's heading and
+> puts the whole corpus back on one provenance:
 >
 >     cd api && uv sync --all-groups && cd ..
 >     make verify-parse        # MUST pass — this is what proves the environment
->     make ingest              # re-parses all 40, refreshes PARSE.csv + CHECKSUMS
+>     make ingest
 >
-> **`make verify-parse` first, and do not skip it.** It is the only thing that
-> distinguishes "this machine reproduces the reference parse" from "this machine
-> produces something plausible". If it fails, that environment is not the
-> reference one and its `make ingest` output must not be committed.
->
-> `PARSE.csv` will show changed timings for all 40 documents; that is entry 6,
-> not a problem.
+> **Run `verify-parse` first and do not skip it.** It is the only thing separating
+> "this machine reproduces the reference parse" from "this machine produced
+> something plausible", and it now includes a document that can fail. `PARSE.csv`
+> will show changed timings for all 40; that is entry 6, not a problem.
 
 ## 3. One amendment declares a clause "as varied" and does not vary it
 
