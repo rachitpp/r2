@@ -26,7 +26,20 @@ remainder is debt that does not block anything. The debt is in `PROGRESS.md`.
 
 **The corpus is no longer the blocker — it exists.** 40 synthetic documents
 generated from the seeded database, and all 40 parsed with Docling into
-`corpus/parsed/`. **Extraction has not been started**, and that is now the gate.
+`corpus/parsed/`.
+
+**Extraction is built and has never been run.** Prompt, schemas, validator,
+runner and 31 tests, all exercised against a stub — no key, no network, no model
+call. `corpus/extracted/` does not exist, so **Phase 2 stands at 2 of 7
+done-conditions and building the pipeline moved none of them.** Code is not
+measurement. Three things gate the first run and all three are yours: a GCP
+budget alert, data residency for `location=global`, and the canonical Vertex
+terms. See `PROGRESS.md` → *Next session should*.
+
+**Amendments vs. supersessions is decided: clause-level provenance.** Extraction
+records what a document says, never what was in force. No migration was written —
+`supplier_term_clauses` would void 147 cached eval responses for ~$3.30 and no
+Phase 2 done-condition needs a table. It belongs in Phase 3.
 
 > **This file said "Phase 2 is blocked on the corpus, which does not exist yet"
 > for two commits after the corpus was generated and parsed.** Both landed

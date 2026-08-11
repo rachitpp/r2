@@ -28,13 +28,25 @@ specimen, no `KNOWN_ISSUES.md`, and the README's four-number block is still blan
   `corpus/parsed/` with `PARSE.csv`. `verify-parse` re-parses a 3-document sample
   and asserts byte-identity in CI — see *Last session*, because until 2026-08-11
   it was a stub that could only fail.
-- **Extraction: not started.** No prompt, no schema, no `corpus/extracted/`.
+- **Extraction: built, and never run.** `api/prompts/extract.md`,
+  `pos_copilot.extract`, `scripts/corpus_extract.py`, `make extract` /
+  `make extract-stub`. Every path is exercised against a stub — no key, no
+  network, no quota — and **no model has been called.** `corpus/extracted/` does
+  not exist yet, so nothing here is a measurement.
 
-**Two decisions of yours gate the first extraction run** and are unchanged in the
-open-questions list below: data residency for `location=global`, and the
-canonical Vertex terms. A third — amendments vs. supersessions — is now *decidable*
-rather than blocked, because the corpus contains 2 clause-level amendments by
-construction.
+**Amendments vs. supersessions is decided: clause-level provenance.** Extraction
+records what a document *says*, never what was in force — the amendment that
+varies three clauses yields three clauses, and the set in force is computed later
+from the whole chain. The alternative makes the model perform the inheritance, and
+then a correct inheritance and an invented value are indistinguishable in the
+output, which is the failure this step is measured on. **No migration was
+written**: `supplier_term_clauses` would regenerate `schema.md`, change the SQL
+prompt fingerprint and void 147 cached responses for ~$3.30, and no Phase 2
+done-condition needs a table. It belongs in Phase 3, where retrieval queries it.
+
+**What still gates the first paid run**, all three yours: data residency for
+`location=global`, the canonical Vertex terms (narrowed again below, still not
+resolved), and **a GCP budget alert, which has never been confirmed to exist.**
 
 ### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
@@ -137,15 +149,49 @@ generated in a **Linux** codespace, OCR included, on a 200dpi skewed scan with n
 text layer. ADR-0006 scopes the determinism claim to the parse layer; this is the
 first evidence that the scope holds across machines rather than only across runs.
 
+### Extraction, built against a stub, never once called a model
+
+`api/prompts/extract.md` (one prompt, `{json_schema}` injected per document type,
+document text below every instruction in a delimited block per rule 6),
+`pos_copilot.extract` (schemas, structural validator, invoice reconciliation),
+`scripts/corpus_extract.py` (cache, 60-call and $2.00 ceilings, canonical-run
+guard), 31 stub-driven tests.
+
+**Two defects found by probing it, neither by reading it:**
+
+- **The stub could write invented values into `corpus/extracted/`.** The report
+  guard covered `EXTRACT.csv` but the per-document writes were unconditional, so
+  a plumbing run would have left 40 files nothing downstream could distinguish
+  from real extractions. Refused up front now.
+- **The test for that guard could not fail.** It passed `--out tmp_path`, so the
+  out-of-place check was what made it green and the stub check never executed.
+  Rewritten to aim at the canonical directory, then validated by disabling the
+  guard and watching it fire — which is how the 40 files were seen. **A probe
+  that passes for the wrong reason is instance twelve**, and it was written *in
+  this session*, by someone who had spent the morning fixing four others.
+
+`MODEL_EXTRACT` was also missing from the Makefile's `export` line — the
+`-include .env` defect already written down two sections above this one.
+
 ### Two things a fresh clone trips over, neither of them in the repo
 
-- **`core.autocrlf=true` and no `.gitattributes` breaks every hash in the
+- **`core.autocrlf=true` and no `.gitattributes` broke every hash in the
   project.** On Windows this failed two tests with confidently wrong messages —
   "prompt changed since the freeze" and "49 expectations computed against a
   different seed". Neither was true: LF-normalising the bytes reproduces
-  `PROMPT_FREEZE.json` and the seed fingerprint exactly. Fixed for this clone with
-  `core.autocrlf=false` and a re-checkout. **A committed `.gitattributes` is the
-  durable fix and has not been written** — it is a repo-wide decision.
+  `PROMPT_FREEZE.json` and the seed fingerprint exactly. **Fixed:
+  `.gitattributes` is committed.**
+
+  The naive version of that file would have broken CI, which is the part worth
+  keeping. Python's `csv` module defaults to `lineterminator="\r\n"`, nothing in
+  the corpus scripts overrides it, so `MANIFEST.csv` and `PARSE.csv` are committed
+  with CRLF and `CHECKSUMS.txt` records the CRLF hash — `* text=auto eol=lf` alone
+  would normalise them and fail `verify-corpus`, the exact check the file exists
+  to protect. `*.csv -text` holds them as committed. **Caught by running
+  `git add --renormalize .` before committing**, which is named in the file so the
+  next edit runs it. `seed/*.csv` are LF because `seed.py` sets the terminator
+  explicitly; the two conventions disagree and reconciling them rewrites
+  `CHECKSUMS.txt`, so it is a deliberate regeneration rather than a cleanup.
 - **`make ingest` needs two environment variables on Windows** and nothing says
   so: `HF_HUB_DISABLE_SYMLINKS=1` (hf_hub symlinks need admin or Developer Mode)
   and `TORCHDYNAMO_DISABLE=1` (TorchInductor shells out to MSVC `cl.exe`). Both
@@ -164,12 +210,16 @@ _The 2026-08-09 eval findings — six samples, threshold 3 retired, q017 and q03
 fixed, q049 withdrawn — are preserved in `docs/HANDOFF.md` and in **Measured
 numbers** below. They have not changed._
 
-_What didn't:_ extraction, which is Phase 2's actual deliverable. `parsed/` is
-still absent from `CHECKSUMS.txt`.
-_Anything half-finished someone would trip over:_ No.
-_Is the system in a working state?_ Yes. 207 passed, 33 skipped without a
+_What didn't:_ **the extraction run itself** — it is built and unrun, blocked on
+the three gates in *Next session should*. So Phase 2 still stands at 2 of 7
+done-conditions: building the pipeline moved no condition, and saying otherwise
+would be counting code as measurement. `parsed/` is still absent from
+`CHECKSUMS.txt`.
+_Anything half-finished someone would trip over:_ No. `make extract` refuses
+without `MODEL_EXTRACT`; `make extract-stub` needs nothing.
+_Is the system in a working state?_ Yes. 238 passed, 33 skipped without a
 database; ruff clean; `make web-check` clean; `verify-corpus` and `verify-parse`
-both pass.
+both pass; `git add --renormalize .` stages nothing.
 
 
 ## Next session should
@@ -179,30 +229,28 @@ are listed under *Named debt* and each is cheap to do **inside** a later phase t
 touches the prompt anyway. Reopening it on its own is what the last three sessions
 did, at ~$9.83 and diminishing returns.
 
-**The corpus is no longer the blocker. Extraction is, and one decision of yours
-gates it:** data residency, because Vertex serves this model from
-`location=global` only, so the first extraction run sends document content to an
-unpinned region. The corpus being synthetic weakens that question a great deal —
-nothing in it is confidential — but it was never formally closed, and the second
-half of it has not weakened at all: **the canonical Vertex terms**, which
-ADR-0009 rests on and which have still only been confirmed from documentation
-rather than the terms themselves. That page is client-rendered and **needs a
-browser, not a fetcher**; look for the "Zero Data Retention" section.
+**Extraction is built and has never been run. Everything left in Phase 2 is
+downstream of running it, and three things gate that — all three yours:**
 
-In value order:
+1. **A GCP budget alert.** `PLAN.md` and the model-providers section below both
+   require one before the first Vertex call. It has never been confirmed to
+   exist, and it is the cheapest of the three to settle.
+2. **Data residency.** Vertex serves this model from `location=global` only, so
+   the run sends document content to an unpinned region. The corpus being
+   synthetic weakens this a great deal — nothing in it is confidential — but it
+   was never formally closed.
+3. **The canonical Vertex terms**, which ADR-0009 rests on. See *Open questions*:
+   three fetches on 2026-08-11 narrowed it again and did not close it.
 
-1. **Decide amendments vs. supersessions.** It is now decidable rather than
-   blocked: the corpus contains 2 clause-level amendments by construction
-   (`PLAN.md` says generate both shapes, and it did). If they are to be modelled
-   as amendments, the answer is a narrow `supplier_term_clauses` table for
-   clause-level provenance with `supplier_terms` kept as the queryable
-   projection — not a reshape. **This decides the extraction schema, so it comes
-   before extraction, not after.**
-2. **Build extraction.** Schema per document type, prompt as a file in
-   `api/prompts/` (ADR-0008 — never inline), raw output into `corpus/extracted/`
-   and **never hand-edited** (rule 8), fixes into `corpus/corrections/` with a
-   note per fix. This is the paid path, so it carries a call ceiling and a spend
-   ceiling like every other runner (rule 2).
+Then, in order:
+
+1. **Run `make extract --limit 5` and read all five by hand** before the full 40.
+   The stage-1 rule is written for evals and the reason generalises exactly: a
+   schema cannot be validated by inspection, only by use. The first staged run of
+   the SQL set scored 0/4 and none of it was the model.
+2. **Then the full 40** — ~$0.80 under a 60-call, $2.00 ceiling. Raw output into
+   `corpus/extracted/`, **never hand-edited** (rule 8); fixes into
+   `corpus/corrections/` with a note per fix saying what the pipeline got wrong.
 3. **Gold set — label all 40.** The *Open questions* estimate of "~40, never
    confirmed" is now confirmed at exactly 40, and the rule already written there
    says: under 40, label all of it and skip gold-set sampling. `PLAN.md` asks for
@@ -260,10 +308,13 @@ _Injection specimens:_ Phase 3, not started.
   of the 40 from source, which is a stronger check on those three and no check at
   all on the other 37. **Extend `CHECKSUMS.txt` when `extracted/` lands**, since
   that is the same gap one layer down and both close with one edit.
-- **No `.gitattributes`.** With `core.autocrlf=true` — Git for Windows' default —
-  every text file checks out CRLF and every byte-level hash in this project is
-  wrong: the prompt freeze, the seed fingerprint, and `PARSE.csv`. Fixed by local
-  config in one clone on 2026-08-11; **the repo still has no durable fix.**
+- **The corpus and seed CSVs disagree about line endings.** `MANIFEST.csv` and
+  `PARSE.csv` are CRLF because Python's `csv` default is RFC 4180 and nothing
+  overrides it; `seed/*.csv` are LF because `seed.py` does. `.gitattributes`
+  holds both as committed with `*.csv -text`, so nothing is broken — but two
+  conventions in one repo is a trap for whoever next writes a CSV. Reconciling
+  rewrites `MANIFEST.csv` and therefore `CHECKSUMS.txt`, so it rides along with
+  the next deliberate corpus regeneration or not at all.
 - **`full×3` is done, but it is one sample of three runs.** Variance at 10.6%
   sits right on ADR-0001's line; another triple would move it either way.
 - **q036's refusal is not reliable** — two of three. It is the behaviour the
@@ -488,6 +539,33 @@ These are unresolved by design. If you hit one, stop.
   only its navigation shell to a fetcher, because the body is client-rendered. **So
   it needs a browser, not a tool** — and the specific thing to look for is the
   "Zero Data Retention" section that page's title advertises.
+
+  **Retried again 2026-08-11, three fetches, narrowed a third time and still not
+  resolved. Two of the three findings change where to look:**
+
+  - The data-governance page still returns navigation only. Confirmed, not assumed
+    — the "needs a browser" note above is current, not stale.
+  - **The Service Specific Terms cross-reference a section named "AI/ML Data
+    Location" at §1(b)(ii), whose body is not on the page fetched.** That is a
+    name to search for rather than a topic to hunt. But note what it is: *data
+    location*, which answers the residency question above and **not** the training
+    question ADR-0009 rests on. They are separate clauses and were being looked
+    for as one.
+  - **The Cloud Data Processing Addendum contains no explicit "we will not train"
+    clause.** What it has is §5.2, a purpose limitation: Google processes Customer
+    Data "only ... to provide, secure, and monitor the Services" plus the
+    customer's own instructions. Training a foundation model is not providing the
+    Services, so the commitment appears to be *implied by purpose limitation
+    rather than stated*. Appendix 4 (Specific Products) was not in the fetched
+    text and is the next place to look.
+
+  **This sharpens the caution rather than relieving it.** ADR-0009 says customer
+  data "stays out of the foundation model training corpus", and the explicit
+  sentence saying so has now failed to turn up in three canonical documents. It
+  may still exist in Appendix 4 or behind the client-rendered page. What can be
+  said today is weaker than what the ADR says, and the ADR should be read as
+  resting on a purpose limitation plus product documentation until someone opens
+  a browser and finds better.
 - **Whether the corpus covers perishables.** If yes, the dynamic pricing cut flips
   and it belongs in Phase 6.
 - **The approval-card wireframe** (Phase 4). Palette and type are settled — proposed
