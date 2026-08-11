@@ -141,7 +141,7 @@ Orders placed with suppliers. Seeded history exists so that supplier delivery pe
 | `status` | text NOT NULL |  |  |
 | `source` | text NOT NULL |  | Who created this order: 'seed' is generated history, 'agent' was drafted by the procurement agent and approved by a human, 'manual' was entered by hand. |
 | `ordered_on` | date NOT NULL |  |  |
-| `expected_on` | date NOT NULL |  | Delivery date promised at the time of ordering, from the supplier's contracted lead time. received_on is when it actually arrived. |
+| `expected_on` | date NOT NULL |  | Delivery date recorded against this order. received_on is when it actually arrived. NOT a substitute for the contracted lead time: every order in this dataset carries expected_on = ordered_on + the supplier's CURRENT lead_time_days, including the 7,905 orders placed before that supplier renegotiated, so for 5,329 of 15,723 orders it does not match the supplier_terms row in force on ordered_on. A question about the lead time a supplier CONTRACTED to must read supplier_terms.lead_time_days with valid_period @> ordered_on; expected_on answers a different question. |
 | `received_on` | date |  |  |
 | `subtotal` | numeric(12,2) NOT NULL |  |  |
 | `created_by_user_id` | integer | FK → users |  |

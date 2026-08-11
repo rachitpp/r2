@@ -143,6 +143,53 @@ ORDERED_SHAPES = frozenset({"top_n", "ranked_all", "scalar"})
 UNORDERED_SHAPES = frozenset({"all_matching"})
 
 
+def _tie_runs(tie_keys: list) -> list[tuple[int, int]]:
+    """Maximal spans of equal ranking value, as (first, last) index pairs."""
+    runs, i = [], 0
+    while i < len(tie_keys):
+        j = i
+        while j + 1 < len(tie_keys) and tie_keys[j + 1] == tie_keys[i]:
+            j += 1
+        runs.append((i, j))
+        i = j + 1
+    return runs
+
+
+def valid_within_ties(expected: dict, got: list, columns: list[str]) -> bool:
+    """Is this answer a legitimate completion of a question with ties in it?
+
+    A reference's tiebreak makes its query deterministic; it does not make the
+    QUESTION determinate. Where the ranking key repeats, two things stop being
+    fixed and neither was ever asked for:
+
+    * rows tied **inside** the answer may appear in any order;
+    * rows tied **at the cut** may fill the last slots in any combination —
+      q042 has five of ten slots contested among thirteen tied products.
+
+    So each run of equal ranking value is matched as a set rather than a
+    sequence, and the final run draws from `tie_pool` when the cut is contested.
+    Everything outside a run is still compared exactly, in order.
+    """
+    want = expected.get("rows", [])
+    tie_keys = expected.get("tie_keys") or []
+    pool = expected.get("tie_pool") or []
+    if len(want) != len(got) or len(tie_keys) != len(want):
+        return False
+
+    for first, last in _tie_runs(tie_keys):
+        group = want[first : last + 1]
+        contested = pool and last == len(want) - 1
+        allowed = list(pool) if contested else list(group)
+        for candidate in got[first : last + 1]:
+            for index, option in enumerate(allowed):
+                if row_contains(option, columns, candidate):
+                    del allowed[index]
+                    break
+            else:
+                return False
+    return True
+
+
 def compare(expected: dict, actual: dict, shape: str = "top_n") -> Judgement:
     """Compare result sets according to what the question determines.
 
@@ -189,6 +236,15 @@ def compare(expected: dict, actual: dict, shape: str = "top_n") -> Judgement:
     ]
     if not mismatched:
         return Judgement(Outcome.CORRECT)
+
+    # Before calling it wrong: is it a valid completion of a question whose
+    # ranking key repeats? Scoring the reference's arbitrary tiebreak as though
+    # the question had named it marks correct answers wrong.
+    if expected.get("tie_keys") and valid_within_ties(expected, got, columns):
+        return Judgement(
+            Outcome.CORRECT,
+            "valid completion of ties the question does not break",
+        )
 
     # Same rows, wrong sequence: almost always a missing ORDER BY tiebreak.
     # Worth naming separately because the remedy is specific — and it is still

@@ -100,23 +100,34 @@ def _places(value: Decimal) -> int:
 
 
 def numbers_match(want: Decimal, got: Decimal, kind: Kind) -> bool:
-    """Compare at the COARSER of the two precisions, then within tolerance.
+    """Do these two numbers state the same quantity?
 
-    Precision alignment is not a loosening; it is the same under-determination
-    the shape taxonomy fixed, one level down. "Rank the days by average
-    takings" does not say how many decimals. A reference writing
-    `round(avg(...))` gives 326958 where a model's raw average gives
-    326958.0876 — the same answer, 0.0876 apart, which absolute money
-    tolerance alone would call wrong.
+    Compared at the COARSER of the two precisions, because that is the real
+    under-determination: "rank the days by average takings" does not say how
+    many decimals. A reference writing `round(avg(...))` gives 326958 where a
+    model's raw average gives 326958.0876 — the same answer, and absolute money
+    tolerance alone would call it wrong.
 
-    Aligning decimal places does not hide real errors, because it aligns
-    DECIMALS, not significant figures: a model answering 1200 where the truth
-    is 1234.56 still fails at zero places.
+    **Compared on the raw difference against half a unit of that precision, and
+    never by re-rounding.** Re-rounding double-rounds, twice over in practice:
+
+    * q031's reference reports `11.5` at one decimal and the model reports
+      `11.55` at two, both from a true 11.549. Quantizing 11.55 back to one
+      decimal gives 11.6 and scores a correct answer wrong.
+    * Postgres rounds half away from zero, Python's `Decimal.quantize` rounds
+      half to even, and they disagree on exact halves — which is where money
+      lands. `sum(line_total)::bigint` gives 34709 for 34708.50 where quantize
+      gives 34708. Four of q035's campaigns sit on an exact half.
+
+    A value stated to `places` decimals stands for anything within half a unit
+    of it, so that is what is allowed, plus the kind's own tolerance. This
+    fixes a boundary; it does not open a gap. Aligning decimals is not aligning
+    significant figures, so a model answering 1200 where the truth is 1234.56
+    still fails at zero places.
     """
     places = min(_places(want), _places(got))
-    quantum = Decimal(1).scaleb(-places)
-    left, right = want.quantize(quantum), got.quantize(quantum)
-    return abs(left - right) <= TOLERANCE[kind]
+    half_a_unit = Decimal(1).scaleb(-places) / 2
+    return abs(want - got) <= half_a_unit + TOLERANCE[kind]
 
 
 def values_match(want: object, got: object, kind: Kind) -> bool:

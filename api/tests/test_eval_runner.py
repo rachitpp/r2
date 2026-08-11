@@ -86,6 +86,36 @@ def test_a_changed_prompt_invalidates_the_cache(tmp_path):
     assert cache.get("fp2", "q001", 0) is None
 
 
+def test_a_changed_question_invalidates_its_own_cached_answer(tmp_path):
+    """The prompt fingerprint does not cover the question text.
+
+    Replacing a question changes what the model would be asked while changing no
+    part of the key, so without this the next re-score judges the answer to the
+    old question against the new one and reports it as a result. Found the hard
+    way: q049 was withdrawn on 2026-08-08 and its three responses had to be
+    deleted by hand.
+    """
+    cache = ResponseCache(root=tmp_path)
+    cache.put("fp1", "q049", 0, "old answer", "the original question")
+    assert cache.get("fp1", "q049", 0, "the original question") == "old answer"
+    assert cache.get("fp1", "q049", 0, "a REPLACED question") is None
+    assert cache.stale == 1
+
+
+def test_an_answer_cached_before_question_hashing_is_still_usable(tmp_path):
+    """Rejecting them would have voided 288 paid-for responses. The
+    grandfathering ends by itself: the next prompt change starts a new
+    directory, and everything in it carries the hash."""
+    import json
+
+    path = tmp_path / "fp1"
+    path.mkdir()
+    (path / "q001.0.json").write_text(json.dumps({"response": "older format"}))
+    cache = ResponseCache(root=tmp_path)
+    assert cache.get("fp1", "q001", 0, "any question at all") == "older format"
+    assert cache.stale == 0
+
+
 def test_cache_can_be_disabled(tmp_path):
     cache = ResponseCache(root=tmp_path, enabled=False)
     cache.put("fp1", "q001", 0, "x")

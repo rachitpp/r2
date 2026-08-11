@@ -14,7 +14,6 @@
     "corpus/ is empty until Phase 2. The parse and extraction blocks are",
     "recorded here now so the shape does not change when it lands."
   ],
-
   "generation": {
     "provider": "vertex",
     "note": "Gemini Enterprise Agent Platform, formerly Vertex AI (renamed May 2026)",
@@ -23,7 +22,10 @@
         "model": "gemini-3.6-flash",
         "location": "global",
         "verified_on": "2026-08-07",
-        "regions_checked_and_absent": ["us-central1", "asia-south1"]
+        "regions_checked_and_absent": [
+          "us-central1",
+          "asia-south1"
+        ]
       },
       "CLASSIFY": {
         "model": "gemini-3.5-flash-lite",
@@ -41,13 +43,16 @@
     "sampling_parameters": null,
     "sampling_note": "temperature, top_p and top_k are deprecated and ignored on these models and return HTTP 400 on later ones. Sending them would look like a determinism control while doing nothing. See ADR-0006."
   },
-
   "parse": {
     "tool": "docling",
-    "version": null,
-    "note": "Phase 2. Pin the exact version; verify-parse asserts byte-identity against a committed 3-document sample."
+    "docling": "2.118.1",
+    "docling_core": "2.91.0",
+    "docling_ibm_models": "3.13.3",
+    "ocr_engine": "rapidocr",
+    "rapidocr": "3.9.2",
+    "onnxruntime": "1.28.0",
+    "note": "OCR is enabled for every document, not only the scans, so one pipeline is being measured rather than several. RapidOCR needs opencv-python-headless in this environment: docling reports 'RapidOCR is not installed' when the real failure is a missing libGL.so.1."
   },
-
   "extraction": {
     "last_verified_on": null,
     "last_verified_commit": null,

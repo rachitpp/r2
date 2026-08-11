@@ -9,82 +9,247 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 0 — Data foundation. Complete.** Next up is Phase 1, structured Q&A.
+**Phase 1 — Structured Q&A. CLOSED 2026-08-09. Phase 2 is next and is blocked on
+you: the corpus does not exist yet.**
 
-Definition of done is in `docs/PLAN.md`.
+`docs/PLAN.md` says Phase 1 is done when the harness prints execution accuracy,
+silent-wrong and cross-run variance **and** a question asked in the web app
+returns an answer beside the query that produced it. Both hold, and the second was
+re-verified end to end after the last change.
+
+**Why it is being closed with known defects open rather than kept open until they
+are gone.** Three consecutive sessions went into the instrument, ~$9.83 and 447
+model calls, against a phase budgeted ~32h that is at a large multiple of it. The
+deliverable has been working for two days. Everything still open is instrument
+refinement whose value is now clearly diminishing: the last full measurement cycle
+bought one genuine finding (the timeout idiom) and one retraction of my own. The
+budget rule in `HANDOFF.md` says to check this **at the point where it can still
+change what you do** — this is that point, and what it changes is: stop measuring.
+
+**What is NOT being claimed by closing it:** that the eval is clean. Threshold 1
+fires, five questions produce unstable silent-wrongs, and two documented blind
+spots (`is_active`, `business_date`/`sold_at`) cannot be detected by the instrument
+at all. All of it is carried below as named debt, none of it blocks Phase 2.
+
+- **Harness: done, and now measured six times** — three triples of the current
+  prompt and three of the previous one. **The samples disagree with each other in
+  ways that decide things**, which is the session's main finding; see
+  *Last session*. Quote the clean triple (runs 3–5 of `f3b7a9…`) and nothing else.
+- **Web app: the query view exists and works.** `web/` is a Next.js App Router
+  app with the proposed palette and type in `tailwind.config.ts`, a typed client
+  mirroring the FastAPI models, and the answer-beside-SQL view. `make web` with
+  `make serve` alongside. **Demo beat 1 runs end to end.**
+  The approval card (the design plan's signature surface) is Phase 4 and is not
+  built. `docs/DESIGN-TOKENS.md` was proposed and then built from — say if the
+  palette or type should change and it is a config edit, not a rewrite.
+- **Live model path: built, opt-in, and proven against the real model.**
+  `DEMO_MODE=false` (`make serve-live`) generates the SQL instead of reading it
+  from a file. Every branch is exercised against a stub in CI — no key, no quota —
+  and three real Vertex calls (~$0.06) confirmed an answer, a refusal and a
+  clerk-scoped query end to end.
+
+**ADR-0001 is resolved — keep generated SQL — but do not cite "two thresholds
+fired" any more.** Threshold 3's firing at 10.6% was a sampling artifact: a strict
+replication of the same prompt and questions returned 4.3%, and the metric has no
+fixed value until the run count is fixed. The resolution's conclusion survives; two
+of its three reasons do not. **The canned demo path is still load-bearing** for the
+part that does survive, so the live path was added beside it and did not replace it.
+Read the ADR's *Review* and *Replication* sections before quoting any of it.
+
+State and corrections: `docs/HANDOFF.md`. Fix-list history:
+`evals/FIX-LIST-v2.md`.
 
 ## Where things stand
 
 | Phase | Status | Note |
 |---|---|---|
-| 0 Data foundation | **done** | ~32h against a 20h budget; PLAN.md updated |
-| 1 Structured Q&A | not started | |
-| 2 Corpus ingestion | not started | |
+| 0 Data foundation | **done** | ~32h against a 20h budget |
+| 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
+| 2 Corpus ingestion | **next, and blocked on you** | `corpus/` holds a README and PIPELINE.json — no documents. Hour one is a PII scan and the amendments-vs-supersessions check, both of which need real files. Three open questions wait on it: corpus size, amendments, and data residency for `location=global` |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
 
 ## Last session
 
-_Date:_ 2026-08-06
-_What landed:_ Phase 0 complete and pushed. Then the locale was resolved to
-**India** and the whole dataset regenerated: INR, Asia/Kolkata, a Maharashtra
-chain (Pune / Nashik / Nagpur), an Indian grocery catalogue, GST by category
-slab, and a real festival model. ADR-0004's reset budget amended to the
-measured numbers; CONVENTIONS gained the migration→`make schema-doc` rule.
-_What didn't, and why:_ Phase 1 has not started. The locale change had to land
-first and finish clean.
-_Anything half-finished someone would trip over:_ No.
-_Is the system in a working state?_ Yes. `make db` → `make test` green: 32 tests,
-`ruff` clean, seed byte-identical at both sizes, `schema.md` current.
+_Date:_ 2026-08-08 → 2026-08-09
+_What landed:_ The live path, proven live. ADR-0001's follow-ups, measured. And
+**the eval measured six times, which is how two of this session's own conclusions
+were caught being wrong.**
+
+### Six samples, and the metric that could not survive them
+
+| sample | prompt | questions × runs | not-view-covered | variance |
+|---|---|---|---|---|
+| first triple (0–2) | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
+| **strict replication (3–5)** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
+| _pooled, not a triple (0–5)_ | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | _12.8%_ |
+| triple, pre-fixes (0–2) | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
+| re-score after the fixes (0–2) | `f3b7a9…` | 49 × 3 | 97.1% (102/105) — **biased** | 0.0% |
+| **clean triple (3–5)** | `f3b7a9…` | 49 × 3 | **91.4% (96/105, CI 85–95)** | **12.2%** |
+
+**Five triples of a system that did not change read 0.0, 2.0, 4.3, 10.6 and 12.2
+percent variance.** Two are strict replications, and each pair straddles the 10%
+line. **Threshold 3 is retired as a trigger.**
+
+**And the 97.1% row is the session's most expensive lesson.** After fixing three
+under-determined questions I re-measured only those three — so failures got a
+second draw and successes did not. It read 97.1% with **zero** silent-wrongs. The
+clean triple over the identical set came back **91.4% with five**, and the
+instability was in the questions that had *not* been re-rolled. **Threshold 1
+fires; the "it does not fire" ruling I recorded lasted about an hour**, and only
+because it was written with an explicit reversal condition.
+
+- **q017 was never a model failure, and the controlled test proves it.** I changed
+  only the question — naming *average* delivery time against *average* contracted
+  lead time — and left the reference untouched. It went from `wrong ×3` to
+  **correct 6/6** across both triples. Six runs of the old prompt had already shown
+  it choosing each reading three times: `HAVING count(*) FILTER (late) > 0` when it
+  failed, `HAVING avg(actual) > avg(contracted)` when it passed.
+- **q036's causation fix is confirmed: refusal 6/6**, up from 2/3, and **zero
+  `refused_wrongly` anywhere in the clean triple** — so the section did not teach
+  blanket refusal, which was the way it could have been worse than the defect.
+- **q026 and q050 are the one stable model-side finding.** Festival membership as a
+  correlated `EXISTS` per row runs 1.5s at chain grain and blows the 5s timeout at
+  category grain; the model picks between that and a set-based join run to run. The
+  exact failing SQL was re-executed against an **idle** database — 5.005s — so this
+  is not test-suite load being blamed on the model.
+- **The 100% on view-covered was an artifact.** q032 fails once in six runs of the
+  old prompt; 65/66.
+- **q049 was mine and is withdrawn.** It scored `wrong_rows` 3/3 while returning
+  values numerically identical to its own reference. **q050 replaces it.** Its
+  premise was wrong too: the 7.1s I quoted was my own rewrite of the correlated
+  form, not what the model writes.
+- **Not one of the five silent-wrongs is stable.** Every one is correct in at least
+  one run of the same triple. The failure this project exists to catch is not "the
+  model cannot" but "the model usually can".
+
+### Everything else that landed
+
+- **`POST /query` generates SQL when `DEMO_MODE=false`.** `api/src/pos_copilot/live.py`,
+  `make serve-live`. Scope reaches the prompt before any SQL exists, the guard
+  (rule 4) runs before a connection is opened, and the model's own SQL comes back
+  in `generated_sql` beside the wrapped `sql` that ran.
+- **Refusals and failures are separate response fields.** `refusal` is the model
+  declining (either sentinel); `error` is the guard rejecting the query or
+  Postgres refusing it. A failed generated query is a **200 carrying `error`**,
+  not a 500 — the request was fine and the system did the right thing.
+- **A ceiling, per rule 2.** Process-wide, 50 calls / $1.00 by default, and the
+  model call is serialised because `Pacer` and `Budget` are not thread-safe and
+  `model.py` is serial by design.
+- **`/health` now reports whether live mode can actually serve.** It answered
+  `ok` with no credential before, which is this project's defect class in the one
+  endpoint whose job is reporting state.
+- **The web input is typed, with the catalogue as suggestions**, so the live path
+  is reachable from the browser without the UI branching on a mode it is not
+  allowed to know (`CONVENTIONS.md`). Provenance is stated per answer from the
+  response's own `mode` field.
+
+_Three defects found on the way, two of them mine:_ **`make serve` could not
+serve in a shell that had not exported `.env` itself** — `-include .env` makes
+*make* variables, not environment ones, so the API got no
+`READONLY_DATABASE_URL` and answered every query with a 500 while `/health` still
+said `ok`. (Last session's end-to-end check passed because that shell had the
+variables; a fresh clone would not have.) `export FOO` for an unset variable
+exports it **empty**, so
+`int(os.environ.get("LIVE_MAX_CALLS", "50"))` raised on every live request
+(`api/src/pos_copilot/env.py` is the fix, and `int("")` was latent in
+`resolve_provider` and the eval runner too); and an `OSError` from a rejected key
+would have surfaced as a traceback, since urllib's errors are not `RuntimeError`.
+
+**The live path is proven live.** Three real Vertex calls, ~$0.06: net revenue for
+May 2026 came back as 8,064,347.42, matching the demo path's figure for the same
+month; "how many customers do we have" came back as
+`-- INSUFFICIENT SCHEMA: customer data is not tracked in the database`; and a
+clerk-scoped question produced `WHERE store_id = 2` in the model's own SQL with the
+tripwire silent. `web/` verified serving through the Next rewrite proxy.
+
+_What didn't:_ the approval card (Phase 4). Nothing else was deferred.
+_Anything half-finished someone would trip over:_ No. Two gates are live and both
+are documented in HANDOFF — `is_active`, and the new `business_date`/`sold_at`
+blind spot.
+_Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
+`make web-check` clean.
 
 ## Next session should
 
-1. **The LIMIT wrapper** — the named debt below. Reject anything that is not a
-   single `SELECT`, wrap as `SELECT * FROM (<sql>) _q LIMIT :n`, fetch through
-   a capped server-side cursor.
-2. **SQL generation** against `sql_generate.md`, then the first eval run:
-   `make eval-sql`, 41 questions × 3 runs. Report execution accuracy three
-   ways — overall, view-covered, not-view-covered — and read the ADR-0001
-   thresholds off the **not-view-covered** number.
-3. **Next.js scaffold and the query UI.** Design tokens get proposed and agreed
-   before any component is written (CONVENTIONS → Frontend).
+**Phase 1 is closed. Do not reopen the eval to chase the remaining items** — they
+are listed under *Named debt* and each is cheap to do **inside** a later phase that
+touches the prompt anyway. Reopening it on its own is what the last three sessions
+did, at ~$9.83 and diminishing returns.
 
-## Phase 1 so far
+**The one thing that unblocks the project is the corpus, and only you can supply
+it.** When documents land, Phase 2's hour one is fixed by `PLAN.md`: a PII scan
+before the first commit, and a check for whether the corpus contains amendments
+rather than clean supersessions — that second one changes the data model, so it
+happens before anything is built. Three questions in *Open questions* below are
+waiting on the same delivery, and one of them — data residency, because Vertex
+serves this model from `location=global` only — needs answering **before** real
+documents are sent anywhere.
 
-- `api/prompts/context/business_context.md` — written first, before any prompt
-  work or eval question, per ADR-0001. Every factual claim in it was checked
-  against the built database rather than the draft.
-- `evals/sql/questions.jsonl` — 41 questions, expected result sets **generated**
-  by executing hand-written reference SQL (`make eval-expectations`), never
-  typed. Pinned to the seed by `seed_fingerprint`; a pytest fails when they
-  drift apart. `evals/sql/README.md` documents the schema and the trap coverage.
-- Four expectation kinds: `rows` (35), `empty` (1), `refusal` (3),
-  `disambiguation` (2). `empty` is a distinct kind on purpose — an empty
-  expectation filed under `rows` scores every wrong query as correct, and
-  `eval_expectations.py` treats that as a broken question rather than a result.
-- **11 view-covered, 30 not.** The ADR-0001 threshold is judged on the 30.
+If you want to spend a session on Phase 1 anyway, in value order:
 
-## KEY ROTATION PENDING — do not use the current credential
+1. **One `business_context.md` line about set-based festival membership.** It is
+   the only stable model-side failure left, the fix is a context edit (which is
+   what this project's evidence says works), and it can ride along with the
+   `business_date`/`sold_at` correction so one cache void covers both.
+2. **Decide whether five *unstable* silent-wrongs mean anything a catalog would
+   fix.** Threshold 1 fires, but every failure is correct in at least one run of
+   the same triple and the set of failing questions changes between triples. The
+   ADR's case for generated SQL never rested on failures being rare — it rested on
+   the context document doing the work, which two more fixes confirmed.
+3. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
+   `tailwind.config.ts` edit, not a rewrite.
 
-The service account JSON arrived in the repo working tree, untracked and
-un-ignored, while every commit used `git add -A`. Not committed and not in
-history — verified — but its disposition is not fully accountable, so it is
-being **rotated**: new key in the console, old one deleted, replacement never
-placed inside the repo directory.
+**And the rule that cost the most to learn: never re-measure only the questions
+that failed.** It read 97.1% with zero silent-wrongs against a clean 91.4% with
+five.
 
-Two layers now guard this, because ignore patterns only catch anticipated
-filenames:
+## Measured numbers
 
-1. `.gitignore` carries broad credential patterns, not just the one filename.
-2. `.githooks/pre-commit` greps STAGED CONTENT for the markers a service
-   account JSON and a PEM private key always carry, plus the AI Studio key
-   shape. The patterns live in the hook; they are deliberately not reproduced
-   here, because a document quoting them literally trips the hook — which is
-   how this paragraph got written. Enable with `make hooks`. Verified to block
-   the real key and to pass a normal commit.
+_SQL, current prompt `f3b7a9193a56f10d`, current 49 questions, **clean triple
+(runs 3–5, 147 fresh responses, 2026-08-09)**:_ not-view-covered **91.4% (96/105,
+CI 85–95%)**, overall 92.8% (128/138), view-covered 97.0% (32/33), **cross-run
+variance 12.2%**, silent-wrong in 5 distinct questions (q011, q026, q034, q043,
+q047) — **none of them stable; each is correct in at least one of the three runs.**
+Execution errors in q026 and q050, both statement timeouts, both verified against
+an idle database so the attribution is the model's idiom and not test-suite load.
+
+**Quote this triple, not runs 0–2 of the same prompt.** Those read 97.1% and 0.0%
+variance because only the three questions that had failed were re-measured after
+being fixed — failures got a second draw and successes did not. The clean triple
+over the identical set is 5.7 points lower, and the instability turned out to sit
+in the questions that had *not* been re-rolled.
+
+_SQL, previous prompt `415953964db74b80` (n=47, six runs, 282 responses):_
+not-view-covered **91.9% (182/198)**, view-covered 98.5% (65/66), variance 10.6%
+and 4.3% on its two independent triples, 12.8% pooled. **Do not quote the pooled
+interval as if it were tight** — six runs of the same 47 questions are clustered,
+so Wilson understates it.
+
+_Attempts-to-correct:_ still not measured; no retry loop exists.
+
+_Extraction:_ Phase 2, not started.
+_Injection specimens:_ Phase 3, not started.
+
+## Named debt carried forward
+
+- **`full×3` is done, but it is one sample of three runs.** Variance at 10.6%
+  sits right on ADR-0001's line; another triple would move it either way.
+- **q036's refusal is not reliable** — two of three. It is the behaviour the
+  project's argument rests on.
+- **No retry loop exists**, so ADR-0001 threshold 4 has never been measured.
+- **On the live path, a scoped query's `WHERE` clause is the model's to write.**
+  The scope reaches the prompt carrying the predicate itself
+  (`store_id = 1 (Kothrud, Pune)`), and `check_scope` is a tripwire behind it —
+  but that tripwire can only fire when `store_id` is among the result columns.
+  Pattern-matching the generated SQL for the predicate was deliberately not
+  done: that is instance eight's defect (regexes guessing at SQL structure). The
+  real fix is a per-store database role, and it is not Phase 1. Demo mode is not
+  affected — there the predicate is substituted, not requested.
 
 ## Vertex: verified working, one surprise
+
 
 - Token mints from the service account; `gemini-3.6-flash` answers.
 - **It serves from `location=global` ONLY** — 404 in us-central1 and
@@ -100,111 +265,8 @@ project, so credit coverage, balance and expiry cannot be read from here.
 Calls succeed, which proves access and quota — not that credit is being drawn
 rather than a card.
 
-## BLOCKED: no GCP credential exists in this environment
-
-ADR-0010 routes every model call through Vertex. **It cannot be executed yet.**
-There is no `gcloud`, no service account, no `GOOGLE_APPLICATION_CREDENTIALS`,
-and nothing GCP-shaped in `.env` beyond the AI Studio key. The service account
-ADR-0009 assumed for Phase 2 does not exist.
-
-Three things need checking in the console before any Vertex call, none of which
-could be done from here:
-
-1. **Do credits actually cover Gemini on Vertex?** The billing page is explicit
-   that they do NOT cover AI Studio, and **silent** about Vertex. The only
-   Vertex exclusion found names *partner* models (Claude, Llama, Mistral in
-   Model Garden), not first-party Gemini — so probably covered, but "probably"
-   bills a card when wrong.
-2. **Remaining credit and expiry.** 90 days from signup, not first use. If the
-   account is not new the balance may already be zero.
-3. **`gemini-3.6-flash` on Vertex, in region, exact model string.** A mismatched
-   pin breaks reproducibility silently, and after ADR-0006 the pinned string is
-   the entire reproducibility claim.
-
-Also: Vertex is now **Gemini Enterprise Agent Platform** (renamed May 2026);
-console and doc paths have moved.
-
-## RPD MEASURED: 20 per day. This changes the plan.
-
-Not from a blog and not from AI Studio — from the `429` body itself, which
-names the quota:
-
-    metric  generativelanguage.googleapis.com/generate_content_free_tier_requests
-    id      GenerateRequestsPerDayPerProjectPerModel-FreeTier
-    value   20
-    model   gemini-3.6-flash
-
-**Twenty requests per day**, scoped per project PER MODEL. The arithmetic:
-
-| | calls | at 20/day |
-|---|---|---|
-| rotation 5x1 | 5 | 0.2 days |
-| 46 x 1 | 46 | 2.3 days |
-| 46 x 3 | 138 | 6.9 days |
-| **total** | **189** | **9.4 days** |
-
-The prompt is ~11,600 tokens (schema.md and business_context.md dominate), so
-the whole measurement is 2.19M input tokens. At the paid Flash rate of $1.50/M
-in and $7.50/M out that is **about $3.70 for the entire thing**.
-
-So the choice is roughly: **$3.70, or nine days.** Needs a ruling — see the
-options in the session report. Note the quota is per MODEL, so a different free
-model carries its own 20/day, but measuring across two models measures two
-models.
-
-## Free-tier daily quota EXHAUSTED 2026-08-07
-
-A re-score hit `429` and six backoff attempts spanning roughly two minutes did
-not clear it, which points at the **daily** cap rather than requests-per-minute.
-No more model calls today; it resets at midnight Pacific.
-
-The cache did not save this run, and correctly so: `business_context.md`
-changed, so the prompt fingerprint changed, so every cached answer describes a
-prompt that no longer exists. Caching protects a *re-run of the same prompt*,
-not a re-run after editing one.
-
-**Still needed: the real RPM/TPM/RPD from `aistudio.google.com/rate-limit`.**
-Roughly 20 calls were spent today across three staged runs.
-
-## Eval instrument — three defects found, all fixed
-
-Stage 1 (5 questions x 1 run, `gemini-3.6-flash`) returned 0/4. **That is not a
-measurement of the model. It is the instrument failing**, and no result file was
-kept, because a 0% sitting in `evals/results/` would be a lie.
-
-Two defects, both mine:
-
-1. **17 of 38 scorable questions have their row count fixed by an arbitrary
-   `LIMIT` the question never asks for.** "What should we reorder at Nashik?"
-   has no natural answer length; the reference says `LIMIT 20` and the model
-   said `LIMIT 100`. Verified on q004: **the model's first 20 rows match the
-   reference's 20 exactly.** It was right and scored wrong. Same shape on q005,
-   q002.
-2. **q001's reference filters `store_id = 1` although the question names no
-   store** — which contradicts `sql_generate.md`'s own rule ("when it does not
-   name a store, aggregate across stores"). The model followed the rule; the
-   reference broke it. 139 rows vs the correct 440.
-
-Ordering has the same problem: 19 reference queries impose an `ORDER BY` the
-question does not imply.
-
-All three were one family: **the reference encoded a choice the question did
-not determine.** Enumerated on paper and closed together rather than one at a
-time — see `evals/README.md` for the full table.
-
-- `result_shape` (4 kinds) fixes row count and row order.
-- Sub-multiset row matching plus `answer_columns` fixes column selection,
-  column order and column names. The expectation now holds ONLY what the
-  question asks for; the reference still SELECTs context for a human reader.
-- `tolerance.py` fixes rounding and rendering: absolute tolerances only,
-  compared at the coarser of the two precisions.
-
-Third staged run (fresh questions) went 3/5, with both failures again the
-instrument — q029 read as singular and the model answered with one row
-correctly; q040's reference demanded a PO count the question never asked for.
-Both fixed. **The next staged run is the first that can be believed.**
-
 ## Model providers and live limits
+
 
 Decided 2026-08-06. Reasoning in **ADR-0009** — the split is on **data terms**,
 not rate limits.
@@ -281,6 +343,7 @@ metric.
 
 ## Locale — resolved, India
 
+
 Currency INR, timezone Asia/Kolkata, modelled as a Maharashtra grocery chain
 (Kothrud/Pune, Gangapur Road/Nashik, Dharampeth/Nagpur). This is now final and
 the eval set can be written against it.
@@ -300,27 +363,8 @@ and committing the regenerated `seed/small/` + `seed/CHECKSUMS.txt` — **which
 invalidates every eval expected result set written before it.** Do it before
 Phase 1's eval set if it is going to happen at all.
 
-## Named debt carried into Phase 1
-
-- **The `LIMIT` wrapper.** Postgres has no max-rows setting, so the read-only
-  role cannot enforce a row cap — CLAUDE.md rule 4 has been amended to say so.
-  Phase 0 ships `pos_readonly` with `default_transaction_read_only`, a 5s
-  `statement_timeout`, and no grant on `users` or `sale_operators`. Phase 1
-  owes: reject anything that is not a single `SELECT`, wrap as
-  `SELECT * FROM (<sql>) _q LIMIT :n`, fetch through a capped server-side
-  cursor. Also recorded in `docs/PLAN.md` under Phase 1.
-- **`view_covered` on every eval question.** Already written into ADR-0001.
-  `v_stock_status` and friends make some questions near-trivial; the threshold-2
-  decision is evaluated against the not-view-covered number, or the measurement
-  flatters itself.
-- **`AS_OF_DATE`, not wall-clock.** `DATA_END_DATE = 2026-06-30` is a constant
-  in `seed.py` and is what makes byte-identity possible. `sql_generate.md` now
-  has the `{as_of_date}` placeholder and forbids `current_date`;
-  `business_context.md` must teach the same thing when it is written.
-- **`api/prompts/context/business_context.md` does not exist yet**, and the
-  top-level README already links to it. Dead link until Phase 1 writes it.
-
 ## Facts about the data someone will otherwise rediscover the hard way
+
 
 - **`small` and `full` are independent datasets, not subset and superset.**
   Reference data (600 products, 18 categories, 12 suppliers) is identical;
@@ -384,6 +428,7 @@ Phase 1's eval set if it is going to happen at all.
 
 ## Open questions — ask me, don't decide
 
+
 These are unresolved by design. If you hit one, stop.
 
 - **Corpus size.** Estimated ~40 documents, never confirmed. If the whole corpus
@@ -393,39 +438,42 @@ These are unresolved by design. If you hit one, stop.
   right for text-to-SQL. If real amendments exist, the answer is a narrow
   `supplier_term_clauses` table for clause-level provenance with `supplier_terms`
   kept as the queryable projection — not a reshape. Still needs deciding.
-- **Available RAM.** Determines the local model tier: 16GB+ runs an 8B at Q4_K_M
-  for `CLASSIFY` and `EXTRACT`; 8–12GB runs a 3–4B and sends `PLAN` to API; under
-  8GB means no local generation. Embeddings stay local at every tier.
-- **Which free-tier provider** for `PLAN`. Not chosen. Check current limits before
-  committing — they change monthly.
-- **Text-to-SQL outcome.** Deliberately open. Settled by Phase 1 measurement
-  against the four thresholds in `PLAN.md`.
-- **Design tokens.** Palette, type pairing, and the approval-card wireframe are not
-  chosen. Propose before building any component (`CONVENTIONS.md` → Frontend).
+- **Available RAM** — now only for the `CLASSIFY` Ollama fallback and Phase 3's
+  local embeddings, since ADR-0010 routes `PLAN`, `CLASSIFY` and `EXTRACT` through
+  Vertex. Embeddings stay local at every tier and need little.
+- **Data residency.** Vertex serves `gemini-3.6-flash` from `location=global`
+  **only** — 404 in us-central1 and asia-south1, measured. The first extraction run
+  therefore sends real document content to an unpinned region. **Needs answering
+  before any document is sent, not after.**
+- **The canonical Vertex terms.** ADR-0009 rests on "customer data stays out of the
+  foundation model training corpus", confirmed from Google Cloud documentation
+  rather than the terms themselves. If they disagree, ADR-0009 is void. Read them
+  before the first extraction run.
+  **Retried 2026-08-09 and narrowed, not resolved:** `cloud.google.com/terms/service-terms`
+  *does* load now — the earlier "would not load" is stale — but the fetched text
+  carries no Vertex or generative-AI clause at all, only data location (§1) and
+  Pre-GA terms (§5). The data-governance page has moved to
+  `docs.cloud.google.com/vertex-ai/generative-ai/docs/data-governance` and returns
+  only its navigation shell to a fetcher, because the body is client-rendered. **So
+  it needs a browser, not a tool** — and the specific thing to look for is the
+  "Zero Data Retention" section that page's title advertises.
 - **Whether the corpus covers perishables.** If yes, the dynamic pricing cut flips
   and it belongs in Phase 6.
-- **Role-scoping policy.** Decided as own-store only, two DB roles, no
-  column-level cost/margin restriction. Cost-hiding stays additive. The
-  `sql_generate.md § Access scope` TODO is Phase 1's to fill in.
+- **The approval-card wireframe** (Phase 4). Palette and type are settled — proposed
+  in `docs/DESIGN-TOKENS.md` and built from; say if they should change and it is a
+  `tailwind.config.ts` edit.
+
+**Resolved since this list was written — removed, not forgotten:** the
+text-to-SQL outcome (ADR-0001, resolved; Phase 1 closed), role-scoping (decided,
+and `sql_generate.md § Access scope` is filled in), the `PLAN` provider (ADR-0010
+routes everything through Vertex), and the palette and type pairing.
 
 **Resolved — don't re-ask:** hours (session-based, see `PLAN.md`), document
 clearance (personal, publishable; PII scan still required in Phase 2), frontend
 (Next.js + Tailwind, ADR-0007).
 
-## Measured numbers
-
-Fill in as they land. These go in the top-level README.
-
-_Extraction (n=__ hand-labeled documents):_ header fields __%, line item F1 __,
-hallucination __%, miss __%
-
-_SQL (n=__ questions, 3 runs each):_ execution accuracy __%, silent-wrong __%,
-cross-run variance __%, median attempts-to-correct __
-_(report overall, view-covered, and not-view-covered — see ADR-0001)_
-
-_Injection specimens:_ __ of __ held
-
 ## Decisions made mid-build
+
 
 Anything decided in a session that isn't yet an ADR. Promote or delete.
 

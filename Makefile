@@ -7,16 +7,37 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
-        eval-sql eval-sql-stub eval-expectations seed-if-missing hooks
+        eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
+        serve serve-live web web-check corpus corpus-verify ingest ingest-verify
 
 -include .env
 
 POSTGRES_USER ?= postgres
 POSTGRES_DB   ?= pos
+POSTGRES_PORT ?= 5432
 SEED_SIZE     ?= small
+API_PORT ?= 8000
 TEMPLATE_DB   := $(POSTGRES_DB)_template
 POS_APP_PASSWORD      ?= pos_app_dev
 POS_READONLY_PASSWORD ?= pos_readonly_dev
+
+# What the serving layer reads from its environment.
+#
+# `-include .env` makes these *make* variables, not environment ones, so a
+# recipe that does not pass them on gets none of them: `make serve` in a shell
+# that has never sourced .env was answering every query with
+# "READONLY_DATABASE_URL is not set" while still reporting healthy. Exporting
+# them is what makes the target able to do the thing it is named for.
+READONLY_DATABASE_URL ?= postgresql://pos_readonly:$(POS_READONLY_PASSWORD)@localhost:$(POSTGRES_PORT)/$(POSTGRES_DB)
+AS_OF_DATE   ?= 2026-06-30
+SQL_MAX_ROWS ?= 100
+DEMO_MODE    ?= true
+export READONLY_DATABASE_URL AS_OF_DATE SQL_MAX_ROWS DEMO_MODE
+
+# Model config, for the local targets that spend quota. Never reaches CI: CI
+# runs with no key, and every target that needs one is here (rule 1).
+export MODEL_PLAN MODEL_CLASSIFY GEMINI_API_KEY GOOGLE_APPLICATION_CREDENTIALS
+export VERTEX_LOCATION VERTEX_RPM GEMINI_RPM LIVE_MAX_CALLS LIVE_MAX_SPEND_USD
 
 # Every psql invocation goes through this. It defaults to running inside the
 # db container so no local psql client is needed; CI overrides it with a bare
@@ -147,6 +168,28 @@ hooks: ## Enable the repo's git hooks (credential scan on commit)
 psql: ## Interactive psql against the working database
 	@docker compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
+web: ## Run the web app (needs `make serve` in another shell)
+	cd web && npm run dev
+
+web-check: ## Typecheck and build the web app
+	cd web && npx tsc --noEmit && npm run build
+
+serve: ## Run the query API (demo mode by default — no key, no quota)
+	@# PYTHONPATH rather than a build backend: pyproject.toml declares none on
+	@# purpose, and pytest reaches src/ the same way.
+	cd api && PYTHONPATH=src $(UV) run uvicorn pos_copilot.app:app --reload --port $(API_PORT)
+
+serve-live: ## Run the query API on the LIVE model path (SPENDS YOUR OWN QUOTA)
+	@# A separate target, not a flag on `serve`, because the spend should be
+	@# something you typed. The ceiling is in api/src/pos_copilot/live.py and
+	@# defaults to 50 calls / $1.00 — raise LIVE_MAX_CALLS deliberately.
+	@if [ -z "$$MODEL_PLAN" ]; then \
+	  echo "MODEL_PLAN is not set. Pin an exact model string in .env — a"; \
+	  echo "floating alias makes a result file describe nothing."; exit 1; \
+	fi
+	@echo "==> live: $$MODEL_PLAN, ceiling $${LIVE_MAX_CALLS:-50} calls / \$$$${LIVE_MAX_SPEND_USD:-1.00}"
+	cd api && PYTHONPATH=src DEMO_MODE=false $(UV) run uvicorn pos_copilot.app:app --reload --port $(API_PORT)
+
 test: ## Run pytest
 	cd api && $(UV) run pytest
 
@@ -161,11 +204,60 @@ fmt: ## ruff format
 # cleanly while corpus/CHECKSUMS.txt is absent and fail loudly once it is not —
 # a permanently-passing no-op would be worse than having no check at all.
 
+corpus: ## Generate the synthetic corpus from the seeded database
+	@# Needs the `corpus` dependency group (reportlab, pymupdf, pillow). They are
+	@# generation-only and are NOT runtime dependencies of api/.
+	cd api && $(UV) run --group corpus python scripts/corpus_generate.py \
+	  --database-url "$${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/$(POSTGRES_DB)}"
+
+corpus-verify: ## Regenerate into a temp dir and assert byte-identity
+	@# The claim is that the corpus is reproducible, so it gets asserted rather
+	@# than stated. PDF writers stamp timestamps and random /ID values by
+	@# default; both are pinned, and this is what catches it if that regresses.
+	@tmp=$$(mktemp -d); \
+	  mkdir -p $$tmp/sources; \
+	  (cd api && $(UV) run --group corpus python scripts/corpus_generate.py \
+	     --database-url "$${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/$(POSTGRES_DB)}" \
+	     --out $$tmp >/dev/null) && \
+	  if diff -r -q corpus/sources $$tmp/sources && \
+	     diff -q corpus/MANIFEST.csv $$tmp/MANIFEST.csv; then \
+	    echo "corpus is byte-identical on regeneration"; rm -rf $$tmp; \
+	  else \
+	    echo "CORPUS IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
+	  fi
+
+ingest: ## Parse every corpus document with Docling into corpus/parsed/
+	@# No model calls and no key: parsing is local. The extraction step that
+	@# follows is the one that spends quota.
+	cd api && $(UV) run --group corpus python scripts/corpus_ingest.py
+
+ingest-verify: ## Re-parse into a temp dir and assert byte-identity
+	@tmp=$$(mktemp -d); \
+	  (cd api && $(UV) run --group corpus python scripts/corpus_ingest.py \
+	     --out $$tmp >/dev/null) && \
+	  if diff -r -q corpus/parsed $$tmp; then \
+	    echo "parsed output is byte-identical on re-parse"; rm -rf $$tmp; \
+	  else \
+	    echo "PARSE IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
+	  fi
+
 verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
+	@# `cd corpus` matters: the paths inside CHECKSUMS.txt are relative to it,
+	@# following seed/CHECKSUMS.txt's convention. Run from the repo root this
+	@# read every path as missing — so this target could only ever have skipped
+	@# or failed, never passed, and it skipped for the whole of Phase 0 and 1.
 	@if [ ! -f corpus/CHECKSUMS.txt ]; then \
 	  echo "skip: corpus/CHECKSUMS.txt does not exist yet (Phase 2)"; \
 	else \
-	  sha256sum -c corpus/CHECKSUMS.txt; \
+	  ( cd corpus && sha256sum -c --quiet CHECKSUMS.txt ) || exit 1; \
+	  listed=$$(grep -c . corpus/CHECKSUMS.txt); \
+	  found=$$(( $$(find corpus/sources -name '*.pdf' | wc -l) + 1 )); \
+	  if [ "$$listed" != "$$found" ]; then \
+	    echo "corpus has $$found artifacts but CHECKSUMS.txt lists $$listed —"; \
+	    echo "an unlisted document is one the pipeline parses and nothing checks."; \
+	    exit 1; \
+	  fi; \
+	  echo "corpus matches CHECKSUMS.txt, and holds nothing it does not list"; \
 	fi
 
 verify-parse: ## Re-run Docling on the committed sample and assert byte-identity

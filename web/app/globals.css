@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  /* Quality floor, unannounced (CONVENTIONS): visible keyboard focus. */
+  :focus-visible {
+    outline: 2px solid theme("colors.indigo");
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  /* Money and counts line up. The mono face is load-bearing here. */
+  .tnum { font-variant-numeric: tabular-nums; }
+}

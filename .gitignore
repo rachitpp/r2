@@ -13,6 +13,7 @@ __pycache__/
 node_modules/
 .next/
 next-env.d.ts
+*.tsbuildinfo
 
 # Seed artifacts
 # `seed/small/` IS committed — it is the dev-loop dataset and a reviewable

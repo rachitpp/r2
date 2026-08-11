@@ -12,6 +12,9 @@ gates anything — it produces the numbers that go in the README.
     python eval_sql.py --runs 1
     python eval_sql.py --runs 3
 
+    # a SECOND triple of the same prompt — a replication, not a re-score
+    python eval_sql.py --runs 3 --run-offset 3
+
 Serial by design. RPM is the first ceiling on a free tier, so there is no
 concurrency and the pacer keeps request starts a fixed interval apart, with
 full-jitter exponential backoff on 429.
@@ -32,6 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from pos_copilot import env
 from pos_copilot.model import (
     Budget,
     BudgetExceeded,
@@ -148,21 +152,21 @@ def run(args: argparse.Namespace) -> int:
     # added. Postgres terminates the connection, correctly. Holding a database
     # transaction open across a network call to a third party is the actual
     # mistake; the timeout just makes it visible.
-    for run_index in range(args.runs):
+    for run_index in range(args.run_offset, args.run_offset + args.runs):
         for q in questions:
             prompt = bundle.render(
                 question=q["question"],
-                as_of_date=os.environ.get("AS_OF_DATE", "2026-06-30"),
+                as_of_date=env.text("AS_OF_DATE", "2026-06-30"),
                 user_role=q.get("user_role", "owner"),
                 store_scope=q.get("store_scope", "all stores"),
             )
 
-            cached = cache.get(fingerprint, q["id"], run_index)
+            cached = cache.get(fingerprint, q["id"], run_index, q["question"])
             if cached is None:
                 budget.check(prompt)
                 cached = provider.generate(prompt)
                 budget.record(prompt)
-                cache.put(fingerprint, q["id"], run_index, cached)
+                cache.put(fingerprint, q["id"], run_index, cached, q["question"])
 
             sql = strip_fences(cached)
             execution, error = None, None
@@ -172,7 +176,7 @@ def run(args: argparse.Namespace) -> int:
                         execution = execute(
                             conn,
                             sql,
-                            max_rows=int(os.environ.get("SQL_MAX_ROWS", "100")),
+                            max_rows=env.integer("SQL_MAX_ROWS", 100),
                             visible_store_ids=scope_ids(q),
                         )
                 except UnsafeQuery as exc:
@@ -223,8 +227,22 @@ def run(args: argparse.Namespace) -> int:
     if args.runs > 1:
         print(f"{'cross-run variance':<18} {variance:.1%} {unstable or ''}")
     if cache.enabled:
-        print(f"{'cache':<18} {cache.hits} hits, {cache.misses} misses")
+        stale = f", {cache.stale} STALE (question changed since)" if cache.stale else ""
+        print(f"{'cache':<18} {cache.hits} hits, {cache.misses} misses{stale}")
     print("=" * 66)
+
+    # A run that made no calls did not measure anything new, and cross-run
+    # variance is the number where that matters most: ADR-0001's reversal
+    # condition is "a second full x 3", and repeating the command under an
+    # unchanged prompt satisfies it by replaying the first one. Saying so is the
+    # difference between a check that runs and a check that looks like it did.
+    if args.runs > 1 and cache.enabled and cache.misses == 0:
+        print(
+            "\nNOTE: every response came from cache, so this is a RE-SCORE of an "
+            f"earlier measurement, not a new sample. The {variance:.1%} variance "
+            "above is the one those cached runs already showed. For a genuine "
+            f"second sample use --run-offset {args.run_offset + args.runs}."
+        )
     print(
         "\nADR-0001 threshold 2 is read off not_view_covered, and only when "
         "the interval excludes 85%."
@@ -232,7 +250,46 @@ def run(args: argparse.Namespace) -> int:
 
     stamp = datetime.now(UTC).strftime("%Y-%m-%d")
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out = RESULTS_DIR / f"{stamp}-sql.json"
+
+    # `<date>-sql.json` is the canonical full run, and ONLY a canonical full run
+    # may write it. A subset, or a triple at an offset, measures something else:
+    # letting it take the same name is how a five-question smoke test silently
+    # replaces a 141-response result file. That was found once already and was
+    # still live until now — two runs on one day were one filename apart.
+    first, last = args.run_offset, args.run_offset + args.runs - 1
+    subset = bool(args.only or args.limit)
+    canonical = not subset and args.run_offset == 0
+    question_ids = [q["id"] for q in questions]
+
+    # A name rule alone is not enough, because "canonical" is a shape and not an
+    # identity: a re-score over six runs of a DIFFERENT prompt is also a full set
+    # at offset 0, and would take this name from the run that earned it. So the
+    # existing file gets read, and a disagreement about what was measured sends
+    # this run to its own name instead of over the top of that one.
+    canonical_path = RESULTS_DIR / f"{stamp}-sql.json"
+    displaced = ""
+    if canonical and canonical_path.exists():
+        prior = json.loads(canonical_path.read_text(encoding="utf-8"))
+        if prior.get("prompt_fingerprint") != fingerprint or (
+            prior.get("question_ids") not in (None, question_ids)
+        ):
+            canonical = False
+            displaced = (
+                f"\nNOTE: {canonical_path.name} already holds a different "
+                f"measurement (prompt {prior.get('prompt_fingerprint')}, "
+                f"{prior.get('questions')} questions). Writing beside it rather "
+                "than over it."
+            )
+
+    name = (
+        f"{stamp}-sql.json"
+        if canonical
+        else f"{stamp}-sql-{fingerprint}-runs{first}-{last}"
+        f"{'-subset' if subset else ''}.json"
+    )
+    out = RESULTS_DIR / name
+    if displaced:
+        print(displaced)
     out.write_text(
         json.dumps(
             {
@@ -241,7 +298,12 @@ def run(args: argparse.Namespace) -> int:
                 "prompt_fingerprint": fingerprint,
                 "prompt_hashes": bundle.hashes,
                 "runs": args.runs,
+                "run_indices": [first, last],
+                "canonical_full_run": canonical,
                 "questions": len(questions),
+                # Which ones, not just how many: a results file that records a
+                # count cannot be told apart from one that ran a different 47.
+                "question_ids": question_ids,
                 "stats": stats,
                 "cross_run_variance": variance,
                 "unstable_questions": unstable,
@@ -261,6 +323,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=("gemini", "stub"), default="gemini")
     parser.add_argument("--runs", type=int, default=1)
+    parser.add_argument(
+        "--run-offset",
+        type=int,
+        default=0,
+        help=(
+            "first run index. Responses are cached on (prompt, question, run "
+            "index), so repeating `--runs 3` under an UNCHANGED prompt replays "
+            "runs 0-2 from cache and reports the same variance it reported "
+            "before — a second sample that is not one. A genuine replication is "
+            "`--runs 3 --run-offset 3`."
+        ),
+    )
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--only", default="", help="comma-separated question ids")
     parser.add_argument("--no-cache", action="store_true")

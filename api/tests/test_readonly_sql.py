@@ -264,3 +264,68 @@ def test_the_tripwire_fires_against_the_real_database(readonly_conn):
             max_rows=5,
             visible_store_ids={1},
         )
+
+
+# ── Ties the question does not break ─────────────────────────────────────────
+
+
+def _judge(expected, got_rows, shape="top_n"):
+    from pos_copilot.scoring import compare
+
+    return compare(expected, {"rows": got_rows}, shape)
+
+
+def test_rows_tied_inside_the_answer_may_come_back_in_any_order():
+    """The reference's `sku` tiebreak makes its query deterministic. It does not
+    make the question determinate."""
+    from pos_copilot.scoring import Outcome
+
+    expected = {
+        "columns": ["sku", "units"],
+        "rows": [["A", 9], ["B", 5], ["C", 5]],
+        "tie_keys": [9, 5, 5],
+        "tie_pool": [],
+    }
+    assert _judge(expected, [["A", 9], ["C", 5], ["B", 5]]).outcome is Outcome.CORRECT
+
+
+def test_a_contested_cut_may_be_filled_from_the_tied_pool():
+    """q042 has five of ten slots contested among thirteen tied products."""
+    from pos_copilot.scoring import Outcome
+
+    expected = {
+        "columns": ["sku", "units"],
+        "rows": [["A", 9], ["B", 5]],
+        "tie_keys": [9, 5],
+        "tie_pool": [["B", 5], ["C", 5], ["D", 5]],
+    }
+    assert _judge(expected, [["A", 9], ["D", 5]]).outcome is Outcome.CORRECT
+
+
+def test_a_row_from_outside_the_tie_is_still_wrong():
+    """Relaxing ties must not relax anything else."""
+    from pos_copilot.scoring import Outcome
+
+    expected = {
+        "columns": ["sku", "units"],
+        "rows": [["A", 9], ["B", 5]],
+        "tie_keys": [9, 5],
+        "tie_pool": [["B", 5], ["C", 5]],
+    }
+    assert _judge(expected, [["A", 9], ["Z", 1]]).outcome is not Outcome.CORRECT
+
+
+def test_the_settled_part_of_the_ranking_is_still_ordered_exactly():
+    from pos_copilot.scoring import Outcome
+
+    expected = {
+        "columns": ["sku", "units"],
+        "rows": [["A", 9], ["B", 7], ["C", 5], ["D", 5]],
+        "tie_keys": [9, 7, 5, 5],
+        "tie_pool": [],
+    }
+    # A and B are not tied — swapping them is a real ordering error.
+    assert (
+        _judge(expected, [["B", 7], ["A", 9], ["C", 5], ["D", 5]]).outcome
+        is not Outcome.CORRECT
+    )

@@ -24,9 +24,11 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 from datetime import date, datetime
 from decimal import Decimal
+from itertools import pairwise
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -72,6 +74,66 @@ def load() -> list[dict]:
 
 def dump(questions: list[dict]) -> str:
     return "".join(json.dumps(q, ensure_ascii=False) + "\n" for q in questions)
+
+
+_ORDER = re.compile(r"\bORDER\s+BY\b(.+?)(?:\bLIMIT\b|$)", re.S | re.I)
+_LIMIT_TAIL = re.compile(r"\s*\bLIMIT\s+\d+\s*;?\s*$", re.I)
+
+
+def tie_structure(conn, sql: str, answer_columns: list[str] | None) -> dict | None:
+    """Where the ranking key repeats, and what could fill a contested slot.
+
+    A reference's tiebreak — almost always `sku` — makes the query
+    DETERMINISTIC, which is not the same as making the question DETERMINATE.
+    Ties do two different things and both need recording:
+
+    * **At the cut**, they decide WHICH ROWS ARE IN the answer at all. q042 has
+      five of its ten slots contested among thirteen tied products.
+    * **Inside the answer**, they make relative ORDER arbitrary. Rows tied on
+      the ranking key can appear in any sequence and each is equally correct.
+
+    `tie_keys` is the ranking value of each expected row, so the scorer can find
+    the runs. `tie_pool` is the full set of rows sharing the boundary value,
+    present only when the cut is contested. Returns None when the ranking key is
+    unique throughout, which is the common case and scores exactly as before.
+    """
+    limit = re.search(r"\bLIMIT\s+(\d+)", sql, re.I)
+    order = _ORDER.search(sql)
+    if not (limit and order):
+        return None
+    n = int(limit.group(1))
+    key = order.group(1).split(",")[0].strip()
+    key = re.sub(r"\s+(ASC|DESC)(\s+NULLS\s+\w+)?\s*$", "", key, flags=re.I).strip()
+    alias = key.split(".")[-1]
+
+    with conn.cursor() as cur:
+        cur.execute(_LIMIT_TAIL.sub("", sql))
+        columns = [d.name for d in cur.description]
+        rows = cur.fetchall()
+    if alias not in columns:
+        return None
+
+    i = columns.index(alias)
+    keys = [r[i] for r in rows]
+    included = keys[:n]
+
+    contested = len(rows) > n and keys[n - 1] == keys[n]
+    interior = any(a == b for a, b in pairwise(included))
+    if not (contested or interior):
+        return None  # ranking key unique — nothing to relax
+
+    pool = []
+    if contested:
+        boundary = keys[n - 1]
+        pool = [r for r in rows if r[i] == boundary]
+        if answer_columns:
+            keep = [columns.index(c) for c in answer_columns]
+            pool = [tuple(r[k] for k in keep) for r in pool]
+
+    return {
+        "tie_keys": [jsonable(k) for k in included],
+        "tie_pool": [[jsonable(v) for v in r] for r in pool],
+    }
 
 
 def run(conn, sql: str, answer_columns: list[str] | None = None) -> dict:
@@ -145,6 +207,10 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             try:
                 fresh["expected"] = run(conn, sql, item.get("answer_columns"))
+                if item.get("result_shape") == "top_n":
+                    tie = tie_structure(conn, sql, item.get("answer_columns"))
+                    if tie:
+                        fresh["expected"].update(tie)
             except Exception as exc:  # report, do not crash the whole run
                 failures.append(f"{item['id']}: {type(exc).__name__}: {exc}")
                 conn.rollback()

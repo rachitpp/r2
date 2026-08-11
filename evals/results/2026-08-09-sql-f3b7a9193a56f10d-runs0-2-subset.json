@@ -1,0 +1,55 @@
+{
+  "canonical_full_run": false,
+  "cross_run_variance": 0.0,
+  "model": "gemini-3.6-flash",
+  "outcomes": {
+    "q050": [
+      "correct",
+      "correct",
+      "correct"
+    ]
+  },
+  "prompt_fingerprint": "f3b7a9193a56f10d",
+  "prompt_hashes": {
+    "context/business_context.md": "e051d6d6c1dc3e333bbcfbcd7d70f83db9093fe1e5a88a8902ef5d4e0b1c4e78",
+    "context/schema.md": "ab2f8838957ffc62fd68637a6e703d90b7617a9817ff01aff42d7850cba25e36",
+    "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9"
+  },
+  "provider": "vertex",
+  "question_ids": [
+    "q050"
+  ],
+  "questions": 1,
+  "run_indices": [
+    0,
+    2
+  ],
+  "runs": 3,
+  "stats": {
+    "not_view_covered": {
+      "accuracy": "100.0% (3/3, 95% CI 44-100%)",
+      "correct": 3,
+      "execution_errors": [],
+      "n": 3,
+      "needs_review": [],
+      "silent_wrong": []
+    },
+    "overall": {
+      "accuracy": "100.0% (3/3, 95% CI 44-100%)",
+      "correct": 3,
+      "execution_errors": [],
+      "n": 3,
+      "needs_review": [],
+      "silent_wrong": []
+    },
+    "view_covered": {
+      "accuracy": "n/a",
+      "correct": 0,
+      "execution_errors": [],
+      "n": 0,
+      "needs_review": [],
+      "silent_wrong": []
+    }
+  },
+  "unstable_questions": []
+}

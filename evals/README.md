@@ -10,7 +10,7 @@ section is the point of it. An eval set that has never been found wrong has
 usually never been used.
 
     evals/
-      sql/questions.jsonl   45 questions + generated expected result sets
+      sql/questions.jsonl   49 questions + generated expected result sets
       sql/README.md         field-by-field schema and trap coverage
       results/              dated JSON, one per run, with prompt hashes
       .cache/               model responses, gitignored, regenerable
@@ -60,6 +60,14 @@ the ceiling.
 
 Three defects. **Every one was found by rotating the questions, not by reading
 them.** Every one would have published a confidently wrong number.
+
+> **Qualified 2026-08-07.** This claim stood unchallenged until instance eight
+> of the recurring defect class. Five probes built to audit the eval failed
+> silently, and **two were caught by a failing known-positive assertion** — not
+> by inspection, not by a model disagreeing. So: inspection alone still does not
+> catch this class, and use catches it late, but **an assertion with a
+> known-positive catches it at the moment the checker is written.** See
+> `DIAGNOSIS-2026-08-07.md` → *Instance eight*.
 
 | Run | Questions | Score | What it actually found |
 |---|---|---|---|
@@ -286,10 +294,31 @@ Reworded to ask what the data actually supports.
 > inverting the authoring order is the preventive one.**
 
 The bias has a direction, and that is what makes it systematic rather than
-noisy. Four references have been wrong — q001, q017, q043, q045 — and **every
-one was wrong in favour of the reference and against the model.** Not one erred
-the other way. A random defect would scatter; this one points, because the
-author knows what they meant and it therefore looks obvious in retrospect.
+noisy. Four references were wrong before the measured run — q001, q017, q043,
+q045 — and **every one was wrong in favour of the reference and against the
+model.** Not one erred the other way. A random defect would scatter; this one
+points, because the author knows what they meant and it therefore looks obvious
+in retrospect.
+
+> **The 47×1 run made this much larger, and the direction did not change.**
+> Diagnosis found **11 of 14 failures to be instrument defects** — and again,
+> not one erred against the reference. See
+> [`DIAGNOSIS-2026-08-07.md`](DIAGNOSIS-2026-08-07.md), which also carries
+> **three axes beyond the six below**, one correction to this section, and a
+> falsified verification found in its own record:
+>
+> - **Axis 7 — row identity.** Which column names a row is not determined by
+>   the question: `stores.code` and `stores.name` both identify it. First
+>   written up as "free-text labels the query invents"; **that statement was
+>   wrong and its evidence was wrong in 3 of its 4 questions.** Corrected there.
+> - **Axis 8 — ratio magnitude.** "Share" does not determine `0.05` or `5.0`.
+> - **Axis 9 — disambiguation was unscoreable.** It was scored on stated
+>   reasoning that `sql_generate.md` forbids the model from writing. Ruled:
+>   a reading is read off the predicate, not the caption.
+>
+> Also corrected there: **q043's `reference_sql` was never edited.** What
+> rotation 4 fixed was its *question*, which had not named the period the
+> reference filtered on.
 
 ### The systematic gap behind all six
 
@@ -355,19 +384,168 @@ would name 264 of 600 products.
 
 ## When to stop rotating
 
-"One more rotation" has no natural end, so the rule is:
+"One more rotation" has no natural end, so there is a rule. **The previous one
+was falsified by the 47×1 run and is replaced below.**
 
-> **Every question must be model-tested, and the instrument corrected against
-> it, before measurement** — by rotation, by inverted authoring, or by any
-> mechanism that puts a model's disagreement in front of the author before the
-> reference hardens.
+### The rule that failed, and why
 
-The earlier form of this rule was "stop when a rotation finds no new defect
-class", which is the same rule stated by its symptom. Coverage is the point;
-rotation was only ever the means.
+> ~~Every question must be model-tested, and the instrument corrected against
+> it, before measurement.~~
 
-So a rotation with nothing left to draw on is **coverage complete, not a gap**.
-Do not manufacture questions to satisfy a rule whose purpose is already served.
+That rule **was satisfied**. And **8 of the 14 failing references had never been
+revised** — model-tested, model agreed, reference still wrong.
+
+The defect is that **agreement was being consumed as a positive result when it
+is a null one.** A question whose model answer agreed has had a check pointed at
+it that returns "fine" without having examined anything: the model answered, the
+harness scored, both genuinely ran — and the *reference* was never inspected by
+any of it. The surrounding machinery working is what made the missing check look
+like a passing one.
+
+That is **instance six of this project's recurring defect class** — a check that
+is not running, wearing the label of a check that is. It has now been found in
+code (truncation, silent), in prose (q019's "verified by hand"), and here **in a
+process rule**, which is the worst of the three because it licensed the other
+two to stop looking.
+
+### The rule that replaces it
+
+> **A reference is verified when every predicate *and its grain* traces to
+> specific words in the question, every number the question names appears in it,
+> **the question determines the SHAPE of its answer — how many rows, and what
+> identifies one**, no `LIMIT` cut falls inside a tie, and the question, the
+> reference, the `intent` and the `traps` all describe the same thing. Model
+> agreement is not verification and does not discharge this.**
+
+**The shape clause was added on 2026-08-08, by breaking it.** q049 was written
+to probe q026's failure and scored `wrong_rows` three times while returning
+**numerically identical values to its own reference**: the reference gave one row
+of two columns, the model gave two labelled rows, and it rounded to 2dp where the
+reference used 1dp. Every predicate traced. Every grain traced. There was no
+`LIMIT` and therefore no tie. The rule as written passed it, and the question
+still failed to determine its own answer — so a correct answer was recorded as a
+silent-wrong three times, in the one number ADR-0001's tightest threshold reads.
+
+Declaring `result_shape` and `answer_columns` does not discharge this clause
+either: **the model never sees those fields.** Only the question text reaches it,
+so only the question text can determine the shape.
+
+**Checked as a class, and there is one latent case left.** Of the 49 questions,
+three declare two or more measures with no identifying column: q035 is a false
+alarm (`promotion` identifies the row), q024 is safe because `ranked_all` scores
+by position so identity is carried by order — **and q009 has exactly q049's
+ambiguity.** "How many units did we move last month gross, and how many net of
+returns?" can be answered as one row of two columns or as two labelled rows, and
+it passes today because the model happens to choose the first. That is luck, not
+determinacy. **q024 shows the fix the project already found:** put the answer in
+an order the question fixes and keep the invented label out of `answer_columns`.
+
+**Three of those clauses were added by running it.** The first prospective run
+found five references whose `LIMIT` falls inside a tie — where the tiebreak
+decides membership rather than order — of which four were new, one overturned a
+"sound" verdict from the pass audit, and the worst (q042) has **5 of its 10
+slots contested among 13 tied products**. It also found `GROUP BY` grain
+invisible to a predicate-only trace (q035), and a stale `traps` tag (q024)
+invisible to a three-field check. See `DIAGNOSIS-2026-08-07.md` → *First
+prospective run*.
+
+### Which shapes owe a tie check, and why
+
+A tie in the ranking column is only a defect where the **score depends on
+position**:
+
+| shape | owes a tie check? | reasoning |
+|---|---|---|
+| `top_n` | **yes** | A tie spanning the cut lets the tiebreak decide **membership** |
+| `ranked_all` | **yes** | No cut, but order *is* scored, so a tie makes **position** arbitrary |
+| `all_matching` | no | The set is scored, order is not — a tie changes nothing |
+| `scalar` | no | One row; there is nothing to order |
+
+`ranked_all` was added after the first run checked only `top_n`. Run against
+q029, q030, q033 and q034: **all four fully distinct, no ties.** A clean result
+from a check that had never been run is still a result.
+
+**Exemption:** `ORDER BY` under `all_matching` owes no trace at all. Demanding
+one generates flags that are always benign, which trains the reader to skip
+flags — the exact failure this rule exists to prevent.
+
+### When enumeration terminates
+
+The first prospective run **amended this rule twice** — grain, and `traps` as a
+fourth coupled field — and neither amendment had been executed against the set.
+A rule that rewrites itself has not finished running. So:
+
+> **Enumeration is complete when a full run adds no new clauses and no new
+> findings.**
+
+It took **three iterations** to reach that. The rule stabilised after the first;
+the tooling needed three passes, each removing false positives. Record the
+iteration count — a rule that needs many is a rule still being discovered.
+
+### Build these probes with a known-positive
+
+Two probes failed **silently** in one session: the clause extractor took the
+first textual `WHERE`, which inside `FILTER (WHERE …)` is the wrong one, and the
+rounded-column check used a regex that could not survive nested parentheses and
+missed both known instances. Each produced a clean-looking result over a subset.
+
+Both were caught only because their output disagreed with something already
+known. **A probe with no known-positive to check itself against cannot be
+trusted** — it has no way to distinguish "found nothing" from "looked at
+nothing". Every probe here now round-trips its parse or is validated against a
+defect already confirmed by hand.
+
+Run it as a **predicate-to-words trace**: list each predicate in the reference
+and name the words requiring it. A predicate that traces to nothing is removed,
+or the question gains the words. The trace runs in both directions, because both
+failed in practice.
+
+**Three coupled fields, not two.** q005 had its question *and* its reference
+updated in lockstep — "under 5 units" → "down to 2 units or fewer", `<= 5` →
+`<= 2` — and its `intent` left saying `on_hand <= 5`. Two of three updated, the
+third stale. Since the disambiguation ruling makes `intent` the field a human
+reads when hand-scoring, **a stale `intent` is a stale scoring criterion**, so
+it is part of the unit rather than commentary beside it. All 47 have since been
+checked; q005 was the only one.
+
+### What this rule cannot see
+
+Stating the limits, so nobody later reads it as total coverage.
+
+- **It is reference-side.** It traces question → reference → intent, and is
+  blind to an **unstated predicate on the model's side** that returns identical
+  rows. `is_active = true` is the worked example: generated SQL adds it, no
+  question asks for it, and it changes nothing because all 600 products are
+  active — so it passes this rule, passes the scorer, and passes the pass audit.
+  A model-side trace would be a different instrument and does not exist.
+- **Its validation is retrospective and partly circular.** It was derived from
+  the eight defects it is credited with catching — q001, q004, q008, q012, q015,
+  q019, q035, q045. **Treat eight as a floor, not a demonstration.** The real
+  test is the first defect it catches that nobody had already found, and it has
+  not yet been run prospectively against anything.
+- **It does not catch defects of omission** — a predicate the reference *should*
+  have and does not is invisible to a trace that only asks what each existing
+  predicate is doing there.
+
+**Why this mechanism and not the two obvious alternatives.** A second
+independently-authored query is expensive and shares the author's bias — the
+same person writing twice makes the same assumption twice, and it catches
+transcription slips rather than intent misreadings. "Execute the reference and
+read its rows" is cheap and does work — this session's 21-pass audit is the
+existence proof — but it is still the author reading their own reference, which
+is the bias the whole apparatus exists to fight.
+
+The predicate trace is preferred because it is **mechanical rather than
+judgemental**: "which words require `below_reorder_point`?" has an answer that
+does not depend on what the author meant. And it is validated against the
+evidence — it would have caught **q001, q004, q008, q012, q015, q019, q035 and
+q045**, which is nearly every reference defect this round found, including the
+two that survived a rotation and the one that survived nine months of agreement.
+
+So a rotation with nothing left to draw on is **not** coverage complete.
+Coverage is complete when every reference has been traced. Rotation finds
+defects the trace cannot — it is still worth running — but it can no longer end
+the process on its own.
 
 While a rotation is still the mechanism: a rotation scoring 3/5 where all three
 are genuine model errors in covered categories is clean; 4/5 where the single
@@ -378,8 +556,19 @@ happened, and what the inversion answers.
 ### Fresh-question ledger
 
 A rotation run on a question the model has already been tuned against measures
-nothing, so questions are spent once. **20 of 46 spent, 26 left — five rounds
-at five a round.**
+nothing, so questions are spent once.
+
+**"Spent" means used in a diagnostic rotation — not "never seen by the model".**
+The `full×3` runs send every question in the set, so no question is unseen. What
+the ledger protects is the supply of questions whose *first* result was not
+already known.
+
+> **Corrected 2026-08-08.** This block said "20 of 46 spent, 26 left" three lines
+> above its own footer saying "25 of 46 spent", and the two lists below covered
+> 46 of the set's 47 questions — **q047 appeared in neither**, so the one
+> artifact whose job is to guarantee no question is reused could not see one of
+> them. The counts below are computed from the lists, and the lists now cover the
+> whole set.
 
 | Rotation | Questions | New defect class found |
 |---|---|---|
@@ -388,25 +577,54 @@ at five a round.**
 | 3 | q007 q020 q029 q040 q046 | Singular-vs-ranked reading; unasked-for column demanded |
 | 4 | q013 q021 q031 q035 q043 | **Predicate axis** — unstated period, threshold, join rule |
 | 5 | q009 q017 q026 q036 q045 | **Causal-question axis** — question asks what the data cannot hold; reference substitutes a proxy |
-| 6 | — | pending; 21 unspent questions went through inverted authoring instead |
+| 6 | — | pending; the unspent questions went through inverted authoring instead |
 
-Unspent (21): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025 q027 q028 q030
-q032 q034 q037 q038 q039 q041 q042 q044.
+Unspent in a rotation (22): q006 q008 q011 q012 q015 q016 q018 q022 q023 q025
+q027 q028 q030 q032 q034 q037 q038 q039 q041 q042 q044 **q047**.
 
-**25 of 46 spent.** Five rotations, six defect classes, ~30 model calls.
+**25 of 49 spent in a rotation.** Five rotations, six defect classes, ~30 model
+calls.
+
+**q048 and q050 are not rotation questions** and are not counted above. (q049 was
+written the same day and **withdrawn the same day** — see the shape clause above.)
+They were
+written on 2026-08-08 as ADR-0001's prescribed response to its two consistent
+failures — *targeted questions probing the observed failure mode* — so their
+purpose is the opposite of a rotation's: the failure they probe is already known,
+and what is being measured is whether it recurs. Both were verified by hand
+against the predicate-trace rule rather than by the prospective run that covered
+the original 47.
 
 ## Running it
 
     make eval-sql-stub                          # no key, no quota, no network
     make eval-sql EVAL_ARGS="--limit 5"         # the staging gate — required
     make eval-sql EVAL_ARGS="--runs 3"          # the full run
+    make eval-sql EVAL_ARGS="--runs 3 --run-offset 3"   # a SECOND triple
 
-Responses are cached on `(prompt fingerprint, question id, run index)`. The
-fingerprint covers `sql_generate.md` and every injected context file, so editing
-`business_context.md` invalidates the cache — correctly, since the model would
-then be sent something different.
+Responses are cached on `(prompt fingerprint, question id, run index)` plus a
+hash of the question text. The fingerprint covers `sql_generate.md` and every
+injected context file, so editing `business_context.md` invalidates the cache —
+correctly, since the model would then be sent something different. The question
+hash covers the remaining input: **replacing a question used to leave its old
+answers live**, and a re-score would have judged them against the new question.
 
 `run_index` is in the key because cross-run variance needs three genuinely
 separate responses. Note that with sampling parameters deprecated and ignored
 (ADR-0006), that number measures the model's own nondeterminism rather than
 prompt instability.
+
+**`--run-offset` is what makes a replication possible, and it exists because it
+was missing.** `--runs 3` iterates run indices 0–2, so repeating it under an
+unchanged prompt is a **re-score of the first triple, not a second sample**: every
+response comes from cache, no calls are made, and the same variance figure comes
+back looking like confirmation. ADR-0001's reversal condition — "a second full×3"
+— was therefore unfalsifiable as written. A genuine second triple is
+`--runs 3 --run-offset 3`, and the runner now says so out loud when a multi-run
+scoring made no calls.
+
+**Only a canonical full run at offset 0 writes `results/<date>-sql.json`.** A
+subset or an offset triple writes `<date>-sql-<fingerprint>-runs<first>-<last>.json`,
+because a `--limit 5` smoke test replacing a 141-response result file is a data
+loss that looks like a successful run. Results files also record *which* question
+ids they ran, so two files cannot silently describe different sets.

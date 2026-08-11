@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "Demo-mode question -> SQL pairs. CLAUDE.md rule 2: the system a reader runs",
+    "must never need paid inference, so demo mode answers from this file with no",
+    "key and no network.",
+    "",
+    "These are NOT the eval reference queries. evals/sql/questions.jsonl is the",
+    "measuring instrument and is currently under repair — twenty open defects in",
+    "evals/FIX-LIST-v2.md — so serving answers from it would ship known-wrong",
+    "numbers in the demo. These pairs are curated separately and deliberately.",
+    "",
+    "`{store_id}` is substituted from the request for store-scoped questions.",
+    "Rule 5: the scope predicate is IN the query, never applied to results after."
+  ],
+  "pairs": [
+    {
+      "question": "What's about to run out at our store this week?",
+      "store_scoped": true,
+      "sql": "SELECT sku, product_name, on_hand, units_per_day, days_of_cover FROM v_stock_status WHERE store_id = {store_id} AND on_hand > 0 AND days_of_cover < 7 ORDER BY days_of_cover, units_per_day DESC, sku"
+    },
+    {
+      "question": "What was our revenue last month?",
+      "store_scoped": false,
+      "sql": "SELECT sum(subtotal)::bigint AS net_revenue, sum(tax_total)::bigint AS gst, sum(total)::bigint AS cash_collected FROM sales WHERE business_date >= DATE '2026-05-01' AND business_date < DATE '2026-06-01'"
+    },
+    {
+      "question": "What effective tax rate were we charging before and after the September 2025 GST reform?",
+      "store_scoped": false,
+      "sql": "SELECT CASE WHEN business_date < DATE '2025-09-22' THEN 'before' ELSE 'from 22 Sep 2025' END AS era, round(100.0 * sum(tax_total) / NULLIF(sum(subtotal), 0), 2) AS effective_rate_pct, sum(subtotal)::bigint AS net_sales FROM sales WHERE business_date BETWEEN DATE '2025-07-01' AND DATE '2025-11-30' GROUP BY 1 ORDER BY 1"
+    },
+    {
+      "question": "What were our top 10 products by units last month?",
+      "store_scoped": false,
+      "sql": "SELECT p.sku, p.name AS product_name, sum(d.net_units) AS net_units FROM daily_product_sales d JOIN products p USING (product_id) WHERE d.business_date >= DATE '2026-05-01' AND d.business_date < DATE '2026-06-01' GROUP BY p.sku, p.name ORDER BY net_units DESC, p.sku LIMIT 10"
+    },
+    {
+      "question": "How many customers do we have?",
+      "store_scoped": false,
+      "sql": null,
+      "refusal": "-- INSUFFICIENT SCHEMA: this POS records anonymous transactions. There is no customer table, so a customer count is not something the data can answer. Baskets and transactions can be counted; people cannot."
+    }
+  ]
+}

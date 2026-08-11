@@ -212,6 +212,40 @@ def guard(sql: str, max_rows: int = DEFAULT_MAX_ROWS) -> GuardedQuery:
     )
 
 
+#: Which roles may see every store. This is the whole of role-scoping for
+#: Phase 1 — deliberately small, and deliberately consulted BEFORE the query is
+#: built rather than after it runs (rule 5). It lives beside the tripwire so
+#: there is one answer to "what may this role see", not one per call path.
+UNSCOPED_ROLES = frozenset({"manager", "owner"})
+
+
+class StoreRequired(LookupError):
+    """A store-scoped role asked something without saying which store.
+
+    Never answered by picking one. A defaulted store is the wrong shop's
+    numbers wearing the right shop's label — which is why `demo.DemoPair.resolve`
+    refuses one layer down and the store selector never pre-fills one layer up.
+    """
+
+
+def visible_stores(role: str, store_id: int | None) -> set[int] | None:
+    """Which stores this request may see. `None` means chain-wide.
+
+    Raising beats returning an empty or sentinel set. A scoped request with no
+    store used to become `{0}`, which matches nothing and therefore looks like a
+    working scope right up until a result carrying a real `store_id` trips the
+    wire and reports our defect as a server fault.
+    """
+    if role in UNSCOPED_ROLES:
+        return None
+    if store_id is None:
+        raise StoreRequired(
+            "this request runs as a store-scoped role and no store was given. "
+            "Picking one would answer the wrong shop without saying so."
+        )
+    return {store_id}
+
+
 class ScopeViolation(RuntimeError):
     """A result set contained a store the requesting user may not see.
 

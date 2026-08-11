@@ -1,0 +1,332 @@
+{
+  "cross_run_variance": 0.02040816326530612,
+  "model": "gemini-3.6-flash",
+  "outcomes": {
+    "q001": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q002": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q003": [
+      "needs_review",
+      "needs_review",
+      "needs_review"
+    ],
+    "q004": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q005": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q006": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q007": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q008": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q009": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q010": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q011": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q012": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q013": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q014": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q015": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q016": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q017": [
+      "wrong_rows",
+      "wrong_rows",
+      "wrong_rows"
+    ],
+    "q018": [
+      "needs_review",
+      "needs_review",
+      "needs_review"
+    ],
+    "q019": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q020": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q021": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q022": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q023": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q024": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q025": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q026": [
+      "execution_error",
+      "wrong_rows",
+      "execution_error"
+    ],
+    "q027": [
+      "needs_review",
+      "needs_review",
+      "needs_review"
+    ],
+    "q028": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q029": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q030": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q031": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q032": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q033": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q034": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q035": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q036_causation_trap": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q037": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q038": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q039": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q040": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q041": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q042": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q043": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q044": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q045": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q046": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q047": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q048": [
+      "correct",
+      "correct",
+      "correct"
+    ],
+    "q049": [
+      "wrong_rows",
+      "wrong_rows",
+      "wrong_rows"
+    ]
+  },
+  "prompt_fingerprint": "f3b7a9193a56f10d",
+  "prompt_hashes": {
+    "context/business_context.md": "e051d6d6c1dc3e333bbcfbcd7d70f83db9093fe1e5a88a8902ef5d4e0b1c4e78",
+    "context/schema.md": "ab2f8838957ffc62fd68637a6e703d90b7617a9817ff01aff42d7850cba25e36",
+    "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9"
+  },
+  "provider": "vertex",
+  "questions": 49,
+  "runs": 3,
+  "stats": {
+    "not_view_covered": {
+      "accuracy": "91.4% (96/105, 95% CI 85-95%)",
+      "correct": 96,
+      "execution_errors": [
+        "q026",
+        "q026"
+      ],
+      "n": 105,
+      "needs_review": [
+        "q018",
+        "q027",
+        "q018",
+        "q027",
+        "q018",
+        "q027"
+      ],
+      "silent_wrong": [
+        "q017",
+        "q049",
+        "q017",
+        "q026",
+        "q049",
+        "q017",
+        "q049"
+      ]
+    },
+    "overall": {
+      "accuracy": "93.5% (129/138, 95% CI 88-97%)",
+      "correct": 129,
+      "execution_errors": [
+        "q026",
+        "q026"
+      ],
+      "n": 138,
+      "needs_review": [
+        "q003",
+        "q018",
+        "q027",
+        "q003",
+        "q018",
+        "q027",
+        "q003",
+        "q018",
+        "q027"
+      ],
+      "silent_wrong": [
+        "q017",
+        "q049",
+        "q017",
+        "q026",
+        "q049",
+        "q017",
+        "q049"
+      ]
+    },
+    "view_covered": {
+      "accuracy": "100.0% (33/33, 95% CI 90-100%)",
+      "correct": 33,
+      "execution_errors": [],
+      "n": 33,
+      "needs_review": [
+        "q003",
+        "q003",
+        "q003"
+      ],
+      "silent_wrong": []
+    }
+  },
+  "unstable_questions": [
+    "q026"
+  ]
+}

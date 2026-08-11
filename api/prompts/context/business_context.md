@@ -379,7 +379,16 @@ one you used** so the answer can be checked.
 | running low | at or below the reorder point | The store's own policy, per store |
 
 If a question gives its own number — "under 5 units", "more than 2 a day" — that
-number wins.
+number **replaces** the working definition. It does not stack on top of it. A
+question asking for "less than three days of cover" wants exactly that, not
+"less than three days of cover *and* below the reorder point" — adding the
+default back silently narrows the answer to something nobody asked for.
+
+**A restock or reorder question includes lines already at zero.** They are the
+most urgent thing on the list, not an edge case to exclude: a product at zero
+has run out, which is the failure the reorder point exists to prevent. Exclude
+them only when the question says so — "about to run out" is a different phrase
+and does mean stock still on hand.
 
 ## Two defaults worth stating
 
@@ -431,6 +440,61 @@ confused.
 
 ---
 
+# Causation: what these tables cannot show
+
+These tables record **what happened** — what sold, at what price, on which day,
+under which promotion. They do not record **what would have happened** under
+different conditions. There is no control group, no holdout period, and no
+measure of demand independent of price, so nothing here can establish that one
+thing *caused* another.
+
+That line has to be held precisely, because most of what sounds causal is
+answerable, and refusing those would be its own wrong answer.
+
+**Answerable — these are facts the data holds:**
+
+- What share of a product's units sold on promotion (`sale_lines.promotion_id`).
+- How a product's units per day inside a promotion window compare with outside
+  it.
+- Which categories sold more per day during a festival ramp than in a comparable
+  non-festive period — a difference in rates, stated as one.
+- Which products sold more after a price change, and by how much.
+
+Each of those describes an association, and can be reported as an association.
+
+**Not answerable — these need a counterfactual that does not exist:**
+
+- Whether a discount *caused* a product to become a top seller.
+- How much of a festive uplift happened *because of* the festival.
+- What a product *would have* sold at full price.
+- Whether a promotion *paid for itself* in units attributable to it.
+
+**The tempting near-miss, and why it is not the answer.** Ranking products by
+their non-promotional units and comparing that against their overall rank looks
+like a counterfactual and is not. It assumes the promoted units would simply not
+have happened — when promotions pull demand forward from later weeks, move it
+between substitutes, and are placed on products already expected to sell. That
+comparison answers a different question and reports the result as though it were
+the one asked. **A proxy presented as the answer is worse than a refusal**, because
+a refusal can be argued with and a number cannot.
+
+Establishing causation here would need a baseline demand model, or a period where
+comparable products were deliberately left undiscounted. Neither exists in this
+schema.
+
+**So: when a question turns on whether X caused Y, answer
+`-- INSUFFICIENT SCHEMA: <what is missing>` and name the missing thing** —
+counterfactual sales, a control group, a baseline demand model. When the same
+subject can be asked as an association, that version is answerable and should be
+answered rather than refused alongside it.
+
+Words that often mark a causal question: *because*, *why*, *caused*, *driven by*,
+*due to*, *only … because*, *thanks to*, *attributable to*. Treat them as a
+signal to check what the question actually needs, not as an instruction to refuse
+on sight — "why is stock low on this line" is usually just "what sold".
+
+---
+
 # Where the honest-looking wrong answers are
 
 A short list of what to double-check, in rough order of how often it bites:
@@ -453,3 +517,7 @@ A short list of what to double-check, in rough order of how often it bites:
     past the end of the data. A Diwali-over-Diwali comparison is impossible and
     the honest answer says so. Holi and Gudi Padwa appear twice, so spring
     festival comparisons are fine.
+13. **Answering a causal question with a correlational proxy.** Share of units
+    sold on promotion is not "caused by the discount", and rank-excluding-
+    promotions is not a counterfactual. See *Causation*, above — the association
+    is answerable and should be answered as one; the causal claim is not.

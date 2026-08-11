@@ -37,13 +37,72 @@ Measured, not estimated. Methodology in [`corpus/README.md`](corpus/README.md).
     Hallucination      _._%    (___/___)
     Miss               _._%    (___/___)
 
-**Text-to-SQL** _(n=__ questions, 3 runs each)_
-<!-- TODO Phase 1 -->
+**Text-to-SQL** _(n=49 questions × 3 runs = 147 responses, 2026-08-09, prompt
+`f3b7a9193a56f10d`, `gemini-3.6-flash` via Vertex, ~$3.32)_
 
-    Execution accuracy      __._%
-    Silent-wrong rate       _._%
-    Cross-run variance      _._%
-    Median attempts         _.__
+    Execution accuracy      91.4%  (96/105 not-view-covered, 95% CI 85-95%)
+                            97.0%  (32/33 view-covered)
+                            92.8%  (128/138 overall, 95% CI 87-96%)
+    Silent-wrong            5 questions of 49 (q011, q026, q034, q043, q047)
+    Execution errors        2 questions (q026, q050) — statement timeouts
+    Cross-run variance      12.2%  (6 questions changed outcome across 3 runs)
+    Median attempts         not measured — no retry loop exists
+
+Read the interval, not the point estimate: 85–95% sits **on** the 85% line this
+project set for itself, so the headline supports "measure again", not "good
+enough". Every number is scored by deterministic result-set comparison — no
+LLM-as-judge.
+
+**Not one of those five silent-wrongs is a stable failure.** Every one is correct
+in at least one of the three runs, and four of the five were correct three times
+out of three in the previous triple. The failure mode this project is built to
+find is not "the model cannot do this" — it is "the model does this correctly
+most of the time", which is harder to catch and worse to ship.
+
+**This block previously read 97.1% with zero silent-wrongs, and that number was
+wrong in an instructive way.** After fixing three questions whose references were
+under-determined, only those three were re-measured — so failures got a second
+draw and successes did not. A clean triple over the identical set came back 5.7
+points lower, with variance at 12.2% rather than 0.0%, and the instability turned
+out to be in the questions that had *not* been re-rolled. Re-measuring only what
+failed is the cheapest way to publish a wrong number, and it looks like diligence
+while you do it.
+
+**The cross-run variance figure is the least trustworthy number in this block, and
+measuring it five times is how that was established.** Every row below is the same
+system, scored the same way:
+
+| sample | prompt | questions | not-view-covered | variance |
+|---|---|---|---|---|
+| first triple (0–2) | `415953…` | 47 | 88.9% (88/99) | 10.6% |
+| **strict replication (3–5)** | `415953…` | 47 | 93.9% (93/99) | **4.3%** |
+| _pooled, not a triple (0–5)_ | `415953…` | 47 | 91.9% (182/198) | _12.8%_ |
+| triple (0–2) | `f3b7a9…` | 49 † | 91.4% (96/105) | 2.0% |
+| after the question fixes (0–2) | `f3b7a9…` | 49 | 97.1% (102/105) | 0.0% |
+| **clean triple (3–5)** | `f3b7a9…` | 49 | **91.4% (96/105)** | **12.2%** |
+
+† that triple included q049, later withdrawn, and the pre-rewrite wording of q017
+and q026 — so it is the same prompt but not quite the same question set.
+
+**Five triples of a system that did not change, and the variance metric read 0.0,
+2.0, 4.3, 10.6 and 12.2 percent.** Two of those are strict replications — same
+prompt, same questions, different draws — and each pair lands on opposite sides of
+the project's own 10% decision line. The pooled row is not a triple and is not
+comparable: the metric counts questions whose outcome *ever* differed, so more runs
+read higher by construction rather than because anything got less stable.
+
+A threshold stated as "variance > 10%" therefore measures the sampling budget as
+much as the model, and it has been **retired as a trigger** — reported with its
+run count, never firing on its own. Reasoning, and what covers the harm it was
+actually about:
+[`docs/adr/0001-text-to-sql-vs-query-catalog.md`](docs/adr/0001-text-to-sql-vs-query-catalog.md).
+
+Two more things one triple could not have shown. **q017 is not a model failure:**
+across six runs of the same prompt it is wrong three times and right three times,
+writing `HAVING count(*) FILTER (late) > 0` when it fails and
+`HAVING avg(actual) > avg(contracted)` when it passes — two defensible readings of
+a question that never said which. **And the 100% on view-covered questions was an
+artifact:** one of them fails once in six runs, so the honest figure is 65/66.
 
 Hallucination rate matters more than headline accuracy. A pipeline at 85% with
 zero hallucinations beats one at 92% with 5%, because the second lies confidently
@@ -73,9 +132,10 @@ Cached trajectories load through the same code path that would call a model.
 `DEMO_MODE=false`, and `docker compose up`. Optionally
 `docker compose --profile local-models up` to run generation locally via Ollama.
 
-No hosted instance. A public chat endpoint over this corpus would be an
-open-ended query interface into personal documents, and free-tier limits mean two
-simultaneous visitors get an error.
+No hosted instance. Free-tier limits mean two simultaneous visitors get an error,
+and an open-ended public chat endpoint over any corpus is a standing invitation to
+use someone else's quota. The corpus being synthetic removes the confidentiality
+reason for this, not the other two.
 
 ## How it works
 
@@ -123,10 +183,20 @@ without one only got failure down to 50%. Context does the work.
 
 ## Corpus
 
-Real documents, published with permission. Personal records screened for PII
-before first commit. Composition, what makes them hard, and known extraction
-failures are in [`corpus/README.md`](corpus/README.md) —
-[`KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md) is deliberately non-empty.
+**Synthetic, and generated from the seeded database** — supplier contracts
+correspond to `supplier_terms` periods, invoices to `purchase_orders`, catalogs to
+`supplier_prices`, so a document and the row it describes cannot disagree. That is
+what makes the temporal demo honest: "what were the terms before the
+renegotiation" is answerable from the documents *and* checkable against the data.
+
+**It is not a corpus of real documents, and the extraction numbers should be read
+with that in front of them.** The difficulty in it is difficulty that was chosen —
+scanned pages, skewed tables, a supplier template that puts totals above line
+items — so the measurement says the pipeline handles the failures we thought of,
+which is a weaker claim than surviving documents nobody designed. Composition, the
+injected difficulty, and known extraction failures are in
+[`corpus/README.md`](corpus/README.md) — [`KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md)
+is deliberately non-empty.
 
 Raw pipeline output in [`corpus/extracted/`](corpus/extracted/) is never
 hand-edited. Hand fixes live in [`corpus/corrections/`](corpus/corrections/) with

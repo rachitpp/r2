@@ -169,3 +169,16 @@ def test_rate_tolerance_is_half_a_hundredth():
 def test_counts_admit_no_tolerance_at_all():
     assert numbers_match(Decimal("100"), Decimal("100"), Kind.EXACT)
     assert not numbers_match(Decimal("100"), Decimal("101"), Kind.EXACT)
+
+
+def test_exact_halves_round_the_way_postgres_rounds():
+    """`sum(line_total)::bigint` gives 34709 for 34708.50. Python's default
+    banker's rounding gives 34708, so a correct answer scored wrong on a
+    half-paisa — q035, four campaigns of it."""
+    assert numbers_match(Decimal("34709"), Decimal("34708.50"), Kind.MONEY)
+    assert numbers_match(Decimal("15320"), Decimal("15319.50"), Kind.MONEY)
+
+
+def test_matching_the_rounding_mode_does_not_widen_the_tolerance():
+    """A real error is still an error — this fixes a boundary, not a gap."""
+    assert not numbers_match(Decimal("34709"), Decimal("34707.50"), Kind.MONEY)

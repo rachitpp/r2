@@ -1,10 +1,10 @@
 {
-  "fingerprint": "de60dd5e3dde7787",
-  "frozen_on": "2026-08-07",
+  "fingerprint": "f3b7a9193a56f10d",
+  "frozen_on": "2026-08-08",
   "hashes": {
-    "context/business_context.md": "49c65b4d6ce6572516984a01bd95ebdbfcb6f5548a87483308164e2459d4b5e2",
-    "context/schema.md": "1b00185cecba62158e77ff5052ad13062ae32018800007deef8f4906e00ecc15",
-    "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9"
+    "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9",
+    "context/business_context.md": "e051d6d6c1dc3e333bbcfbcd7d70f83db9093fe1e5a88a8902ef5d4e0b1c4e78",
+    "context/schema.md": "ab2f8838957ffc62fd68637a6e703d90b7617a9817ff01aff42d7850cba25e36"
   },
-  "reason": "Re-frozen after adding the definitions that question-sharpening introduced (fast-moving, top seller, about to run out) and the grain/period defaults. Sharpening a question fixes the eval and can leave the product ambiguous; the context document is where that belongs. Cache reset accepted deliberately, BEFORE measuring. Unfreezing again means editing, regenerating this, and restarting."
+  "reason": "Unfrozen for ADR-0001's own prescribed follow-ups, batched so the void is spent ONCE. (1) q036's causation fix, which the ADR requires to be a context edit and NOT a few-shot pair showing the refusal: business_context.md gains a Causation section stating what these tables cannot show, listing the associations that ARE answerable so the fix cannot teach blanket refusal of promotion questions, and naming the specific near-miss the failing run reached for (rank-excluding-promotions presented as a counterfactual). (2) A false statement corrected in the schema: purchase_orders.expected_on was documented as the date promised from the supplier's contracted lead time, and it is not - every order carries ordered_on + the supplier's CURRENT lead time, so for 5,329 of 15,723 orders it disagrees with the terms in force at order time. That comment licensed q017's failure, so q017's next measurement is NOT a clean second sample of the same question. Nothing was added to the context for q017 or q026 beyond that correction, deliberately, so both stay measurable. Previous fingerprint 415953964db74b80; its 141 cached responses are now void and the run starts over."
 }

@@ -17,12 +17,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import random
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
+
+from pos_copilot import env
 
 CACHE_DIR = Path(__file__).resolve().parents[3] / "evals" / ".cache"
 
@@ -340,44 +341,76 @@ class ResponseCache:
     run_index is part of the key because cross-run variance (ADR-0001,
     threshold 3) needs three genuinely separate responses. Collapsing them
     would report perfect stability by construction.
+
+    **The fingerprint does not cover the question text**, and that hole was live
+    until 2026-08-08: editing or replacing a question changes what the model
+    would be asked while changing no part of the key, so a re-score would judge
+    the answer to the old question against the new one and report it as a
+    result. `question_sha` closes it — a stored answer whose question has since
+    changed is a miss, counted separately so it cannot look like a cold cache.
+    Records written before this field existed are accepted, because rejecting
+    them would void 288 paid-for responses; the grandfathering ends on its own
+    the next time the prompt changes, since that starts a fresh directory.
     """
 
     root: Path = CACHE_DIR
     enabled: bool = True
     hits: int = 0
     misses: int = 0
+    #: Answers found but rejected because their question has changed since.
+    stale: int = 0
 
     def _path(self, fingerprint: str, question_id: str, run_index: int) -> Path:
         return self.root / fingerprint / f"{question_id}.{run_index}.json"
 
-    def get(self, fingerprint: str, question_id: str, run_index: int) -> str | None:
+    @staticmethod
+    def question_sha(question: str) -> str:
+        return hashlib.sha256(question.encode("utf-8")).hexdigest()[:16]
+
+    def get(
+        self,
+        fingerprint: str,
+        question_id: str,
+        run_index: int,
+        question: str | None = None,
+    ) -> str | None:
         if not self.enabled:
             return None
         path = self._path(fingerprint, question_id, run_index)
         if not path.exists():
             self.misses += 1
             return None
+        record = json.loads(path.read_text(encoding="utf-8"))
+        stored = record.get("question_sha")
+        if question is not None and stored and stored != self.question_sha(question):
+            self.stale += 1
+            self.misses += 1
+            return None
         self.hits += 1
-        return json.loads(path.read_text(encoding="utf-8"))["response"]
+        return record["response"]
 
     def put(
-        self, fingerprint: str, question_id: str, run_index: int, response: str
+        self,
+        fingerprint: str,
+        question_id: str,
+        run_index: int,
+        response: str,
+        question: str | None = None,
     ) -> None:
         if not self.enabled:
             return
         path = self._path(fingerprint, question_id, run_index)
         path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "question_id": question_id,
+            "run_index": run_index,
+            "prompt_fingerprint": fingerprint,
+            "response": response,
+        }
+        if question is not None:
+            record["question_sha"] = self.question_sha(question)
         path.write_text(
-            json.dumps(
-                {
-                    "question_id": question_id,
-                    "run_index": run_index,
-                    "prompt_fingerprint": fingerprint,
-                    "response": response,
-                },
-                indent=2,
-            )
-            + "\n",
+            json.dumps(record, indent=2) + "\n",
             encoding="utf-8",
         )
 
@@ -388,26 +421,26 @@ def resolve_provider(role: str = "PLAN") -> Provider:
     Model selection goes through role config and is never hardcoded at a call
     site (CONVENTIONS → API and agent).
     """
-    model = os.environ.get(f"MODEL_{role}")
+    model = env.text(f"MODEL_{role}")
     if not model:
         raise RuntimeError(
             f"MODEL_{role} is not set. Pin an exact model string — never a "
             "floating alias — so a result file describes a specific model."
         )
-    rpm = int(os.environ.get("VERTEX_RPM", os.environ.get("GEMINI_RPM", "10")))
+    rpm = env.integer("VERTEX_RPM", env.integer("GEMINI_RPM", 10))
 
     # Vertex first (ADR-0010). AI Studio is the documented fallback and is
     # capped at 20 requests per day per model, which no measurement survives.
-    credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    credentials = env.text("GOOGLE_APPLICATION_CREDENTIALS")
     if credentials and Path(credentials).exists():
         return VertexProvider(
             model=model,
             credentials_path=credentials,
-            location=os.environ.get("VERTEX_LOCATION", "global"),
+            location=env.text("VERTEX_LOCATION", "global"),
             pacer=Pacer(rpm=rpm),
         )
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = env.text("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
             "No credential. Set GOOGLE_APPLICATION_CREDENTIALS to the service "
