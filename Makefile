@@ -204,6 +204,9 @@ fmt: ## ruff format
 # cleanly while corpus/CHECKSUMS.txt is absent and fail loudly once it is not —
 # a permanently-passing no-op would be worse than having no check at all.
 
+# The three documents verify-parse re-parses. See the target for why these.
+VERIFY_PARSE_DOCS ?= contract-sup-01-20241130,catalog-sup-01-20251103,contract-sup-01-20250629
+
 corpus: ## Generate the synthetic corpus from the seeded database
 	@# Needs the `corpus` dependency group (reportlab, pymupdf, pillow). They are
 	@# generation-only and are NOT runtime dependencies of api/.
@@ -261,11 +264,40 @@ verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
 	fi
 
 verify-parse: ## Re-run Docling on the committed sample and assert byte-identity
+	@# The sample spans the pipeline's failure modes rather than being the three
+	@# fastest documents: a scanned page with no text layer at all (OCR is where
+	@# parse accuracy is actually decided), a line-item table that continues
+	@# across a page break, and a plain text-layer contract as the control. A
+	@# sample that skipped OCR would assert the half that was never in doubt.
+	@#
+	@# No key and no quota — docling runs locally (ADR-0006). It does fetch its
+	@# layout weights from HuggingFace on a cold cache, so the first CI run is
+	@# slow; that is a model download, not a model call.
 	@if [ ! -d corpus/parsed ]; then \
 	  echo "skip: corpus/parsed/ does not exist yet (Phase 2)"; \
 	else \
-	  echo "ERROR: corpus/parsed/ exists but verify-parse is not implemented."; \
-	  exit 1; \
+	  tmp=$$(mktemp -d); \
+	  (cd api && $(UV) run --group corpus python scripts/corpus_ingest.py \
+	     --only "$(VERIFY_PARSE_DOCS)" --out "$$tmp" >/dev/null) \
+	     || { echo "verify-parse: the parse itself failed"; rm -rf $$tmp; exit 1; }; \
+	  checked=0; fail=0; \
+	  for id in $$(echo "$(VERIFY_PARSE_DOCS)" | tr ',' ' '); do \
+	    if [ ! -s "$$tmp/$$id.md" ]; then \
+	      echo "verify-parse: $$id produced no output"; fail=1; continue; \
+	    fi; \
+	    if diff -q "corpus/parsed/$$id.md" "$$tmp/$$id.md" >/dev/null 2>&1; then \
+	      checked=$$(( checked + 1 )); \
+	    else \
+	      echo "PARSE IS NOT REPRODUCIBLE: $$id differs from the committed copy"; \
+	      fail=1; \
+	    fi; \
+	  done; \
+	  want=$$(echo "$(VERIFY_PARSE_DOCS)" | tr ',' ' ' | wc -w); \
+	  if [ "$$checked" != "$$want" ] || [ "$$fail" != "0" ]; then \
+	    echo "verify-parse FAILED ($$checked/$$want matched) — see $$tmp"; exit 1; \
+	  fi; \
+	  rm -rf $$tmp; \
+	  echo "verify-parse: $$checked/$$want byte-identical to the committed parse"; \
 	fi
 
 define SETVAL_SQL_BODY

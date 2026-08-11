@@ -44,8 +44,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CORPUS = REPO_ROOT / "corpus"
 
 REPORT_FIELDS = [
-    "doc_id", "doc_type", "injected_difficulty", "pages", "chars", "tables",
-    "ocr_used", "parse_seconds", "sha256",
+    "doc_id",
+    "doc_type",
+    "injected_difficulty",
+    "pages",
+    "chars",
+    "tables",
+    "ocr_used",
+    "parse_seconds",
+    "sha256",
 ]
 
 
@@ -95,6 +102,40 @@ def versions() -> dict:
     }
 
 
+def display(path: Path) -> str:
+    """Repo-relative when it can be, absolute when it cannot.
+
+    `Path.relative_to` raises rather than falling back, so printing the output
+    directory crashed the run whenever `--out` pointed outside the repo — which
+    is what `make ingest-verify` passes (`mktemp -d`). It crashed *after* the
+    parse had finished and every file had been written, in the final progress
+    line, and the Makefile's `&&` meant the byte-comparison it exists for never
+    ran. ADR-0006's reproducibility assertion has never once executed.
+    """
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def is_canonical(*, only: str, out: Path, corpus: Path) -> bool:
+    """Whether this run may write PARSE.csv and PIPELINE.json.
+
+    Those two files describe *the whole corpus*, so only a run that parsed the
+    whole corpus into its canonical location may write them. Both ways of not
+    being that run used to write them anyway:
+
+    - `--only` left PARSE.csv holding just the documents it had parsed. A
+      debugging convenience silently truncated the report from 40 rows to 1, so
+      it then claimed the corpus was one document.
+    - `--out <tmp>` wrote the report into the real `corpus/` for a parse whose
+      artifacts had gone somewhere else entirely — which is exactly what
+      `make ingest-verify` passes, so the verification mutated the very thing
+      it was verifying.
+    """
+    return not only and out.resolve() == (corpus / "parsed").resolve()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus", default=str(CORPUS))
@@ -126,27 +167,38 @@ def main(argv: list[str] | None = None) -> int:
 
         markdown = result.document.export_to_markdown()
         target = out / f"{doc['doc_id']}.md"
-        target.write_text(markdown, encoding="utf-8")
+        # newline="\n" is load-bearing, not style. Without it Python translates
+        # every \n to \r\n on Windows, while the sha256 below is taken over the
+        # in-memory string — so PARSE.csv would record a hash the file on disk
+        # does not have, and verify-corpus cannot catch it because parsed/ is
+        # not in CHECKSUMS.txt. A recorded hash that describes nothing on disk
+        # is this project's recurring defect class, in the one column whose job
+        # is proving the artifact is what it says it is.
+        target.write_text(markdown, encoding="utf-8", newline="\n")
         written.add(target.resolve())
 
         tables = len(getattr(result.document, "tables", []) or [])
-        report.append({
-            "doc_id": doc["doc_id"],
-            "doc_type": doc["doc_type"],
-            "injected_difficulty": doc["injected_difficulty"],
-            "pages": doc["pages"],
-            "chars": len(markdown),
-            "tables": tables,
-            # A scanned document has no text layer, so any text at all came from
-            # OCR. Derived from the artifact rather than from the manifest's
-            # claim about it.
-            "ocr_used": "scanned" in doc["injected_difficulty"],
-            "parse_seconds": f"{elapsed:.1f}",
-            "sha256": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
-        })
+        report.append(
+            {
+                "doc_id": doc["doc_id"],
+                "doc_type": doc["doc_type"],
+                "injected_difficulty": doc["injected_difficulty"],
+                "pages": doc["pages"],
+                "chars": len(markdown),
+                "tables": tables,
+                # A scanned document has no text layer, so any text at all came from
+                # OCR. Derived from the artifact rather than from the manifest's
+                # claim about it.
+                "ocr_used": "scanned" in doc["injected_difficulty"],
+                "parse_seconds": f"{elapsed:.1f}",
+                "sha256": hashlib.sha256(markdown.encode("utf-8")).hexdigest(),
+            }
+        )
         mark = "ocr" if "scanned" in doc["injected_difficulty"] else "   "
-        print(f"  {mark} {doc['doc_id']:34} {len(markdown):6} chars  "
-              f"{tables} tables  {elapsed:5.1f}s")
+        print(
+            f"  {mark} {doc['doc_id']:34} {len(markdown):6} chars  "
+            f"{tables} tables  {elapsed:5.1f}s"
+        )
 
     # Same sweep as the generator, for the same reason: a parsed file left behind
     # by an earlier run is input the extraction step would happily consume.
@@ -157,31 +209,47 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  removed stale {stale.name}")
 
     empty = [r for r in report if r["chars"] < 50]
-    with (corpus / "PARSE.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=REPORT_FIELDS)
-        writer.writeheader()
-        writer.writerows(sorted(report, key=lambda r: r["doc_id"]))
+    canonical = is_canonical(only=args.only, out=out, corpus=corpus)
 
-    pipeline = corpus / "PIPELINE.json"
-    spec = json.loads(pipeline.read_text(encoding="utf-8"))
-    spec["parse"] = {
-        "tool": "docling",
-        **versions(),
-        "note": (
-            "OCR is enabled for every document, not only the scans, so one "
-            "pipeline is being measured rather than several. RapidOCR needs "
-            "opencv-python-headless in this environment: docling reports "
-            "'RapidOCR is not installed' when the real failure is a missing "
-            "libGL.so.1."
-        ),
-    }
-    pipeline.write_text(json.dumps(spec, indent=2) + "\n", encoding="utf-8")
+    if canonical:
+        with (corpus / "PARSE.csv").open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=REPORT_FIELDS)
+            writer.writeheader()
+            writer.writerows(sorted(report, key=lambda r: r["doc_id"]))
+
+        pipeline = corpus / "PIPELINE.json"
+        spec = json.loads(pipeline.read_text(encoding="utf-8"))
+        spec["parse"] = {
+            "tool": "docling",
+            **versions(),
+            "note": (
+                "OCR is enabled for every document, not only the scans, so one "
+                "pipeline is being measured rather than several. RapidOCR needs "
+                "opencv-python-headless in this environment: docling reports "
+                "'RapidOCR is not installed' when the real failure is a missing "
+                "libGL.so.1."
+            ),
+        }
+        pipeline.write_text(
+            json.dumps(spec, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
 
     total = sum(float(r["parse_seconds"]) for r in report)
     ocr_docs = [r for r in report if r["ocr_used"]]
-    print(f"\nparsed {len(report)} documents in {total:.0f}s "
-          f"({len(ocr_docs)} through OCR)")
-    print(f"wrote {out.relative_to(REPO_ROOT)}/ and corpus/PARSE.csv")
+    print(
+        f"\nparsed {len(report)} documents in {total:.0f}s "
+        f"({len(ocr_docs)} through OCR)"
+    )
+    if canonical:
+        print(f"wrote {display(out)}/ and corpus/PARSE.csv")
+    else:
+        # Say which run this was and what it therefore did not write, rather
+        # than printing the same line a full run prints.
+        why = "--only" if args.only else "--out"
+        print(
+            f"wrote {display(out)}/ — partial run ({why}), so PARSE.csv "
+            f"and PIPELINE.json were left alone"
+        )
     if empty:
         # A document that parsed to nothing is worse than one that parsed badly:
         # the extraction step would report a clean miss and nothing would look
