@@ -15,10 +15,13 @@ extraction is not built, and that is the gate.**
 Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
 it is what the eval numbers in the README rest on.
 
-**Where Phase 2 stands against `PLAN.md`'s seven done-conditions:** two hold
-(reproducible parse asserted in CI, and the PII scan recorded honestly as
-vacuous). Five do not: no extraction, no gold set, no `TIMELINE.md`, no injection
-specimen, no `KNOWN_ISSUES.md`, and the README's four-number block is still blank.
+**Where Phase 2 stands against `PLAN.md`'s seven done-conditions:** three hold
+(1 reproducible parse asserted in CI, 6 `KNOWN_ISSUES.md` non-empty, 7 the PII
+scan recorded honestly as vacuous). **Condition 4 is half-done and blocked by the
+corpus itself** — `TIMELINE.md` exists and is hand-verified, but the gap query it
+requires has nothing to query: *the corpus has no coverage gaps.* Three do not
+hold: no extraction, no gold set, no injection specimen, and the README's
+four-number block is blank.
 
 - **Corpus: done.** 40 synthetic documents generated from the seeded database —
   24 contracts (including 2 clause-level amendments), 10 invoices, 3 catalogs,
@@ -173,6 +176,41 @@ guard), 31 stub-driven tests.
 `MODEL_EXTRACT` was also missing from the Makefile's `export` line — the
 `-include .env` defect already written down two sections above this one.
 
+### The corpus has no coverage gaps, and three documents said it did
+
+Measured from `MANIFEST.csv`: **12 suppliers, 24 contracts, two each, and every
+predecessor ends on the exact day its successor begins.** Zero gaps. The only
+dates with nothing in force are before each supplier's first contract, earliest
+2023-09-07 — a much weaker case, because "before any contract existed" is hard to
+tell apart from "not found", which is the distinction demo beat 2 exists to show.
+
+**`PLAN.md`'s done-condition 4 therefore cannot be satisfied by this corpus.**
+`corpus/README.md` asserted the opposite — *"a date with no contract in force is a
+real gap in the corpus rather than a staged one"* — which described what
+`valid_period` permits rather than what the generator produced. Same shape as the
+`expected_on` schema comment and the `business_date`/`sold_at` claim: **a document
+asserting a property the artifact does not have.** Corrected in place, so the
+correction is visible rather than tidy.
+
+**Fixing it means regenerating with a deliberate lapse for one or two suppliers,
+and that must happen before extraction is paid for** — regenerating changes the
+documents, changes the parse, and voids extracted output. It is now an open
+question below. It also needs Postgres, so it is blocked on Docker locally.
+
+`corpus/TIMELINE.md` and `corpus/KNOWN_ISSUES.md` now exist and both say this
+plainly. `test_corpus_timeline.py` asserts the claim is still true, so the day a
+regeneration introduces a gap, the three documents describing its absence fail
+together instead of ageing quietly.
+
+### `verify-corpus` was checking none of the parse output
+
+It listed the 40 source PDFs plus `MANIFEST.csv` and checked completeness by
+counting PDFs — so it reported **41/41 while verifying none of the 40 committed
+parse artifacts**, which `CONVENTIONS.md` and ADR-0006 both say it covers. Now 82
+artifacts, and the completeness half is a set comparison rather than a count:
+`sha256sum -c` verifies the paths a file mentions and is structurally blind to the
+ones it omits, which is precisely how the gap survived.
+
 ### Two things a fresh clone trips over, neither of them in the repo
 
 - **`core.autocrlf=true` and no `.gitattributes` broke every hash in the
@@ -210,16 +248,16 @@ _The 2026-08-09 eval findings — six samples, threshold 3 retired, q017 and q03
 fixed, q049 withdrawn — are preserved in `docs/HANDOFF.md` and in **Measured
 numbers** below. They have not changed._
 
-_What didn't:_ **the extraction run itself** — it is built and unrun, blocked on
-the three gates in *Next session should*. So Phase 2 still stands at 2 of 7
-done-conditions: building the pipeline moved no condition, and saying otherwise
-would be counting code as measurement. `parsed/` is still absent from
-`CHECKSUMS.txt`.
+_What didn't:_ **the extraction run itself** — built and unrun, blocked on the
+three gates in *Next session should*. Building the pipeline moved no
+done-condition, and saying otherwise would count code as measurement. Phase 2 is
+at 3 of 7, and the three that moved are documentation and checks, not extraction.
 _Anything half-finished someone would trip over:_ No. `make extract` refuses
-without `MODEL_EXTRACT`; `make extract-stub` needs nothing.
-_Is the system in a working state?_ Yes. 238 passed, 33 skipped without a
-database; ruff clean; `make web-check` clean; `verify-corpus` and `verify-parse`
-both pass; `git add --renormalize .` stages nothing.
+without `MODEL_EXTRACT`; `make extract-stub` needs nothing and cannot write into
+the committed corpus.
+_Is the system in a working state?_ Yes. 259 passed, 33 skipped without a
+database; ruff clean; `make web-check` clean; `verify-corpus` (82 artifacts) and
+`verify-parse` both pass; `git add --renormalize .` stages nothing.
 
 
 ## Next session should
@@ -301,13 +339,12 @@ _Injection specimens:_ Phase 3, not started.
 
 ## Named debt carried forward
 
-- **`corpus/parsed/` and `PARSE.csv` are committed but unchecksummed.**
-  `CONVENTIONS.md` and ADR-0006 both say `verify-corpus` covers `parsed/` and
-  `extracted/`; it counts PDFs plus the manifest and nothing else, so it passes
-  41/41 while checking none of the parse output. `verify-parse` re-derives three
-  of the 40 from source, which is a stronger check on those three and no check at
-  all on the other 37. **Extend `CHECKSUMS.txt` when `extracted/` lands**, since
-  that is the same gap one layer down and both close with one edit.
+- **`make corpus` leaves `CHECKSUMS.txt` stale until `make ingest` runs.**
+  Generation writes the sources-and-manifest listing; `corpus_ingest` refreshes
+  the whole thing on a canonical run, because it is the last stage that writes
+  artifacts. Regenerating documents always requires re-parsing them, so the two
+  always run together — but `make corpus` on its own now fails `verify-corpus`,
+  loudly and correctly. `make corpus-checksums` is the manual refresh.
 - **The corpus and seed CSVs disagree about line endings.** `MANIFEST.csv` and
   `PARSE.csv` are CRLF because Python's `csv` default is RFC 4180 and nothing
   overrides it; `seed/*.csv` are LF because `seed.py` does. `.gitattributes`
@@ -512,6 +549,23 @@ Phase 1's eval set if it is going to happen at all.
 
 These are unresolved by design. If you hit one, stop.
 
+- **Regenerate the corpus with a coverage gap, or retire done-condition 4?**
+  There are no gaps: 24 contracts, 12 suppliers, every predecessor ending the day
+  its successor begins. `PLAN.md` requires "a query for a date inside a known gap
+  returns *no document in force*, distinct from *not found*", and no such date
+  exists. Three options, and the first is the recommendation:
+  1. **Regenerate with a deliberate lapse** for one or two suppliers. Demo beat 2
+     is a named deliverable and this is the half that makes it interesting. It
+     also lets the dropped `bilingual-mr-en` difficulty ride along, since both
+     need the same regeneration.
+  2. Retire the condition and say in `PLAN.md` why — the corpus can show
+     "not found" (only SUP-01 has catalogs) but not "no document in force".
+  3. Accept the pre-history case (any date before a supplier's first contract) as
+     satisfying it, which is weaker than it sounds and worth saying out loud.
+
+  **Decide before extraction is paid for.** Regenerating changes the documents,
+  which changes the parse, which voids extracted output. Needs Postgres, so it is
+  blocked on Docker locally too.
 - **Amendments vs. supersessions. Now decidable — nothing is waiting on data.**
   Phase 0's `supplier_terms` is a wide table that supersedes as a set, which is
   right for supersessions and right for text-to-SQL. The corpus contains **2

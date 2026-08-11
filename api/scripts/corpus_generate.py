@@ -526,7 +526,16 @@ def write_checksums(docs: list, out: Path) -> None:
     ]
     manifest = (out / "MANIFEST.csv").read_bytes()
     lines.append(f"{hashlib.sha256(manifest).hexdigest()}  MANIFEST.csv")
-    (out / "CHECKSUMS.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # newline="\n": without it Windows writes CRLF and this file stops being
+    # byte-comparable across platforms. Same defect as corpus_ingest's parsed
+    # output had, in the file that records every other file's bytes.
+    #
+    # This covers sources/ and MANIFEST.csv only, which is all that exists when
+    # generation runs. parsed/ and extracted/ are added by corpus_checksums,
+    # which corpus_ingest calls on a canonical run.
+    (out / "CHECKSUMS.txt").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

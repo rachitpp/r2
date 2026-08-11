@@ -234,6 +234,14 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(spec, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
 
+        # Refresh the checksums here, because this is the last stage that writes
+        # committed artifacts. Leaving it to a step someone has to remember is
+        # how parsed/ went unlisted — and therefore unverified — for the whole
+        # of Phase 2 while verify-corpus reported 41/41.
+        from corpus_checksums import write_checksums
+
+        print(f"checksums  {write_checksums(corpus)} artifacts")
+
     total = sum(float(r["parse_seconds"]) for r in report)
     ocr_docs = [r for r in report if r["ocr_used"]]
     print(

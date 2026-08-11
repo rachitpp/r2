@@ -30,11 +30,18 @@ generated from the seeded database, and all 40 parsed with Docling into
 
 **Extraction is built and has never been run.** Prompt, schemas, validator,
 runner and 31 tests, all exercised against a stub — no key, no network, no model
-call. `corpus/extracted/` does not exist, so **Phase 2 stands at 2 of 7
-done-conditions and building the pipeline moved none of them.** Code is not
-measurement. Three things gate the first run and all three are yours: a GCP
-budget alert, data residency for `location=global`, and the canonical Vertex
-terms. See `PROGRESS.md` → *Next session should*.
+call. `corpus/extracted/` does not exist, so **building the pipeline moved no
+done-condition.** Code is not measurement. Three things gate the first run and all
+three are yours: a GCP budget alert, data residency for `location=global`, and the
+canonical Vertex terms. See `PROGRESS.md` → *Next session should*.
+
+**Phase 2 is at 3 of 7, and one condition is blocked by the corpus itself.
+The corpus has no coverage gaps** — 24 contracts, 12 suppliers, every predecessor
+ending the day its successor begins — so done-condition 4's "query a date inside a
+known gap" has nothing to query. `corpus/README.md` claimed the opposite until
+2026-08-11. Fixing it means regenerating with a deliberate lapse, **which must
+happen before extraction is paid for**, since it voids extracted output. Open
+question in `PROGRESS.md`.
 
 **Amendments vs. supersessions is decided: clause-level provenance.** Extraction
 records what a document says, never what was in force. No migration was written —

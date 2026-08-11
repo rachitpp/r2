@@ -26,10 +26,27 @@ Every document corresponds to a row, and the row is recorded in `MANIFEST.csv` a
 
 **This is the property that makes the temporal demo honest.** "What were the terms
 before the renegotiation?" is answerable from the documents *and* checkable against
-`supplier_terms`, because the document was made from that row. `valid_period`
-already permits gaps, so a date with no contract in force is a real gap in the
-corpus rather than a staged one — which is what demo beat 2's "no document in
-force, distinct from not found" needs.
+`supplier_terms`, because the document was made from that row.
+
+> ### ⚠️ There are no coverage gaps, and this file used to say there were
+>
+> The sentence here read: *"`valid_period` already permits gaps, so a date with no
+> contract in force is a real gap in the corpus rather than a staged one — which is
+> what demo beat 2's 'no document in force, distinct from not found' needs."*
+>
+> **That described what the generator permits, not what it produced.** Measured
+> 2026-08-11: 12 suppliers, 24 contracts, **two per supplier, and the first ends on
+> the exact day the second begins.** Zero gaps. The only dates with nothing in force
+> are before each supplier's first contract — earliest 2023-09-07 — and
+> "before any contract existed" is a far weaker demonstration than a mid-history
+> lapse, because it is much harder to distinguish from "not found", which is the
+> distinction the beat exists to show.
+>
+> **Consequence: `PLAN.md`'s Phase 2 done-condition 4 cannot be satisfied by this
+> corpus as built.** Closing it needs a regeneration that gives one or two suppliers
+> a deliberate lapse, and that must happen *before* any extraction is paid for,
+> since regenerating changes the documents and voids extracted output. See
+> `KNOWN_ISSUES.md`.
 
 Invoice totals reconcile against `sum(line_total)` for the same order, so a
 mis-extracted line item is *detectable* rather than merely wrong.

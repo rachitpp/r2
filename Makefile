@@ -9,7 +9,7 @@ SHELL := /bin/bash
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
-        extract extract-stub
+        extract extract-stub corpus-checksums
 
 -include .env
 
@@ -266,24 +266,24 @@ extract-stub: ## Same runner against a stub — no key, no quota, no network
 	     --provider stub --out "$$tmp" $(EXTRACT_ARGS)); \
 	  status=$$?; rm -rf $$tmp; exit $$status
 
+corpus-checksums: ## Regenerate corpus/CHECKSUMS.txt from what is on disk
+	@# A deliberate act, like seed-generate. `make ingest` does it automatically
+	@# because it is the last stage that writes artifacts; this is for the cases
+	@# where it did not, and for adding a new artifact tree.
+	cd api && $(UV) run python scripts/corpus_checksums.py
+
 verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
-	@# `cd corpus` matters: the paths inside CHECKSUMS.txt are relative to it,
-	@# following seed/CHECKSUMS.txt's convention. Run from the repo root this
-	@# read every path as missing — so this target could only ever have skipped
-	@# or failed, never passed, and it skipped for the whole of Phase 0 and 1.
-	@if [ ! -f corpus/CHECKSUMS.txt ]; then \
-	  echo "skip: corpus/CHECKSUMS.txt does not exist yet (Phase 2)"; \
-	else \
-	  ( cd corpus && sha256sum -c --quiet CHECKSUMS.txt ) || exit 1; \
-	  listed=$$(grep -c . corpus/CHECKSUMS.txt); \
-	  found=$$(( $$(find corpus/sources -name '*.pdf' | wc -l) + 1 )); \
-	  if [ "$$listed" != "$$found" ]; then \
-	    echo "corpus has $$found artifacts but CHECKSUMS.txt lists $$listed —"; \
-	    echo "an unlisted document is one the pipeline parses and nothing checks."; \
-	    exit 1; \
-	  fi; \
-	  echo "corpus matches CHECKSUMS.txt, and holds nothing it does not list"; \
-	fi
+	@# Now covers parsed/ and extracted/ as CONVENTIONS.md and ADR-0006 always
+	@# said it did. It never did: it listed the source PDFs plus MANIFEST.csv and
+	@# checked completeness by counting PDFs, so it passed 41/41 while checking
+	@# none of the parse output.
+	@#
+	@# The completeness half is the part that matters and the part `sha256sum -c`
+	@# cannot do — that verifies what the file mentions and is blind to what it
+	@# omits, which is exactly how the gap survived. Python, not shell, because
+	@# comparing two sets and saying which side each difference is on is what
+	@# went wrong when it was counted instead.
+	cd api && $(UV) run python scripts/corpus_checksums.py --check
 
 verify-parse: ## Re-run Docling on the committed sample and assert byte-identity
 	@# The sample spans the pipeline's failure modes rather than being the three
