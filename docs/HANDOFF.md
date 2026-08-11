@@ -19,11 +19,23 @@ instrument works), `evals/DIAGNOSIS-2026-08-07.md` (why it currently doesn't),
 
 ## Where the project is
 
-**Phase 1 — Structured Q&A. CLOSED 2026-08-09.** Phase 0 is complete. **Phase 2 is
-next and is blocked on the corpus, which does not exist yet** — `corpus/` holds a
-README and `PIPELINE.json`. Closing Phase 1 does not claim the eval is clean: it
-claims the deliverable works, the measurement has been taken six times, and the
+**Phase 2 — Corpus ingestion. IN PROGRESS.** Phase 0 and Phase 1 are complete;
+Phase 1 closed 2026-08-09. Closing it did not claim the eval is clean: it claimed
+the deliverable works, the measurement has been taken six times, and the
 remainder is debt that does not block anything. The debt is in `PROGRESS.md`.
+
+**The corpus is no longer the blocker — it exists.** 40 synthetic documents
+generated from the seeded database, and all 40 parsed with Docling into
+`corpus/parsed/`. **Extraction has not been started**, and that is now the gate.
+
+> **This file said "Phase 2 is blocked on the corpus, which does not exist yet"
+> for two commits after the corpus was generated and parsed.** Both landed
+> without touching it or `PROGRESS.md`, so the two state documents disagreed with
+> the repository they describe — and this one arrives first in a new session, by
+> design, which is the specific failure mode moving it into the repo was meant to
+> prevent. Being version-controlled made it *correctable*; it did not make it
+> correct. **The rule that would have caught it is already written in
+> `CONVENTIONS.md`: update `PROGRESS.md` as the last action of every session.**
 
 The eval has been diagnosed, fixed, and measured **six times** — three triples of
 the current prompt and three of the previous one.

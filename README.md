@@ -240,5 +240,18 @@ terms and prices, a stock-simulating seed generator, and a read-only role.
 from a template. Seed output is byte-identical on re-run, asserted in CI at both
 sizes with no API key.
 
-Phase 1 (structured Q&A, eval harness, first UI) is next. See
+**Phase 1 closed 2026-08-09 — structured Q&A.** A question asked in the web app
+returns an answer beside the SQL that produced it, with no key and no quota; the
+live generation path sits beside the canned one, opt-in, and has been proven
+against the real model. The eval harness reports execution accuracy, silent-wrong
+rate and cross-run variance, measured six times. The numbers are in *Results*
+above, and what they do and don't support is in
+[`docs/PROGRESS.md`](docs/PROGRESS.md). It was closed with known instrument debt,
+listed there rather than hidden.
+
+**Phase 2 in progress — corpus ingestion.** The corpus exists: 40 synthetic
+documents generated from the seeded database, byte-identical on regeneration,
+and parsed with Docling into [`corpus/parsed/`](corpus/parsed/). A 3-document
+sample is re-parsed and byte-compared in CI on every push. **Extraction has not
+been built**, so every extraction number above is still blank. See
 [`docs/PLAN.md`](docs/PLAN.md).

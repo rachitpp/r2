@@ -9,8 +9,34 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 1 — Structured Q&A. CLOSED 2026-08-09. Phase 2 is next and is blocked on
-you: the corpus does not exist yet.**
+**Phase 2 — Corpus ingestion. IN PROGRESS. The corpus exists and is parsed;
+extraction is not built, and that is the gate.**
+
+Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
+it is what the eval numbers in the README rest on.
+
+**Where Phase 2 stands against `PLAN.md`'s seven done-conditions:** two hold
+(reproducible parse asserted in CI, and the PII scan recorded honestly as
+vacuous). Five do not: no extraction, no gold set, no `TIMELINE.md`, no injection
+specimen, no `KNOWN_ISSUES.md`, and the README's four-number block is still blank.
+
+- **Corpus: done.** 40 synthetic documents generated from the seeded database —
+  24 contracts (including 2 clause-level amendments), 10 invoices, 3 catalogs,
+  3 policies. 10 carry an injected difficulty, each re-derived from the rendered
+  PDF before the manifest is written. Byte-identical on regeneration.
+- **Parse: done, and now actually checked.** All 40 parsed with Docling into
+  `corpus/parsed/` with `PARSE.csv`. `verify-parse` re-parses a 3-document sample
+  and asserts byte-identity in CI — see *Last session*, because until 2026-08-11
+  it was a stub that could only fail.
+- **Extraction: not started.** No prompt, no schema, no `corpus/extracted/`.
+
+**Two decisions of yours gate the first extraction run** and are unchanged in the
+open-questions list below: data residency for `location=global`, and the
+canonical Vertex terms. A third — amendments vs. supersessions — is now *decidable*
+rather than blocked, because the corpus contains 2 clause-level amendments by
+construction.
+
+### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
 `docs/PLAN.md` says Phase 1 is done when the harness prints execution accuracy,
 silent-wrong and cross-run variance **and** a question asked in the web app
@@ -31,10 +57,11 @@ fires, five questions produce unstable silent-wrongs, and two documented blind
 spots (`is_active`, `business_date`/`sold_at`) cannot be detected by the instrument
 at all. All of it is carried below as named debt, none of it blocks Phase 2.
 
-- **Harness: done, and now measured six times** — three triples of the current
+- **Harness: done, and measured six times** — three triples of the current
   prompt and three of the previous one. **The samples disagree with each other in
-  ways that decide things**, which is the session's main finding; see
-  *Last session*. Quote the clean triple (runs 3–5 of `f3b7a9…`) and nothing else.
+  ways that decide things**, which was that session's main finding; the six-sample
+  table is in `docs/HANDOFF.md`. Quote the clean triple (runs 3–5 of `f3b7a9…`)
+  and nothing else.
 - **Web app: the query view exists and works.** `web/` is a Next.js App Router
   app with the proposed palette and type in `tailwind.config.ts`, a typed client
   mirroring the FastAPI models, and the answer-beside-SQL view. `make web` with
@@ -65,111 +92,85 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **next, and blocked on you** | `corpus/` holds a README and PIPELINE.json — no documents. Hour one is a PII scan and the amendments-vs-supersessions check, both of which need real files. Three open questions wait on it: corpus size, amendments, and data residency for `location=global` |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. Extraction not started, and it is the gate. 2 of 7 done-conditions hold. Data residency for `location=global` still unanswered and still blocks the first run |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
 
 ## Last session
 
-_Date:_ 2026-08-08 → 2026-08-09
-_What landed:_ The live path, proven live. ADR-0001's follow-ups, measured. And
-**the eval measured six times, which is how two of this session's own conclusions
-were caught being wrong.**
+_Date:_ 2026-08-11
+_What landed:_ The environment stood up on Windows, and **four checks that were
+not running turned out to be wearing the label of checks that were.** No model
+calls, no spend.
 
-### Six samples, and the metric that could not survive them
+### The parse layer was never actually verified
 
-| sample | prompt | questions × runs | not-view-covered | variance |
-|---|---|---|---|---|
-| first triple (0–2) | `415953…` | 47 × 3 | 88.9% (88/99, CI 81.2–93.7) | **10.6%** |
-| **strict replication (3–5)** | `415953…` | 47 × 3 | **93.9% (93/99, CI 87.4–97.2)** | **4.3%** |
-| _pooled, not a triple (0–5)_ | `415953…` | 47 × 6 | 91.9% (182/198, CI 87.3–95.0) | _12.8%_ |
-| triple, pre-fixes (0–2) | `f3b7a9…` | 49 × 3 | 91.4% (96/105, CI 84.5–95.4) | 2.0% |
-| re-score after the fixes (0–2) | `f3b7a9…` | 49 × 3 | 97.1% (102/105) — **biased** | 0.0% |
-| **clean triple (3–5)** | `f3b7a9…` | 49 × 3 | **91.4% (96/105, CI 85–95)** | **12.2%** |
+- **`verify-parse` was a stub that could only fail.** It skipped while
+  `corpus/parsed/` was absent and printed `not implemented; exit 1` once it was
+  not — so **CI has been red on master since the parse landed**, on the last step
+  of the run. It now does what ADR-0006 specifies: re-parses a 3-document sample
+  and asserts byte-identity, with a counter so it cannot confuse "found no
+  differences" with "compared nothing".
+- **`make ingest-verify` has never once executed its comparison.** The final
+  progress line called `Path.relative_to(REPO_ROOT)`, which raises whenever
+  `--out` points outside the repo — which is exactly what the target passes
+  (`mktemp -d`). It crashed *after* the full parse, and the Makefile's `&&` meant
+  the diff never ran. ADR-0006's reproducibility assertion was unfalsifiable by
+  construction, the same shape as ADR-0001's reversal test.
+- **`--only` truncated `PARSE.csv` from 40 rows to 1**, so the report then
+  claimed the corpus held one document. Found by running it.
+- **`PARSE.csv` recorded hashes that no file on disk had.** `write_text` with no
+  explicit `newline` translates every newline on Windows, while the `sha256`
+  beside it is taken over the in-memory string. `verify-corpus` cannot catch it
+  either, because `parsed/` is not in `CHECKSUMS.txt` — see *Named debt*.
 
-**Five triples of a system that did not change read 0.0, 2.0, 4.3, 10.6 and 12.2
-percent variance.** Two are strict replications, and each pair straddles the 10%
-line. **Threshold 3 is retired as a trigger.**
+**Each fix carries an assertion, and each assertion was validated by
+reintroducing the defect and watching it fail** — `api/tests/test_corpus_ingest.py`,
+the first corpus tests in the repo. Instance eight's lesson, applied on the way in
+rather than after.
 
-**And the 97.1% row is the session's most expensive lesson.** After fixing three
-under-determined questions I re-measured only those three — so failures got a
-second draw and successes did not. It read 97.1% with **zero** silent-wrongs. The
-clean triple over the identical set came back **91.4% with five**, and the
-instability was in the questions that had *not* been re-rolled. **Threshold 1
-fires; the "it does not fire" ruling I recorded lasted about an hour**, and only
-because it was written with an explicit reversal condition.
+### The parse is deterministic across platforms — measured, not assumed
 
-- **q017 was never a model failure, and the controlled test proves it.** I changed
-  only the question — naming *average* delivery time against *average* contracted
-  lead time — and left the reference untouched. It went from `wrong ×3` to
-  **correct 6/6** across both triples. Six runs of the old prompt had already shown
-  it choosing each reading three times: `HAVING count(*) FILTER (late) > 0` when it
-  failed, `HAVING avg(actual) > avg(contracted)` when it passed.
-- **q036's causation fix is confirmed: refusal 6/6**, up from 2/3, and **zero
-  `refused_wrongly` anywhere in the clean triple** — so the section did not teach
-  blanket refusal, which was the way it could have been worse than the defect.
-- **q026 and q050 are the one stable model-side finding.** Festival membership as a
-  correlated `EXISTS` per row runs 1.5s at chain grain and blows the 5s timeout at
-  category grain; the model picks between that and a set-based join run to run. The
-  exact failing SQL was re-executed against an **idle** database — 5.005s — so this
-  is not test-suite load being blamed on the model.
-- **The 100% on view-covered was an artifact.** q032 fails once in six runs of the
-  old prompt; 65/66.
-- **q049 was mine and is withdrawn.** It scored `wrong_rows` 3/3 while returning
-  values numerically identical to its own reference. **q050 replaces it.** Its
-  premise was wrong too: the 7.1s I quoted was my own rewrite of the correlated
-  form, not what the model writes.
-- **Not one of the five silent-wrongs is stable.** Every one is correct in at least
-  one run of the same triple. The failure this project exists to catch is not "the
-  model cannot" but "the model usually can".
+The 3-document sample re-parsed on **Windows** is byte-identical to output
+generated in a **Linux** codespace, OCR included, on a 200dpi skewed scan with no
+text layer. ADR-0006 scopes the determinism claim to the parse layer; this is the
+first evidence that the scope holds across machines rather than only across runs.
 
-### Everything else that landed
+### Two things a fresh clone trips over, neither of them in the repo
 
-- **`POST /query` generates SQL when `DEMO_MODE=false`.** `api/src/pos_copilot/live.py`,
-  `make serve-live`. Scope reaches the prompt before any SQL exists, the guard
-  (rule 4) runs before a connection is opened, and the model's own SQL comes back
-  in `generated_sql` beside the wrapped `sql` that ran.
-- **Refusals and failures are separate response fields.** `refusal` is the model
-  declining (either sentinel); `error` is the guard rejecting the query or
-  Postgres refusing it. A failed generated query is a **200 carrying `error`**,
-  not a 500 — the request was fine and the system did the right thing.
-- **A ceiling, per rule 2.** Process-wide, 50 calls / $1.00 by default, and the
-  model call is serialised because `Pacer` and `Budget` are not thread-safe and
-  `model.py` is serial by design.
-- **`/health` now reports whether live mode can actually serve.** It answered
-  `ok` with no credential before, which is this project's defect class in the one
-  endpoint whose job is reporting state.
-- **The web input is typed, with the catalogue as suggestions**, so the live path
-  is reachable from the browser without the UI branching on a mode it is not
-  allowed to know (`CONVENTIONS.md`). Provenance is stated per answer from the
-  response's own `mode` field.
+- **`core.autocrlf=true` and no `.gitattributes` breaks every hash in the
+  project.** On Windows this failed two tests with confidently wrong messages —
+  "prompt changed since the freeze" and "49 expectations computed against a
+  different seed". Neither was true: LF-normalising the bytes reproduces
+  `PROMPT_FREEZE.json` and the seed fingerprint exactly. Fixed for this clone with
+  `core.autocrlf=false` and a re-checkout. **A committed `.gitattributes` is the
+  durable fix and has not been written** — it is a repo-wide decision.
+- **`make ingest` needs two environment variables on Windows** and nothing says
+  so: `HF_HUB_DISABLE_SYMLINKS=1` (hf_hub symlinks need admin or Developer Mode)
+  and `TORCHDYNAMO_DISABLE=1` (TorchInductor shells out to MSVC `cl.exe`). Both
+  are no-ops on Linux and in CI. Where they belong — `.env.example`, the corpus
+  README, or the Makefile — is not decided.
 
-_Three defects found on the way, two of them mine:_ **`make serve` could not
-serve in a shell that had not exported `.env` itself** — `-include .env` makes
-*make* variables, not environment ones, so the API got no
-`READONLY_DATABASE_URL` and answered every query with a 500 while `/health` still
-said `ok`. (Last session's end-to-end check passed because that shell had the
-variables; a fresh clone would not have.) `export FOO` for an unset variable
-exports it **empty**, so
-`int(os.environ.get("LIVE_MAX_CALLS", "50"))` raised on every live request
-(`api/src/pos_copilot/env.py` is the fix, and `int("")` was latent in
-`resolve_provider` and the eval runner too); and an `OSError` from a rejected key
-would have surfaced as a traceback, since urllib's errors are not `RuntimeError`.
+### The state documents had gone stale, which is the defect this project names
 
-**The live path is proven live.** Three real Vertex calls, ~$0.06: net revenue for
-May 2026 came back as 8,064,347.42, matching the demo path's figure for the same
-month; "how many customers do we have" came back as
-`-- INSUFFICIENT SCHEMA: customer data is not tracked in the database`; and a
-clerk-scoped question produced `WHERE store_id = 2` in the model's own SQL with the
-tripwire silent. `web/` verified serving through the Next rewrite proxy.
+`CLAUDE.md`, `README.md`, `PROGRESS.md` and `HANDOFF.md` all still said the corpus
+did not exist, **two commits after it was generated and parsed.** `HANDOFF.md`
+exists in the repo precisely so a stale state document can be corrected — and it
+is the one pasted into a new session first. Being version-controlled made it
+correctable; it did not make it correct. All four are reconciled in this session.
 
-_What didn't:_ the approval card (Phase 4). Nothing else was deferred.
-_Anything half-finished someone would trip over:_ No. Two gates are live and both
-are documented in HANDOFF — `is_active`, and the new `business_date`/`sold_at`
-blind spot.
-_Is the system in a working state?_ Yes. 230 passed with a database; ruff clean;
-`make web-check` clean.
+_The 2026-08-09 eval findings — six samples, threshold 3 retired, q017 and q036
+fixed, q049 withdrawn — are preserved in `docs/HANDOFF.md` and in **Measured
+numbers** below. They have not changed._
+
+_What didn't:_ extraction, which is Phase 2's actual deliverable. `parsed/` is
+still absent from `CHECKSUMS.txt`.
+_Anything half-finished someone would trip over:_ No.
+_Is the system in a working state?_ Yes. 207 passed, 33 skipped without a
+database; ruff clean; `make web-check` clean; `verify-corpus` and `verify-parse`
+both pass.
+
 
 ## Next session should
 
@@ -178,32 +179,50 @@ are listed under *Named debt* and each is cheap to do **inside** a later phase t
 touches the prompt anyway. Reopening it on its own is what the last three sessions
 did, at ~$9.83 and diminishing returns.
 
-**The one thing that unblocks the project is the corpus, and only you can supply
-it.** When documents land, Phase 2's hour one is fixed by `PLAN.md`: a PII scan
-before the first commit, and a check for whether the corpus contains amendments
-rather than clean supersessions — that second one changes the data model, so it
-happens before anything is built. Three questions in *Open questions* below are
-waiting on the same delivery, and one of them — data residency, because Vertex
-serves this model from `location=global` only — needs answering **before** real
-documents are sent anywhere.
+**The corpus is no longer the blocker. Extraction is, and one decision of yours
+gates it:** data residency, because Vertex serves this model from
+`location=global` only, so the first extraction run sends document content to an
+unpinned region. The corpus being synthetic weakens that question a great deal —
+nothing in it is confidential — but it was never formally closed, and the second
+half of it has not weakened at all: **the canonical Vertex terms**, which
+ADR-0009 rests on and which have still only been confirmed from documentation
+rather than the terms themselves. That page is client-rendered and **needs a
+browser, not a fetcher**; look for the "Zero Data Retention" section.
 
-If you want to spend a session on Phase 1 anyway, in value order:
+In value order:
 
-1. **One `business_context.md` line about set-based festival membership.** It is
-   the only stable model-side failure left, the fix is a context edit (which is
-   what this project's evidence says works), and it can ride along with the
-   `business_date`/`sold_at` correction so one cache void covers both.
-2. **Decide whether five *unstable* silent-wrongs mean anything a catalog would
-   fix.** Threshold 1 fires, but every failure is correct in at least one run of
-   the same triple and the set of failing questions changes between triples. The
-   ADR's case for generated SQL never rested on failures being rare — it rested on
-   the context document doing the work, which two more fixes confirmed.
-3. **Review `web/` running** (`make serve` + `make web`). Palette and type are a
-   `tailwind.config.ts` edit, not a rewrite.
+1. **Decide amendments vs. supersessions.** It is now decidable rather than
+   blocked: the corpus contains 2 clause-level amendments by construction
+   (`PLAN.md` says generate both shapes, and it did). If they are to be modelled
+   as amendments, the answer is a narrow `supplier_term_clauses` table for
+   clause-level provenance with `supplier_terms` kept as the queryable
+   projection — not a reshape. **This decides the extraction schema, so it comes
+   before extraction, not after.**
+2. **Build extraction.** Schema per document type, prompt as a file in
+   `api/prompts/` (ADR-0008 — never inline), raw output into `corpus/extracted/`
+   and **never hand-edited** (rule 8), fixes into `corpus/corrections/` with a
+   note per fix. This is the paid path, so it carries a call ceiling and a spend
+   ceiling like every other runner (rule 2).
+3. **Gold set — label all 40.** The *Open questions* estimate of "~40, never
+   confirmed" is now confirmed at exactly 40, and the rule already written there
+   says: under 40, label all of it and skip gold-set sampling. `PLAN.md` asks for
+   30; the corpus is 40, so sampling would save little and cost a denominator.
+4. **`TIMELINE.md`, the gap query, injection specimens, `KNOWN_ISSUES.md`,** and
+   the README's four-number block. Note done-condition 6's own warning: for a
+   corpus we generated, an empty `KNOWN_ISSUES.md` means the injected difficulty
+   was too gentle, not that the pipeline is good.
 
-**And the rule that cost the most to learn: never re-measure only the questions
-that failed.** It read 97.1% with zero silent-wrongs against a clean 91.4% with
-five.
+**Two repo-level decisions are waiting and neither is mine to take:** a committed
+`.gitattributes` (without it, every hash in this project is wrong on a Windows
+clone), and where the two Windows-only ingest environment variables belong. Both
+are described in *Last session*.
+
+**Do not reopen the Phase 1 eval to chase the remaining items** — they are listed
+under *Named debt* and each is cheap to do **inside** a later phase that touches
+the prompt anyway. Reopening it on its own is what three sessions did, at ~$9.83
+and diminishing returns. **And the rule that cost the most to learn: never
+re-measure only the questions that failed.** It read 97.1% with zero
+silent-wrongs against a clean 91.4% with five.
 
 ## Measured numbers
 
@@ -234,6 +253,17 @@ _Injection specimens:_ Phase 3, not started.
 
 ## Named debt carried forward
 
+- **`corpus/parsed/` and `PARSE.csv` are committed but unchecksummed.**
+  `CONVENTIONS.md` and ADR-0006 both say `verify-corpus` covers `parsed/` and
+  `extracted/`; it counts PDFs plus the manifest and nothing else, so it passes
+  41/41 while checking none of the parse output. `verify-parse` re-derives three
+  of the 40 from source, which is a stronger check on those three and no check at
+  all on the other 37. **Extend `CHECKSUMS.txt` when `extracted/` lands**, since
+  that is the same gap one layer down and both close with one edit.
+- **No `.gitattributes`.** With `core.autocrlf=true` — Git for Windows' default —
+  every text file checks out CRLF and every byte-level hash in this project is
+  wrong: the prompt freeze, the seed fingerprint, and `PARSE.csv`. Fixed by local
+  config in one clone on 2026-08-11; **the repo still has no durable fix.**
 - **`full×3` is done, but it is one sample of three runs.** Variance at 10.6%
   sits right on ADR-0001's line; another triple would move it either way.
 - **q036's refusal is not reliable** — two of three. It is the behaviour the
@@ -431,13 +461,14 @@ Phase 1's eval set if it is going to happen at all.
 
 These are unresolved by design. If you hit one, stop.
 
-- **Corpus size.** Estimated ~40 documents, never confirmed. If the whole corpus
-  is under 40, label all of it and skip gold-set sampling.
-- **Amendments vs. supersessions.** Phase 2, hour one. Phase 0's `supplier_terms`
-  is a wide table that supersedes as a set, which is right for supersessions and
-  right for text-to-SQL. If real amendments exist, the answer is a narrow
-  `supplier_term_clauses` table for clause-level provenance with `supplier_terms`
-  kept as the queryable projection — not a reshape. Still needs deciding.
+- **Amendments vs. supersessions. Now decidable — nothing is waiting on data.**
+  Phase 0's `supplier_terms` is a wide table that supersedes as a set, which is
+  right for supersessions and right for text-to-SQL. The corpus contains **2
+  clause-level amendments**, generated deliberately so the pipeline meets the
+  harder case rather than the one we would have picked. If they are to be
+  modelled as amendments, the answer is a narrow `supplier_term_clauses` table
+  for clause-level provenance with `supplier_terms` kept as the queryable
+  projection — not a reshape. **Decide before the extraction schema is written.**
 - **Available RAM** — now only for the `CLASSIFY` Ollama fallback and Phase 3's
   local embeddings, since ADR-0010 routes `PLAN`, `CLASSIFY` and `EXTRACT` through
   Vertex. Embeddings stay local at every tier and need little.
@@ -466,7 +497,9 @@ These are unresolved by design. If you hit one, stop.
 **Resolved since this list was written — removed, not forgotten:** the
 text-to-SQL outcome (ADR-0001, resolved; Phase 1 closed), role-scoping (decided,
 and `sql_generate.md § Access scope` is filled in), the `PLAN` provider (ADR-0010
-routes everything through Vertex), and the palette and type pairing.
+routes everything through Vertex), the palette and type pairing, and **corpus
+size — it is exactly 40, so the rule that was written against the estimate now
+applies: label all of it and skip gold-set sampling.**
 
 **Resolved — don't re-ask:** hours (session-based, see `PLAN.md`), document
 clearance (personal, publishable; PII scan still required in Phase 2), frontend
