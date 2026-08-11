@@ -40,3 +40,8 @@ gcp-*.json
 *credentials*.json
 *.pem
 *.p12
+
+# Extraction response cache — keyed on the prompt fingerprint and the parsed
+# document's text, regenerable, and it would otherwise commit every raw model
+# response twice: once here and once in corpus/extracted/.
+corpus/.cache/

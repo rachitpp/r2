@@ -73,6 +73,30 @@ def load_sql_prompt() -> PromptBundle:
     )
 
 
+def load_extract_prompt() -> PromptBundle:
+    """extract.md, with no context files injected.
+
+    Deliberately context-free, unlike the SQL prompt. `business_context.md` and
+    `schema.md` describe the database, and extraction must record what a document
+    says rather than what the database would expect it to say — injecting them
+    would give the model the answers it is being measured on reconstructing, and
+    a plausible value copied from context is exactly the failure this step is
+    scored for.
+
+    The consequence for cost is worth stating: the extraction fingerprint is
+    therefore independent of the two context documents, so the corrections gated
+    in `HANDOFF.md` can land without voiding a single extracted document.
+    """
+    template_path = PROMPTS_DIR / "extract.md"
+    if not template_path.exists():
+        raise FileNotFoundError(f"missing prompt file: {template_path}")
+    return PromptBundle(
+        template=template_path.read_text(encoding="utf-8"),
+        context={},
+        hashes={template_path.name: sha256_of(template_path)},
+    )
+
+
 def bundle_fingerprint(hashes: dict[str, str]) -> str:
     """One short id for the whole prompt surface.
 

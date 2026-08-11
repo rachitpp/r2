@@ -8,7 +8,8 @@ SHELL := /bin/bash
 .PHONY: help up down db reset seed seed-generate verify-seed schema-doc \
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
-        serve serve-live web web-check corpus corpus-verify ingest ingest-verify
+        serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
+        extract extract-stub
 
 -include .env
 
@@ -36,7 +37,8 @@ export READONLY_DATABASE_URL AS_OF_DATE SQL_MAX_ROWS DEMO_MODE
 
 # Model config, for the local targets that spend quota. Never reaches CI: CI
 # runs with no key, and every target that needs one is here (rule 1).
-export MODEL_PLAN MODEL_CLASSIFY GEMINI_API_KEY GOOGLE_APPLICATION_CREDENTIALS
+export MODEL_PLAN MODEL_CLASSIFY MODEL_EXTRACT GEMINI_API_KEY
+export GOOGLE_APPLICATION_CREDENTIALS
 export VERTEX_LOCATION VERTEX_RPM GEMINI_RPM LIVE_MAX_CALLS LIVE_MAX_SPEND_USD
 
 # Every psql invocation goes through this. It defaults to running inside the
@@ -243,6 +245,26 @@ ingest-verify: ## Re-parse into a temp dir and assert byte-identity
 	  else \
 	    echo "PARSE IS NOT REPRODUCIBLE — see $$tmp"; exit 1; \
 	  fi
+
+extract: ## Extract structured data from the parsed corpus (SPENDS QUOTA)
+	@# A separate target from extract-stub, not a flag, because the spend should
+	@# be something you typed. 40 documents is 40 calls, ~$$0.80; the ceiling is
+	@# 60 calls / $$2.00 and lives in the runner. Responses cache permanently, so
+	@# re-running after a validator change costs nothing.
+	@if [ -z "$$MODEL_EXTRACT" ]; then \
+	  echo "MODEL_EXTRACT is not set. Pin an exact model string in .env — a"; \
+	  echo "floating alias makes an extraction result describe nothing."; exit 1; \
+	fi
+	cd api && $(UV) run python scripts/corpus_extract.py $(EXTRACT_ARGS)
+
+extract-stub: ## Same runner against a stub — no key, no quota, no network
+	@# Writes to a temp directory. The runner also refuses a stub run aimed at
+	@# corpus/extracted/, because invented values sitting in a committed
+	@# directory are indistinguishable from extracted ones.
+	@tmp=$$(mktemp -d); \
+	  (cd api && $(UV) run python scripts/corpus_extract.py \
+	     --provider stub --out "$$tmp" $(EXTRACT_ARGS)); \
+	  status=$$?; rm -rf $$tmp; exit $$status
 
 verify-corpus: ## SHA-256 every corpus artifact against corpus/CHECKSUMS.txt
 	@# `cd corpus` matters: the paths inside CHECKSUMS.txt are relative to it,

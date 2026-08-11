@@ -14,12 +14,28 @@ diffable in git.
         schema.md              Table and column documentation
       sql_generate.md          NL question → SQL          [Phase 1]
       sql_answer.md            Result set → prose answer  [Phase 1]
-      extract_contract.md      Schema-guided extraction   [Phase 2]
-      extract_invoice.md                                  [Phase 2]
-      extract_policy.md                                   [Phase 2]
-      extract_catalog.md                                  [Phase 2]
+      extract.md               Schema-guided extraction   [Phase 2]
       retrieval_answer.md      Retrieved chunks → answer  [Phase 3]
       agent_plan.md            Procurement agent system   [Phase 4]
+
+**One extraction prompt, not four.** This file planned
+`extract_contract.md` / `_invoice.md` / `_policy.md` / `_catalog.md`. What differs
+between the four document types is only the JSON shape being asked for; the rules
+about recording nothing the document does not state, and the security block
+saying document text is data, are identical. Four copies would mean fixing an
+injection defence in four places and finding out later that one was missed —
+which is the reason `context/` is injected rather than pasted. The per-type shape
+lives in `pos_copilot.extract.SCHEMAS` and arrives through `{json_schema}`, and
+the same module validates the response against it, so the schema shown and the
+schema enforced cannot drift.
+
+**`extract.md` injects no `context/` files, deliberately.** `business_context.md`
+and `schema.md` describe the database, and extraction is measured on recording
+what a document says rather than what the database expects it to say — handing
+the model the answers would corrupt the measurement. It also means the extraction
+fingerprint is independent of both, so the corrections gated in `docs/HANDOFF.md`
+can land without voiding a single extracted document. `test_extract.py` asserts
+this rather than trusting it.
 
 `context/` files are not prompts — they are documentation injected *into* prompts.
 `business_context.md` is the single highest-leverage artifact in the repo
@@ -40,6 +56,10 @@ dependency.
     {user_role}         Role the request runs under
     {store_scope}       Stores this user may see: "all stores", or a single
                         store named as "store_id = 3 (Dharampeth, Nagpur)"
+    {doc_type}          contract | invoice | catalog | policy
+    {doc_id}            MANIFEST.csv doc_id of the document being extracted
+    {json_schema}       The shape to return, from pos_copilot.extract.SCHEMAS
+    {document}          Parsed document text from corpus/parsed/, untrusted
 
 Every literal brace in prompt body text must be doubled: `{{` and `}}`.
 
