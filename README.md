@@ -33,13 +33,43 @@ the three are not standing up yet:
 
 Measured, not estimated. Methodology in [`corpus/README.md`](corpus/README.md).
 
-**Extraction** _(n=__ hand-labeled documents)_
-<!-- TODO Phase 2 -->
+**Extraction** _(n=37 of 40 documents, 2026-08-12, `gemini-3.6-flash` via Vertex,
+40 calls, ~$0.18. Gold set derived from the rows the documents were generated
+from — see the caveats below, they matter more than the numbers.)_
 
-    Header fields      __._%   (___/___)
-    Line item F1       _.__    (___ rows across __ documents)
-    Hallucination      _._%    (___/___)
-    Miss               _._%    (___/___)
+    Header fields      99.5%   (198/199)
+    Line item F1       1.00    (160 rows across 37 documents)
+    Hallucination      0.0%    (0/160 rows)
+    Miss               0.0%    (0/160 rows)
+
+**Read the denominators before the percentages.**
+
+- **37 of 40, not 40 of 40.** Three policies are free-standing — no database row
+  was behind them, so there is nothing to score and inventing a denominator would
+  be worse than a smaller one.
+- **Two clause-level amendments are excluded from header scoring**, and that
+  exclusion is the most interesting result here. They restate three clauses and
+  nothing else; the `supplier_terms` row carries the full inherited set, so every
+  clause the document deliberately omits reads as a miss. A wide superseding table
+  **structurally cannot score a clause-level amendment** — which is precisely the
+  case the clause-level provenance decision was made for, demonstrated rather than
+  argued. See [`corpus/corrections/`](corpus/corrections/).
+- **The one header miss is OCR**, not reasoning: a scanned, skewed contract whose
+  letterhead did not survive rasterisation. Every number in the same document is
+  exact.
+- **"0% hallucination" is a claim about rows, and it was nearly a false one.**
+  `supplier_code` used to be scored on catalogs — where no catalog prints one.
+  Two extractions inferred `SUP-01` from the supplier name and scored *correct*;
+  the one that honestly returned null scored as a *miss*. The metric was rewarding
+  the hallucination and penalising the refusal. Fixed, and written up rather than
+  quietly dropped.
+- **The gold set cannot tell a model failure from a document failure.** Where the
+  generator wrote `&amp;` into a PDF, faithful extraction scores as an error. Both
+  cases are in [`corpus/corrections/`](corpus/corrections/), and two of the four
+  notes there say the pipeline was right and the corpus was wrong.
+
+Scored by `make eval-extraction` — deterministic comparison against Postgres, no
+LLM-as-judge, free to re-run.
 
 > ### ⚠️ The text-to-SQL block below is STALE and has not been re-measured
 >

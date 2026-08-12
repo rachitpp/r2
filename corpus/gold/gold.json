@@ -1,0 +1,1318 @@
+{
+  "catalog-sup-01-20250401": {
+    "header": {
+      "effective_from": "2025-04-01",
+      "supplier_code": "SUP-01"
+    },
+    "rows": [
+      {
+        "key": "FNV-0001",
+        "product_name": "Ratnagiri Alphonso Mangoes Loose",
+        "unit_price": "17.50"
+      },
+      {
+        "key": "FNV-0002",
+        "product_name": "Green Konkan Potatoes Grade A",
+        "unit_price": "15.07"
+      },
+      {
+        "key": "FNV-0003",
+        "product_name": "Krishi Bazaar Tomatoes 500 g Pack",
+        "unit_price": "22.40"
+      },
+      {
+        "key": "FNV-0004",
+        "product_name": "Ratnagiri Bottle Gourd 500 g Pack",
+        "unit_price": "17.46"
+      },
+      {
+        "key": "FNV-0005",
+        "product_name": "Sahyadri Bananas 1 kg Pack",
+        "unit_price": "91.92"
+      },
+      {
+        "key": "FNV-0006",
+        "product_name": "Sahyadri Okra Loose",
+        "unit_price": "18.54"
+      },
+      {
+        "key": "FNV-0007",
+        "product_name": "Sahyadri Potatoes Loose",
+        "unit_price": "10.98"
+      },
+      {
+        "key": "FNV-0009",
+        "product_name": "Green Konkan Bottle Gourd Grade A",
+        "unit_price": "43.31"
+      },
+      {
+        "key": "FNV-0010",
+        "product_name": "Krishi Bazaar Lemons 500 g Pack",
+        "unit_price": "35.48"
+      },
+      {
+        "key": "FNV-0011",
+        "product_name": "Green Konkan Tomatoes Grade A",
+        "unit_price": "39.25"
+      },
+      {
+        "key": "FNV-0013",
+        "product_name": "Ratnagiri Onions Farm Fresh",
+        "unit_price": "25.84"
+      },
+      {
+        "key": "FNV-0014",
+        "product_name": "Green Konkan Cauliflower Farm Fresh",
+        "unit_price": "38.64"
+      },
+      {
+        "key": "FNV-0015",
+        "product_name": "Ratnagiri Onions Farm Fresh #2",
+        "unit_price": "18.22"
+      },
+      {
+        "key": "FNV-0016",
+        "product_name": "Krishi Bazaar Tomatoes Grade A",
+        "unit_price": "47.48"
+      },
+      {
+        "key": "FNV-0017",
+        "product_name": "Krishi Bazaar Coriander Farm Fresh",
+        "unit_price": "17.91"
+      },
+      {
+        "key": "FNV-0018",
+        "product_name": "Sahyadri Okra Loose #2",
+        "unit_price": "25.72"
+      },
+      {
+        "key": "FNV-0019",
+        "product_name": "Sahyadri Bananas 500 g Pack",
+        "unit_price": "26.20"
+      },
+      {
+        "key": "FNV-0020",
+        "product_name": "Green Konkan Alphonso Mangoes 500 g Pack",
+        "unit_price": "45.55"
+      },
+      {
+        "key": "FNV-0021",
+        "product_name": "Krishi Bazaar Cauliflower Grade A",
+        "unit_price": "37.58"
+      },
+      {
+        "key": "FNV-0022",
+        "product_name": "Krishi Bazaar Cauliflower Farm Fresh",
+        "unit_price": "21.61"
+      },
+      {
+        "key": "FNV-0024",
+        "product_name": "Green Konkan Bananas Farm Fresh",
+        "unit_price": "27.10"
+      },
+      {
+        "key": "FNV-0025",
+        "product_name": "Krishi Bazaar Onions Grade A",
+        "unit_price": "35.11"
+      },
+      {
+        "key": "FNV-0026",
+        "product_name": "Ratnagiri Bottle Gourd Grade A",
+        "unit_price": "24.19"
+      },
+      {
+        "key": "FNV-0027",
+        "product_name": "Green Konkan Potatoes Farm Fresh",
+        "unit_price": "14.58"
+      },
+      {
+        "key": "FNV-0029",
+        "product_name": "Sahyadri Lemons Farm Fresh",
+        "unit_price": "34.19"
+      },
+      {
+        "key": "FNV-0030",
+        "product_name": "Sahyadri Onions 500 g Pack",
+        "unit_price": "29.52"
+      },
+      {
+        "key": "FNV-0031",
+        "product_name": "Krishi Bazaar Bottle Gourd Farm Fresh",
+        "unit_price": "28.82"
+      },
+      {
+        "key": "FNV-0032",
+        "product_name": "Krishi Bazaar Spinach Grade A",
+        "unit_price": "40.31"
+      },
+      {
+        "key": "FNV-0033",
+        "product_name": "Green Konkan Bananas Grade A",
+        "unit_price": "46.56"
+      }
+    ],
+    "type": "catalog"
+  },
+  "catalog-sup-01-20251103": {
+    "header": {
+      "effective_from": "2025-11-03",
+      "supplier_code": "SUP-01"
+    },
+    "rows": [
+      {
+        "key": "FNV-0001",
+        "product_name": "Ratnagiri Alphonso Mangoes Loose",
+        "unit_price": "18.19"
+      },
+      {
+        "key": "FNV-0002",
+        "product_name": "Green Konkan Potatoes Grade A",
+        "unit_price": "16.87"
+      },
+      {
+        "key": "FNV-0003",
+        "product_name": "Krishi Bazaar Tomatoes 500 g Pack",
+        "unit_price": "23.51"
+      },
+      {
+        "key": "FNV-0004",
+        "product_name": "Ratnagiri Bottle Gourd 500 g Pack",
+        "unit_price": "17.46"
+      },
+      {
+        "key": "FNV-0005",
+        "product_name": "Sahyadri Bananas 1 kg Pack",
+        "unit_price": "91.92"
+      },
+      {
+        "key": "FNV-0006",
+        "product_name": "Sahyadri Okra Loose",
+        "unit_price": "20.10"
+      },
+      {
+        "key": "FNV-0007",
+        "product_name": "Sahyadri Potatoes Loose",
+        "unit_price": "10.98"
+      },
+      {
+        "key": "FNV-0008",
+        "product_name": "Ratnagiri Cauliflower 1 kg Pack",
+        "unit_price": "56.16"
+      },
+      {
+        "key": "FNV-0009",
+        "product_name": "Green Konkan Bottle Gourd Grade A",
+        "unit_price": "43.31"
+      },
+      {
+        "key": "FNV-0010",
+        "product_name": "Krishi Bazaar Lemons 500 g Pack",
+        "unit_price": "35.48"
+      },
+      {
+        "key": "FNV-0011",
+        "product_name": "Green Konkan Tomatoes Grade A",
+        "unit_price": "39.25"
+      },
+      {
+        "key": "FNV-0012",
+        "product_name": "Green Konkan Lemons 500 g Pack",
+        "unit_price": "12.54"
+      },
+      {
+        "key": "FNV-0013",
+        "product_name": "Ratnagiri Onions Farm Fresh",
+        "unit_price": "25.84"
+      },
+      {
+        "key": "FNV-0014",
+        "product_name": "Green Konkan Cauliflower Farm Fresh",
+        "unit_price": "43.40"
+      },
+      {
+        "key": "FNV-0015",
+        "product_name": "Ratnagiri Onions Farm Fresh #2",
+        "unit_price": "18.22"
+      },
+      {
+        "key": "FNV-0016",
+        "product_name": "Krishi Bazaar Tomatoes Grade A",
+        "unit_price": "50.86"
+      },
+      {
+        "key": "FNV-0017",
+        "product_name": "Krishi Bazaar Coriander Farm Fresh",
+        "unit_price": "19.25"
+      },
+      {
+        "key": "FNV-0018",
+        "product_name": "Sahyadri Okra Loose #2",
+        "unit_price": "25.72"
+      },
+      {
+        "key": "FNV-0019",
+        "product_name": "Sahyadri Bananas 500 g Pack",
+        "unit_price": "26.20"
+      },
+      {
+        "key": "FNV-0020",
+        "product_name": "Green Konkan Alphonso Mangoes 500 g Pack",
+        "unit_price": "49.15"
+      },
+      {
+        "key": "FNV-0021",
+        "product_name": "Krishi Bazaar Cauliflower Grade A",
+        "unit_price": "37.58"
+      },
+      {
+        "key": "FNV-0022",
+        "product_name": "Krishi Bazaar Cauliflower Farm Fresh",
+        "unit_price": "21.61"
+      },
+      {
+        "key": "FNV-0023",
+        "product_name": "Ratnagiri Potatoes 1 kg Pack",
+        "unit_price": "30.06"
+      },
+      {
+        "key": "FNV-0024",
+        "product_name": "Green Konkan Bananas Farm Fresh",
+        "unit_price": "27.10"
+      },
+      {
+        "key": "FNV-0025",
+        "product_name": "Krishi Bazaar Onions Grade A",
+        "unit_price": "35.11"
+      },
+      {
+        "key": "FNV-0026",
+        "product_name": "Ratnagiri Bottle Gourd Grade A",
+        "unit_price": "26.51"
+      },
+      {
+        "key": "FNV-0027",
+        "product_name": "Green Konkan Potatoes Farm Fresh",
+        "unit_price": "14.58"
+      },
+      {
+        "key": "FNV-0028",
+        "product_name": "Krishi Bazaar Green Chillies Farm Fresh",
+        "unit_price": "40.33"
+      },
+      {
+        "key": "FNV-0029",
+        "product_name": "Sahyadri Lemons Farm Fresh",
+        "unit_price": "34.19"
+      },
+      {
+        "key": "FNV-0030",
+        "product_name": "Sahyadri Onions 500 g Pack",
+        "unit_price": "29.52"
+      },
+      {
+        "key": "FNV-0031",
+        "product_name": "Krishi Bazaar Bottle Gourd Farm Fresh",
+        "unit_price": "28.82"
+      },
+      {
+        "key": "FNV-0032",
+        "product_name": "Krishi Bazaar Spinach Grade A",
+        "unit_price": "40.31"
+      },
+      {
+        "key": "FNV-0033",
+        "product_name": "Green Konkan Bananas Grade A",
+        "unit_price": "49.25"
+      },
+      {
+        "key": "FNV-0034",
+        "product_name": "Ratnagiri Bananas Loose",
+        "unit_price": "24.01"
+      }
+    ],
+    "type": "catalog"
+  },
+  "catalog-sup-01-20260504": {
+    "header": {
+      "effective_from": "2026-05-04",
+      "supplier_code": "SUP-01"
+    },
+    "rows": [
+      {
+        "key": "FNV-0001",
+        "product_name": "Ratnagiri Alphonso Mangoes Loose",
+        "unit_price": "18.19"
+      },
+      {
+        "key": "FNV-0002",
+        "product_name": "Green Konkan Potatoes Grade A",
+        "unit_price": "16.87"
+      },
+      {
+        "key": "FNV-0003",
+        "product_name": "Krishi Bazaar Tomatoes 500 g Pack",
+        "unit_price": "23.51"
+      },
+      {
+        "key": "FNV-0004",
+        "product_name": "Ratnagiri Bottle Gourd 500 g Pack",
+        "unit_price": "17.46"
+      },
+      {
+        "key": "FNV-0005",
+        "product_name": "Sahyadri Bananas 1 kg Pack",
+        "unit_price": "91.92"
+      },
+      {
+        "key": "FNV-0006",
+        "product_name": "Sahyadri Okra Loose",
+        "unit_price": "20.10"
+      },
+      {
+        "key": "FNV-0007",
+        "product_name": "Sahyadri Potatoes Loose",
+        "unit_price": "10.98"
+      },
+      {
+        "key": "FNV-0008",
+        "product_name": "Ratnagiri Cauliflower 1 kg Pack",
+        "unit_price": "56.16"
+      },
+      {
+        "key": "FNV-0009",
+        "product_name": "Green Konkan Bottle Gourd Grade A",
+        "unit_price": "43.31"
+      },
+      {
+        "key": "FNV-0010",
+        "product_name": "Krishi Bazaar Lemons 500 g Pack",
+        "unit_price": "36.75"
+      },
+      {
+        "key": "FNV-0011",
+        "product_name": "Green Konkan Tomatoes Grade A",
+        "unit_price": "39.25"
+      },
+      {
+        "key": "FNV-0012",
+        "product_name": "Green Konkan Lemons 500 g Pack",
+        "unit_price": "13.19"
+      },
+      {
+        "key": "FNV-0013",
+        "product_name": "Ratnagiri Onions Farm Fresh",
+        "unit_price": "25.84"
+      },
+      {
+        "key": "FNV-0014",
+        "product_name": "Green Konkan Cauliflower Farm Fresh",
+        "unit_price": "43.40"
+      },
+      {
+        "key": "FNV-0015",
+        "product_name": "Ratnagiri Onions Farm Fresh #2",
+        "unit_price": "19.97"
+      },
+      {
+        "key": "FNV-0016",
+        "product_name": "Krishi Bazaar Tomatoes Grade A",
+        "unit_price": "50.86"
+      },
+      {
+        "key": "FNV-0017",
+        "product_name": "Krishi Bazaar Coriander Farm Fresh",
+        "unit_price": "19.25"
+      },
+      {
+        "key": "FNV-0018",
+        "product_name": "Sahyadri Okra Loose #2",
+        "unit_price": "25.72"
+      },
+      {
+        "key": "FNV-0019",
+        "product_name": "Sahyadri Bananas 500 g Pack",
+        "unit_price": "26.20"
+      },
+      {
+        "key": "FNV-0020",
+        "product_name": "Green Konkan Alphonso Mangoes 500 g Pack",
+        "unit_price": "49.15"
+      },
+      {
+        "key": "FNV-0021",
+        "product_name": "Krishi Bazaar Cauliflower Grade A",
+        "unit_price": "37.58"
+      },
+      {
+        "key": "FNV-0022",
+        "product_name": "Krishi Bazaar Cauliflower Farm Fresh",
+        "unit_price": "21.61"
+      },
+      {
+        "key": "FNV-0023",
+        "product_name": "Ratnagiri Potatoes 1 kg Pack",
+        "unit_price": "33.03"
+      },
+      {
+        "key": "FNV-0024",
+        "product_name": "Green Konkan Bananas Farm Fresh",
+        "unit_price": "27.10"
+      },
+      {
+        "key": "FNV-0025",
+        "product_name": "Krishi Bazaar Onions Grade A",
+        "unit_price": "39.35"
+      },
+      {
+        "key": "FNV-0026",
+        "product_name": "Ratnagiri Bottle Gourd Grade A",
+        "unit_price": "26.51"
+      },
+      {
+        "key": "FNV-0027",
+        "product_name": "Green Konkan Potatoes Farm Fresh",
+        "unit_price": "14.58"
+      },
+      {
+        "key": "FNV-0028",
+        "product_name": "Krishi Bazaar Green Chillies Farm Fresh",
+        "unit_price": "41.71"
+      },
+      {
+        "key": "FNV-0029",
+        "product_name": "Sahyadri Lemons Farm Fresh",
+        "unit_price": "34.19"
+      },
+      {
+        "key": "FNV-0030",
+        "product_name": "Sahyadri Onions 500 g Pack",
+        "unit_price": "29.52"
+      },
+      {
+        "key": "FNV-0031",
+        "product_name": "Krishi Bazaar Bottle Gourd Farm Fresh",
+        "unit_price": "28.82"
+      },
+      {
+        "key": "FNV-0032",
+        "product_name": "Krishi Bazaar Spinach Grade A",
+        "unit_price": "40.31"
+      },
+      {
+        "key": "FNV-0033",
+        "product_name": "Green Konkan Bananas Grade A",
+        "unit_price": "49.25"
+      },
+      {
+        "key": "FNV-0034",
+        "product_name": "Ratnagiri Bananas Loose",
+        "unit_price": "26.03"
+      }
+    ],
+    "type": "catalog"
+  },
+  "contract-sup-01-20241130": {
+    "header": {
+      "effective_from": "2024-11-30",
+      "effective_to": "2025-06-29",
+      "lead_time_days": 10,
+      "min_order_value": "8000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 14,
+      "supplier_code": "SUP-01",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-01-20250629": {
+    "header": {
+      "effective_from": "2025-06-29",
+      "effective_to": null,
+      "lead_time_days": 10,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-01",
+      "volume_discount_pct": "3.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-02-20250603": {
+    "header": {
+      "effective_from": "2025-06-03",
+      "effective_to": "2026-01-13",
+      "lead_time_days": 5,
+      "min_order_value": "25000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-02",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-02-20260113": {
+    "header": {
+      "effective_from": "2026-01-13",
+      "effective_to": null,
+      "lead_time_days": 5,
+      "min_order_value": "20000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 14,
+      "supplier_code": "SUP-02",
+      "volume_discount_pct": "1.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-03-20240726": {
+    "header": {
+      "effective_from": "2024-07-26",
+      "effective_to": "2025-12-09",
+      "lead_time_days": 2,
+      "min_order_value": "12000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-03",
+      "volume_discount_pct": "1.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-03-20251209": {
+    "header": {
+      "effective_from": "2025-12-09",
+      "effective_to": null,
+      "lead_time_days": 2,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-03",
+      "volume_discount_pct": "3.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-04-20240122": {
+    "header": {
+      "effective_from": "2024-01-22",
+      "effective_to": "2025-10-18",
+      "lead_time_days": 9,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-04",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-04-20251018": {
+    "header": {
+      "effective_from": "2025-10-18",
+      "effective_to": null,
+      "lead_time_days": 7,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-04",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-05-20250103": {
+    "header": {
+      "effective_from": "2025-01-03",
+      "effective_to": "2025-09-24",
+      "lead_time_days": 9,
+      "min_order_value": "8000.00",
+      "payment_terms_days": 45,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-05",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-05-20250924": {
+    "header": {
+      "effective_from": "2025-09-24",
+      "effective_to": null,
+      "lead_time_days": 7,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-05",
+      "volume_discount_pct": "2.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-06-20240928": {
+    "header": {
+      "effective_from": "2024-09-28",
+      "effective_to": "2025-10-22",
+      "lead_time_days": 5,
+      "min_order_value": "12000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-06",
+      "volume_discount_pct": "2.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-06-20251209": {
+    "header": {
+      "effective_from": "2025-12-09",
+      "effective_to": null,
+      "lead_time_days": 3,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 30,
+      "supplier_code": "SUP-06",
+      "volume_discount_pct": "1.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-07-20240118": {
+    "header": {
+      "effective_from": "2024-01-18",
+      "effective_to": "2025-06-02",
+      "lead_time_days": 3,
+      "min_order_value": "12000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-07",
+      "volume_discount_pct": "2.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-07-20250602": {
+    "header": {
+      "effective_from": "2025-06-02",
+      "effective_to": null,
+      "lead_time_days": 2,
+      "min_order_value": "20000.00",
+      "payment_terms_days": 45,
+      "returns_window_days": 14,
+      "supplier_code": "SUP-07",
+      "volume_discount_pct": "2.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-08-20240905": {
+    "header": {
+      "effective_from": "2024-09-05",
+      "effective_to": "2025-07-29",
+      "lead_time_days": 10,
+      "min_order_value": "8000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 30,
+      "supplier_code": "SUP-08",
+      "volume_discount_pct": "1.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-08-20250729": {
+    "header": {
+      "effective_from": "2025-07-29",
+      "effective_to": null,
+      "lead_time_days": 10,
+      "min_order_value": "10000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 30,
+      "supplier_code": "SUP-08",
+      "volume_discount_pct": "3.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-09-20240212": {
+    "header": {
+      "effective_from": "2024-02-12",
+      "effective_to": "2025-09-09",
+      "lead_time_days": 11,
+      "min_order_value": "12000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-09",
+      "volume_discount_pct": "1.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-09-20250909": {
+    "header": {
+      "effective_from": "2025-09-09",
+      "effective_to": null,
+      "lead_time_days": 10,
+      "min_order_value": "30000.00",
+      "payment_terms_days": 60,
+      "returns_window_days": 14,
+      "supplier_code": "SUP-09",
+      "volume_discount_pct": "2.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-10-20250112": {
+    "header": {
+      "effective_from": "2025-01-12",
+      "effective_to": "2025-11-07",
+      "lead_time_days": 7,
+      "min_order_value": "15000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-10",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-10-20251107": {
+    "header": {
+      "effective_from": "2025-11-07",
+      "effective_to": null,
+      "lead_time_days": 5,
+      "min_order_value": "30000.00",
+      "payment_terms_days": 45,
+      "returns_window_days": 30,
+      "supplier_code": "SUP-10",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-11-20230907": {
+    "header": {
+      "effective_from": "2023-09-07",
+      "effective_to": "2025-04-26",
+      "lead_time_days": 8,
+      "min_order_value": "8000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-11",
+      "volume_discount_pct": "2.50"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-11-20250713": {
+    "header": {
+      "effective_from": "2025-07-13",
+      "effective_to": null,
+      "lead_time_days": 7,
+      "min_order_value": "10000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 28,
+      "supplier_code": "SUP-11",
+      "volume_discount_pct": "2.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-12-20240812": {
+    "header": {
+      "effective_from": "2024-08-12",
+      "effective_to": "2025-12-18",
+      "lead_time_days": 7,
+      "min_order_value": "8000.00",
+      "payment_terms_days": 14,
+      "returns_window_days": 14,
+      "supplier_code": "SUP-12",
+      "volume_discount_pct": "0.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "contract-sup-12-20251218": {
+    "header": {
+      "effective_from": "2025-12-18",
+      "effective_to": null,
+      "lead_time_days": 5,
+      "min_order_value": "10000.00",
+      "payment_terms_days": 30,
+      "returns_window_days": 30,
+      "supplier_code": "SUP-12",
+      "volume_discount_pct": "1.00"
+    },
+    "rows": [],
+    "type": "contract"
+  },
+  "invoice-sup-01-5316": {
+    "header": {
+      "subtotal": "2119.50",
+      "supplier_code": "SUP-01"
+    },
+    "rows": [
+      {
+        "key": "Green Konkan Tomatoes Grade A",
+        "line_total": "2119.50",
+        "quantity": 54,
+        "unit_price": "39.25"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-03-10305": {
+    "header": {
+      "subtotal": "1282.14",
+      "supplier_code": "SUP-03"
+    },
+    "rows": [
+      {
+        "key": "Chitale Wadi Lassi Twin Pack",
+        "line_total": "1078.80",
+        "quantity": 24,
+        "unit_price": "44.95"
+      },
+      {
+        "key": "Chitale Wadi Shrikhand Twin Pack",
+        "line_total": "203.34",
+        "quantity": 6,
+        "unit_price": "33.89"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-03-14107": {
+    "header": {
+      "subtotal": "5380.32",
+      "supplier_code": "SUP-03"
+    },
+    "rows": [
+      {
+        "key": "Amrit Dhara Butter Pouch",
+        "line_total": "3476.16",
+        "quantity": 72,
+        "unit_price": "48.28"
+      },
+      {
+        "key": "Gokul Butter Pouch",
+        "line_total": "1904.16",
+        "quantity": 48,
+        "unit_price": "39.67"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-05-9119": {
+    "header": {
+      "subtotal": "3338.76",
+      "supplier_code": "SUP-05"
+    },
+    "rows": [
+      {
+        "key": "Bhusari Masala Peanuts 150 g",
+        "line_total": "561.96",
+        "quantity": 18,
+        "unit_price": "31.22"
+      },
+      {
+        "key": "Bhusari Sev Sharing Pack",
+        "line_total": "1485.12",
+        "quantity": 42,
+        "unit_price": "35.36"
+      },
+      {
+        "key": "Chivda Ghar Aloo Bhujia Multipack #2",
+        "line_total": "554.88",
+        "quantity": 24,
+        "unit_price": "23.12"
+      },
+      {
+        "key": "Nagpur Crisp Masala Peanuts Sharing Pack",
+        "line_total": "736.80",
+        "quantity": 30,
+        "unit_price": "24.56"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-06-14543": {
+    "header": {
+      "subtotal": "10421.68",
+      "supplier_code": "SUP-06"
+    },
+    "rows": [
+      {
+        "key": "Instant Ghar Upma Mix Family Pack",
+        "line_total": "429.06",
+        "quantity": 6,
+        "unit_price": "71.51"
+      },
+      {
+        "key": "Jhat Pat Dosa Batter Family Pack",
+        "line_total": "6084.54",
+        "quantity": 77,
+        "unit_price": "79.02"
+      },
+      {
+        "key": "Jhat Pat Frozen Parathas Multipack",
+        "line_total": "3499.44",
+        "quantity": 84,
+        "unit_price": "41.66"
+      },
+      {
+        "key": "Rasoi Rani Gravy Base Standard",
+        "line_total": "408.64",
+        "quantity": 8,
+        "unit_price": "51.08"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-06-1764": {
+    "header": {
+      "subtotal": "2783.73",
+      "supplier_code": "SUP-06"
+    },
+    "rows": [
+      {
+        "key": "Mumbai Tiffin Idli Batter Value Pack",
+        "line_total": "756.12",
+        "quantity": 12,
+        "unit_price": "63.01"
+      },
+      {
+        "key": "Rasoi Rani Soup Mix Value Pack",
+        "line_total": "2027.61",
+        "quantity": 13,
+        "unit_price": "155.97"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-07-4672": {
+    "header": {
+      "subtotal": "5055.18",
+      "supplier_code": "SUP-07"
+    },
+    "rows": [
+      {
+        "key": "Aamras Jaljeera 2 L",
+        "line_total": "592.68",
+        "quantity": 12,
+        "unit_price": "49.39"
+      },
+      {
+        "key": "Chai Adda Instant Coffee Refill",
+        "line_total": "2312.10",
+        "quantity": 18,
+        "unit_price": "128.45"
+      },
+      {
+        "key": "Coolwave Nimbu Pani 1.25 L",
+        "line_total": "2050.88",
+        "quantity": 34,
+        "unit_price": "60.32"
+      },
+      {
+        "key": "Sharbat Co Nimbu Pani 250 ml",
+        "line_total": "99.52",
+        "quantity": 8,
+        "unit_price": "12.44"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-10-14562": {
+    "header": {
+      "subtotal": "448.82",
+      "supplier_code": "SUP-10"
+    },
+    "rows": [
+      {
+        "key": "Panchali Aluminium Foil Single #2",
+        "line_total": "204.24",
+        "quantity": 6,
+        "unit_price": "34.04"
+      },
+      {
+        "key": "Softwrap Napkins Single",
+        "line_total": "244.58",
+        "quantity": 7,
+        "unit_price": "34.94"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-10-15385": {
+    "header": {
+      "subtotal": "140.16",
+      "supplier_code": "SUP-10"
+    },
+    "rows": [
+      {
+        "key": "Neatfold Toilet Rolls Single",
+        "line_total": "140.16",
+        "quantity": 3,
+        "unit_price": "46.72"
+      }
+    ],
+    "type": "invoice"
+  },
+  "invoice-sup-12-5436": {
+    "header": {
+      "subtotal": "54681.92",
+      "supplier_code": "SUP-12"
+    },
+    "rows": [
+      {
+        "key": "Deepmala Agarbatti Pack of 6",
+        "line_total": "668.64",
+        "quantity": 6,
+        "unit_price": "111.44"
+      },
+      {
+        "key": "Deepmala Cotton Wicks Single",
+        "line_total": "214.74",
+        "quantity": 6,
+        "unit_price": "35.79"
+      },
+      {
+        "key": "Deepmala Dhoop Sticks Gift Set",
+        "line_total": "1081.08",
+        "quantity": 6,
+        "unit_price": "180.18"
+      },
+      {
+        "key": "Deepmala Dhoop Sticks Pack of 12",
+        "line_total": "393.06",
+        "quantity": 6,
+        "unit_price": "65.51"
+      },
+      {
+        "key": "Deepmala LED String Lights Pack of 6",
+        "line_total": "2969.28",
+        "quantity": 24,
+        "unit_price": "123.72"
+      },
+      {
+        "key": "Deepmala LED String Lights Single",
+        "line_total": "174.72",
+        "quantity": 6,
+        "unit_price": "29.12"
+      },
+      {
+        "key": "Deepmala Puja Thali Gift Set",
+        "line_total": "684.24",
+        "quantity": 6,
+        "unit_price": "114.04"
+      },
+      {
+        "key": "Deepmala Puja Thali Gift Set #2",
+        "line_total": "316.20",
+        "quantity": 6,
+        "unit_price": "52.70"
+      },
+      {
+        "key": "Deepmala Rangoli Colours Pack of 6",
+        "line_total": "730.20",
+        "quantity": 6,
+        "unit_price": "121.70"
+      },
+      {
+        "key": "Deepmala Rangoli Colours Single",
+        "line_total": "165.18",
+        "quantity": 6,
+        "unit_price": "27.53"
+      },
+      {
+        "key": "Deepmala Torans Pack of 6",
+        "line_total": "475.68",
+        "quantity": 6,
+        "unit_price": "79.28"
+      },
+      {
+        "key": "Deepmala Torans Single",
+        "line_total": "34.54",
+        "quantity": 1,
+        "unit_price": "34.54"
+      },
+      {
+        "key": "Kesari Cotton Wicks Pack of 6",
+        "line_total": "1504.56",
+        "quantity": 12,
+        "unit_price": "125.38"
+      },
+      {
+        "key": "Kesari Gift Wrap Gift Set",
+        "line_total": "130.37",
+        "quantity": 1,
+        "unit_price": "130.37"
+      },
+      {
+        "key": "Kesari Torans Single",
+        "line_total": "106.38",
+        "quantity": 6,
+        "unit_price": "17.73"
+      },
+      {
+        "key": "Little Konkan Baby Oil Medium",
+        "line_total": "1014.30",
+        "quantity": 6,
+        "unit_price": "169.05"
+      },
+      {
+        "key": "Little Konkan Baby Soap Value Pack",
+        "line_total": "3168.00",
+        "quantity": 12,
+        "unit_price": "264.00"
+      },
+      {
+        "key": "Little Konkan Feeding Bottle Multipack",
+        "line_total": "1664.88",
+        "quantity": 6,
+        "unit_price": "277.48"
+      },
+      {
+        "key": "Nanhe Kadam Baby Oil Medium",
+        "line_total": "3786.48",
+        "quantity": 12,
+        "unit_price": "315.54"
+      },
+      {
+        "key": "Nanhe Kadam Baby Wipes Medium",
+        "line_total": "2334.24",
+        "quantity": 12,
+        "unit_price": "194.52"
+      },
+      {
+        "key": "Nanhe Kadam Feeding Bottle Medium",
+        "line_total": "1229.10",
+        "quantity": 6,
+        "unit_price": "204.85"
+      },
+      {
+        "key": "Nanhe Kadam Infant Cereal Small",
+        "line_total": "975.36",
+        "quantity": 6,
+        "unit_price": "162.56"
+      },
+      {
+        "key": "Nazuk Baby Lotion Multipack",
+        "line_total": "4048.44",
+        "quantity": 12,
+        "unit_price": "337.37"
+      },
+      {
+        "key": "Nazuk Baby Lotion Small",
+        "line_total": "3241.20",
+        "quantity": 12,
+        "unit_price": "270.10"
+      },
+      {
+        "key": "Nazuk Baby Soap Large",
+        "line_total": "179.83",
+        "quantity": 1,
+        "unit_price": "179.83"
+      },
+      {
+        "key": "Nazuk Baby Soap Multipack",
+        "line_total": "1294.44",
+        "quantity": 6,
+        "unit_price": "215.74"
+      },
+      {
+        "key": "Nazuk Baby Wipes Value Pack",
+        "line_total": "1572.06",
+        "quantity": 6,
+        "unit_price": "262.01"
+      },
+      {
+        "key": "Nazuk Baby Wipes Value Pack #2",
+        "line_total": "4162.08",
+        "quantity": 24,
+        "unit_price": "173.42"
+      },
+      {
+        "key": "Nazuk Infant Cereal Small",
+        "line_total": "1070.16",
+        "quantity": 6,
+        "unit_price": "178.36"
+      },
+      {
+        "key": "Shishu Baby Oil Large",
+        "line_total": "1828.68",
+        "quantity": 6,
+        "unit_price": "304.78"
+      },
+      {
+        "key": "Shishu Baby Soap Value Pack",
+        "line_total": "4846.80",
+        "quantity": 24,
+        "unit_price": "201.95"
+      },
+      {
+        "key": "Shishu Feeding Bottle Medium",
+        "line_total": "2046.24",
+        "quantity": 12,
+        "unit_price": "170.52"
+      },
+      {
+        "key": "Shubh Labh Cotton Wicks Single",
+        "line_total": "32.77",
+        "quantity": 1,
+        "unit_price": "32.77"
+      },
+      {
+        "key": "Shubh Labh Diya Set Pack of 12",
+        "line_total": "604.26",
+        "quantity": 6,
+        "unit_price": "100.71"
+      },
+      {
+        "key": "Shubh Labh Diya Set Single",
+        "line_total": "380.04",
+        "quantity": 12,
+        "unit_price": "31.67"
+      },
+      {
+        "key": "Shubh Labh LED String Lights Single",
+        "line_total": "184.74",
+        "quantity": 6,
+        "unit_price": "30.79"
+      },
+      {
+        "key": "Shubh Labh Puja Thali Gift Set",
+        "line_total": "1604.88",
+        "quantity": 12,
+        "unit_price": "133.74"
+      },
+      {
+        "key": "Utsav Ghar Diya Set Pack of 12",
+        "line_total": "122.07",
+        "quantity": 1,
+        "unit_price": "122.07"
+      },
+      {
+        "key": "Utsav Ghar Gift Wrap Gift Set",
+        "line_total": "2349.12",
+        "quantity": 12,
+        "unit_price": "195.76"
+      },
+      {
+        "key": "Utsav Ghar Gift Wrap Single",
+        "line_total": "430.08",
+        "quantity": 12,
+        "unit_price": "35.84"
+      },
+      {
+        "key": "Utsav Ghar Torans Pack of 12",
+        "line_total": "862.80",
+        "quantity": 6,
+        "unit_price": "143.80"
+      }
+    ],
+    "type": "invoice"
+  }
+}

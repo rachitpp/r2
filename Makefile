@@ -9,7 +9,7 @@ SHELL := /bin/bash
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
-        extract extract-stub corpus-checksums
+        extract extract-stub corpus-checksums eval-extraction
 
 -include .env
 
@@ -284,6 +284,24 @@ extract-stub: ## Same runner against a stub — no key, no quota, no network
 	  (cd api && $(UV) run python scripts/corpus_extract.py \
 	     --provider stub --out "$$tmp" $(EXTRACT_ARGS)); \
 	  status=$$?; rm -rf $$tmp; exit $$status
+
+eval-extraction: ## Score corpus/extracted/ against the rows it came from
+	@# No model calls — reads committed JSON and queries Postgres, so it is free
+	@# to re-run. It needs a database and therefore never runs in CI (ADR-0005).
+	@#
+	@# The gold set is DERIVED, not hand-labelled: this corpus was generated from
+	@# the database, so MANIFEST.csv's source_table + source_key name the row
+	@# behind every document. That is exact and covers all 40 with no
+	@# hand-labelling error. What it cannot do is tell a model failure from a
+	@# DOCUMENT failure — see corpus/corrections/, where two of the four notes
+	@# say the pipeline was right and the corpus was wrong.
+	@if [ -z "$$DATABASE_URL" ]; then \
+	  echo "DATABASE_URL is not set. The gold set is read from the rows the"; \
+	  echo "documents were generated from; there is nothing to score without it."; \
+	  exit 1; \
+	fi
+	cd api && $(UV) run python scripts/eval_extraction.py \
+	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
 
 corpus-checksums: ## Regenerate corpus/CHECKSUMS.txt from what is on disk
 	@# A deliberate act, like seed-generate. `make ingest` does it automatically

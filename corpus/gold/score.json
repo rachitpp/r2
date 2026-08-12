@@ -1,0 +1,312 @@
+{
+  "documents_scored": 37,
+  "header": {
+    "correct": 198,
+    "total": 199
+  },
+  "rows": {
+    "matched": 160,
+    "total": 160,
+    "hallucinated": 0,
+    "missed": 0,
+    "f1": 1.0
+  },
+  "per_document": [
+    {
+      "doc_id": "catalog-sup-01-20250401",
+      "doc_type": "catalog",
+      "header_correct": 1,
+      "header_total": 1,
+      "row_correct": 29,
+      "row_total": 29
+    },
+    {
+      "doc_id": "catalog-sup-01-20251103",
+      "doc_type": "catalog",
+      "header_correct": 1,
+      "header_total": 1,
+      "row_correct": 34,
+      "row_total": 34
+    },
+    {
+      "doc_id": "catalog-sup-01-20260504",
+      "doc_type": "catalog",
+      "header_correct": 1,
+      "header_total": 1,
+      "row_correct": 34,
+      "row_total": 34
+    },
+    {
+      "doc_id": "contract-sup-01-20241130",
+      "doc_type": "contract",
+      "header_correct": 7,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-01-20250629",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-02-20250603",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-02-20260113",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-03-20240726",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-03-20251209",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-04-20240122",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-04-20251018",
+      "doc_type": "contract",
+      "header_correct": 0,
+      "header_total": 0,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-05-20250103",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-05-20250924",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-06-20240928",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-06-20251209",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-07-20240118",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-07-20250602",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-08-20240905",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-08-20250729",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-09-20240212",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-09-20250909",
+      "doc_type": "contract",
+      "header_correct": 0,
+      "header_total": 0,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-10-20250112",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-10-20251107",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-11-20230907",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-11-20250713",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-12-20240812",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "contract-sup-12-20251218",
+      "doc_type": "contract",
+      "header_correct": 8,
+      "header_total": 8,
+      "row_correct": 0,
+      "row_total": 0
+    },
+    {
+      "doc_id": "invoice-sup-01-5316",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 1,
+      "row_total": 1
+    },
+    {
+      "doc_id": "invoice-sup-03-10305",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 2,
+      "row_total": 2
+    },
+    {
+      "doc_id": "invoice-sup-03-14107",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 2,
+      "row_total": 2
+    },
+    {
+      "doc_id": "invoice-sup-05-9119",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 4,
+      "row_total": 4
+    },
+    {
+      "doc_id": "invoice-sup-06-14543",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 4,
+      "row_total": 4
+    },
+    {
+      "doc_id": "invoice-sup-06-1764",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 2,
+      "row_total": 2
+    },
+    {
+      "doc_id": "invoice-sup-07-4672",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 4,
+      "row_total": 4
+    },
+    {
+      "doc_id": "invoice-sup-10-14562",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 2,
+      "row_total": 2
+    },
+    {
+      "doc_id": "invoice-sup-10-15385",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 1,
+      "row_total": 1
+    },
+    {
+      "doc_id": "invoice-sup-12-5436",
+      "doc_type": "invoice",
+      "header_correct": 2,
+      "header_total": 2,
+      "row_correct": 41,
+      "row_total": 41
+    }
+  ]
+}
