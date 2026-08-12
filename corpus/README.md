@@ -119,12 +119,23 @@ because both are silent:
   it is undocumented in this version: absent from `save.__doc__` and from the
   signature, but accepted. Passing it on the intermediate save too is not
   redundant — it *preserves* an existing ID rather than suppressing one, so
-  without it the four scanned documents still varied after the other 36 were
-  fixed.
+  without it the scanned documents still varied after the others were fixed.
+
+> **This paragraph said "the four scanned documents … after the other 36 were
+> fixed", and `MANIFEST.csv` has five `scanned-200dpi-skewed`.** The two numbers
+> sum to 40, so they moved together — almost certainly the same off-by-one that
+> made the difficulty table above publish `4` when the manifest had always said
+> `5`. That table was corrected; this sentence was not. **Which of the two is
+> actually wrong cannot be settled without regenerating**, which needs Postgres, so
+> the counts are dropped here rather than guessed at. Recorded instead of tidied,
+> because a corrected number with no record of the correction is worth less.
 
 ## Extraction results
 
 <!-- Phase 2. Nothing here until the pipeline runs. When it does, the numbers get
      n, denominators, and the sentence about chosen difficulty above them. -->
 
-Not measured yet. The pipeline is not built.
+Not measured yet. **The pipeline is built and has never been run** — prompt,
+schemas, validator and runner are all exercised against a stub, and no model call
+has ever been made, so `corpus/extracted/` does not exist. Building it moved no
+done-condition; code is not measurement.

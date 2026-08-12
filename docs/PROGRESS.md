@@ -32,9 +32,10 @@ one field in one row per supplier moved and nothing else in the seed did.
   3 policies. 10 carry an injected difficulty, each re-derived from the rendered
   PDF before the manifest is written. Byte-identical on regeneration.
 - **Parse: done, and now actually checked.** All 40 parsed with Docling into
-  `corpus/parsed/` with `PARSE.csv`. `verify-parse` re-parses a 3-document sample
-  and asserts byte-identity in CI — see *Last session*, because until 2026-08-11
-  it was a stub that could only fail.
+  `corpus/parsed/` with `PARSE.csv`. `verify-parse` re-parses a **4-document**
+  sample and asserts byte-identity in CI — see *Last session*, because until
+  2026-08-11 it was a stub that could only fail, and the sample was three
+  documents that could not fail either.
 - **Extraction: built, and never run.** `api/prompts/extract.md`,
   `pos_copilot.extract`, `scripts/corpus_extract.py`, `make extract` /
   `make extract-stub`. Every path is exercised against a stub — no key, no
@@ -282,9 +283,11 @@ Now asserted against the manifest.
 - **`verify-parse` was a stub that could only fail.** It skipped while
   `corpus/parsed/` was absent and printed `not implemented; exit 1` once it was
   not — so **CI has been red on master since the parse landed**, on the last step
-  of the run. It now does what ADR-0006 specifies: re-parses a 3-document sample
+  of the run. It now does what ADR-0006 specifies: re-parses a committed sample
   and asserts byte-identity, with a counter so it cannot confuse "found no
-  differences" with "compared nothing".
+  differences" with "compared nothing". The sample was three documents when this
+  was written and is **four** now — the fourth was added later the same day, once
+  the three turned out to share the property that made the check useless.
 - **`make ingest-verify` has never once executed its comparison.** The final
   progress line called `Path.relative_to(REPO_ROOT)`, which raises whenever
   `--out` points outside the repo — which is exactly what the target passes
@@ -561,8 +564,15 @@ measured against, so they are built first.
   the next deliberate corpus regeneration or not at all.
 - **`full×3` is done, but it is one sample of three runs.** Variance at 10.6%
   sits right on ADR-0001's line; another triple would move it either way.
-- **q036's refusal is not reliable** — two of three. It is the behaviour the
-  project's argument rests on.
+- ~~**q036's refusal is not reliable** — two of three.~~ **Retired 2026-08-12,
+  against the committed results rather than by assertion.** `q036_causation_trap`
+  is `correct ×3` in *both* triples of the current prompt
+  (`evals/results/2026-08-09-sql.json` and `…-runs3-5.json`) — **6/6** — and 5 of 6
+  on the previous prompt, its one `should_have_refused` at run index 1. The "two of
+  three" was the pre-fix figure and had been carried as current debt ever since,
+  while `HANDOFF.md` recorded 6/6 twenty lines from the same claim. It is still the
+  behaviour the project's argument rests on, so re-check it whenever the prompt or
+  `business_context.md` moves.
 - **No retry loop exists**, so ADR-0001 threshold 4 has never been measured.
 - **On the live path, a scoped query's `WHERE` clause is the model's to write.**
   The scope reaches the prompt carrying the predicate itself

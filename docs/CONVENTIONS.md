@@ -177,8 +177,10 @@ transitions are themselves a tell.
 ## Tests and evals
 
 - **pytest asserts. Evals measure. They are different things** (ADR-0005).
-- Evals are `make eval-extraction` and `make eval-sql`, run at phase boundaries.
-  **Never in pytest, never in CI** — they cost quota.
+- Evals are `make eval-sql` and — **once Phase 2 builds it** — `make
+  eval-extraction`, run at phase boundaries. **Never in pytest, never in CI** —
+  they cost quota. Only `eval-sql` exists today; the extraction scorer arrives with
+  the gold set.
 
 ### Stage 1 is a permanent gate, not a one-time ramp
 

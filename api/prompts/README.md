@@ -120,7 +120,14 @@ Prompt changes move eval scores. Every eval run records the SHA-256 of each
 prompt file it used, written into `evals/results/`. When a README number moves,
 the hash tells you whether the prompt moved with it.
 
-    make prompt-hashes    # print current hashes
+**There is no `make prompt-hashes`.** This line documented one until 2026-08-12
+and no such target has ever existed. The hashes come from three places that do:
+
+- `evals/PROMPT_FREEZE.json` — the frozen set, and what `pytest` compares against.
+- `prompt_hashes` and `prompt_fingerprint` in each `evals/results/*.json`, which
+  is the record of what actually reached the model for that run.
+- `pos_copilot.prompts.load_bundle(...).hashes`, if you need them for a file that
+  has not been run.
 
 Changing a prompt without re-running the relevant eval leaves a stale number in
 the README. Either re-run it or mark it stale.

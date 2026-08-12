@@ -233,10 +233,18 @@ which changes the prompt fingerprint and **voids every cached response**. (Done 
 
 ### 5. Instrument v2 is applied, measured, and ADR-0001 is resolved
 
-The batch landed, `full×3` ran, and the ADR now says **keep generated SQL**.
-Two thresholds fired and the catalog was still not built; the reasoning is in
-the ADR, it names what would reverse it, and it was written by the agent that
-ran the measurement rather than in a separate sitting.
+The batch landed, `full×3` ran, and the ADR now says **keep generated SQL**. The
+reasoning is in the ADR, it names what would reverse it, and it was written by the
+agent that ran the measurement rather than in a separate sitting.
+
+**This paragraph read "two thresholds fired and the catalog was still not built"
+until 2026-08-12, 141 lines below the box in this same file that says *do not
+quote "two thresholds fired"*.** Threshold 3's firing at 10.6% was a sampling
+artifact — a strict replication of the same prompt and questions returned 4.3%,
+and the metric has no fixed value until the run count is fixed. **Threshold 1 is
+the one that fires.** The ADR's conclusion survives; two of its three stated
+reasons do not. A file can carry its own correction and still be quoted from the
+wrong half, which is why the correction now sits in both places.
 
 ---
 

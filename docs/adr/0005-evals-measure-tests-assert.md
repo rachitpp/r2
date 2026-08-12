@@ -18,8 +18,9 @@ pure functions (date resolution, chunk boundaries, scoring logic) and DB
 integration via `CREATE DATABASE test_x TEMPLATE seeded_template` for fast
 per-test isolation. `ruff check` alongside. mypy optional, does not gate.
 
-**Evals measure.** `make eval-extraction` and `make eval-sql`, run locally at
-phase boundaries. They produce numbers for the README. They are not gates.
+**Evals measure.** `make eval-sql`, and `make eval-extraction` once Phase 2 builds
+it — only the first exists today. Run locally at phase boundaries. They produce
+numbers for the README. They are not gates.
 
 ## Alternative rejected
 
