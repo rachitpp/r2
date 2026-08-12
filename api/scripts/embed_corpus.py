@@ -110,12 +110,48 @@ def load_clauses(conn, corpus: Path, supplier_ids: dict[str, int]) -> tuple[int,
     return written, skipped
 
 
+def store_ids_for_invoices(conn, manifest: list[dict]) -> dict[str, int]:
+    """Which store each invoice was delivered to.
+
+    **Invoices are the only store-specific documents in this corpus**, and until
+    2026-08-13 nothing populated `doc_chunks.store_id` at all — every row was
+    NULL. That is worse than it sounds: the scope predicate is
+    `(store_id = %s OR store_id IS NULL)`, so with every row NULL a store-scoped
+    query matches EVERYTHING and the restriction reads as working. A test
+    written against that data would have passed for the wrong reason, which is
+    the defect this project keeps finding, in a filter written the day before.
+
+    Contracts, catalogs and policies stay NULL because they genuinely are
+    chain-wide — a supply agreement is not "the Kothrud agreement". NULL means
+    "applies everywhere" and the predicate must keep matching it, or a clerk
+    loses every policy document.
+    """
+    po_ids = {
+        row["doc_id"]: int(row["source_key"])
+        for row in manifest
+        if row["doc_type"] == "invoice" and row["source_key"]
+    }
+    if not po_ids:
+        return {}
+    with conn.cursor() as cur:
+        cur.execute(
+            "select po_id, store_id from purchase_orders where po_id = ANY(%s)",
+            (list(po_ids.values()),),
+        )
+        by_po = dict(cur.fetchall())
+    return {
+        doc_id: by_po[po_id] for doc_id, po_id in po_ids.items() if po_id in by_po
+    }
+
+
 def load_chunks(
     conn, corpus: Path, supplier_ids: dict[str, int], *, reembed: bool
 ) -> tuple[int, int, int]:
     """Chunk corpus/parsed/, embed what changed, upsert."""
     embedder = default_embedder()
-    manifest = {row["doc_id"]: row for row in load_manifest(corpus)}
+    manifest_rows = load_manifest(corpus)
+    manifest = {row["doc_id"]: row for row in manifest_rows}
+    invoice_stores = store_ids_for_invoices(conn, manifest_rows)
 
     with conn.cursor() as cur:
         cur.execute("select doc_id, chunk_index, content_sha256 from doc_chunks")
@@ -166,6 +202,7 @@ def load_chunks(
                     index,
                     content,
                     supplier_ids.get(code or ""),
+                    invoice_stores.get(doc_id),
                     effective_from,
                     effective_to,
                     digest,
@@ -179,12 +216,14 @@ def load_chunks(
                 cur.execute(
                     """insert into doc_chunks
                        (doc_id, doc_type, chunk_index, content, supplier_id,
-                        effective_from, effective_to, content_sha256, embedding)
-                       values (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        store_id, effective_from, effective_to, content_sha256,
+                        embedding)
+                       values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                        on conflict (doc_id, chunk_index) do update set
                          content = excluded.content,
                          doc_type = excluded.doc_type,
                          supplier_id = excluded.supplier_id,
+                         store_id = excluded.store_id,
                          effective_from = excluded.effective_from,
                          effective_to = excluded.effective_to,
                          content_sha256 = excluded.content_sha256,

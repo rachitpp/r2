@@ -55,6 +55,28 @@ class Retrieval:
         return self.outcome == "found"
 
 
+def store_scope_for(role: str, store_id: int | None) -> int | None:
+    """Which store this request may see documents for. `None` means chain-wide.
+
+    Deliberately the same shape and the same refusal as
+    `readonly_sql.visible_stores`, because a reader who has understood scoping
+    on the SQL path should not have to learn a second set of rules here. A
+    store-scoped role with no store raises rather than defaulting: a defaulted
+    store is the wrong shop's invoices wearing the right shop's label.
+    """
+    from .readonly_sql import UNSCOPED_ROLES, StoreRequired
+
+    if role in UNSCOPED_ROLES:
+        return None
+    if store_id is None:
+        raise StoreRequired(
+            "this request runs as a store-scoped role and no store was given. "
+            "Picking one would retrieve the wrong shop's documents without "
+            "saying so."
+        )
+    return store_id
+
+
 def _scope_sql(supplier_id: int | None, store_id: int | None) -> tuple[str, list]:
     """Build the scope predicate.
 

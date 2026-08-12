@@ -16,8 +16,9 @@ bookkeeping, caught only because a model was finally pointed at the documents.
 The extraction itself was accurate everywhere it was checked against the
 database. **Entries 12–13 come from the injection run the same day**, and they
 are the same shape again: what the run found was mostly wrong with the *specimens*
-and the *detector*, not with the defence. **Entry 14 comes from Phase 3's
-end-to-end run on 2026-08-13** and is the first that is about the answer itself.
+and the *detector*, not with the defence. **Entries 14–15 come from Phase 3 on
+2026-08-13**: the first is about the answer itself, the second about a filter
+that could not have failed a test because no data could exercise it.
 
 ---
 
@@ -389,3 +390,33 @@ it is why answers are committed verbatim rather than only verdicts.
 report" — they are different situations and only the first is a disagreement. That
 edits the prompt, so it belongs with the next deliberate prompt change rather than
 as a reflex, and it needs measuring rather than assuming afterwards.
+
+## 15. The role-scope filter was unfalsifiable for a day
+
+`doc_chunks.store_id` was NULL on **every row** from the moment the table was
+created until 2026-08-13. Nothing populated it.
+
+The retrieval predicate is `(c.store_id = %s OR c.store_id IS NULL)`, and that
+NULL branch is deliberate and load-bearing: a policy applies chain-wide, so a
+clerk's query must match NULL or it silently loses every policy document.
+
+**With every row NULL, the branch matched everything.** A store-scoped query
+returned the whole corpus and looked exactly like a working restriction. Rule 5
+is a hard rule — "role-scope before generation, never after" — and the mechanism
+implementing it could not have failed a test, because there was no data for it to
+discriminate.
+
+**Fixed by populating what is genuinely store-specific.** Invoices are delivered
+to a store, so `purchase_orders.store_id` fills 16 chunks across 3 stores.
+Contracts, catalogs and policies stay NULL because they really are chain-wide — a
+supply agreement is not "the Kothrud agreement".
+
+Measured after the fix, which is the point: a manager retrieves the Kothrud
+invoice, the clerk at Kothrud retrieves it, and **the clerk at Gangapur Road
+retrieves nothing** while still receiving every chain-wide policy.
+
+**The tests now assert on the SQL that is built rather than on what comes back**,
+so they hold whatever the data happens to contain. That is the general lesson: a
+filter tested only against data that cannot exercise it is a filter nobody has
+tested. This is the second time in two days a check in this repo could not have
+failed, and the first one was also written the day before it was caught.
