@@ -632,8 +632,14 @@ SUP-06's real lapse returns `none_in_force` with no model call.
   string in a test supplier PDF; putting one there means regenerating the corpus
   and voiding the parse, checksums and all 40 extractions. Retrieval-to-answer is
   tested; parse-to-answer is not.
-- **The web view has never been driven in a browser.** Typecheck, build, and the
-  API in demo mode are verified; the click-through is not.
+- **The web view has never been driven in a browser, and the gap is now narrow
+  and named.** `make smoke` (added 2026-08-13) drives both beats through **port
+  3000** — the Next rewrite a browser actually uses, which `pytest` and
+  `next build` both miss entirely: a typo there breaks every request in the
+  browser while both suites stay green. All six checks pass, including the two
+  refusals. **What is still unverified is React event wiring** — a button whose
+  `onClick` was never attached, or a `useState` that never re-renders, passes
+  `make smoke` and passes CI. That needs a browser driving the page.
 - **`AS_OF_DATE` is duplicated.** `live.py.as_of_date()` returns a string and
   `docqa.as_of_date()` returns a `date`, both reading the same variable with the
   same fallback. Two functions, one rule — reconcile when something touches both.

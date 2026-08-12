@@ -10,7 +10,7 @@ SHELL := /bin/bash
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
         extract extract-stub corpus-checksums eval-extraction injection-demo \
-        embed test-slow demo-beat-2
+        embed test-slow demo-beat-2 smoke
 
 -include .env
 
@@ -303,6 +303,18 @@ eval-extraction: ## Score corpus/extracted/ against the rows it came from
 	fi
 	cd api && $(UV) run python scripts/eval_extraction.py \
 	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
+
+smoke: ## Drive both demo beats through the web app's own request path
+	@# Hits port 3000, NOT 8000, on purpose. pytest exercises FastAPI directly and
+	@# tsc/next build check the web app compiles; neither touches the Next rewrite
+	@# between them, so a typo there breaks every browser request while both suites
+	@# stay green. This is the only check that would notice.
+	@#
+	@# Needs `make serve` and `make web` running. No key, no quota.
+	@#
+	@# It does NOT cover React event wiring — a button whose onClick was never
+	@# attached passes this and passes CI. That needs a browser.
+	cd api && $(UV) run python scripts/smoke_demo.py $(SMOKE_ARGS)
 
 demo-beat-2: ## Produce the Phase 3 artifact — temporal + injection (SPENDS QUOTA)
 	@# PLAN.md's Phase 3 done-condition, both halves, end to end against the real
