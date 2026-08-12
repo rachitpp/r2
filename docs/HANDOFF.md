@@ -54,9 +54,15 @@ takes 3 of 6 retrieval slots. The prompt fix changed how an injected instruction
 is framed in an answer; ordering is untouched, and an agent that *acts* on
 retrieved documents raises the stakes on that.
 
-**Rule 12 gates the start of Phase 4.** `CONVENTIONS.md` names the approval card
-and the audit log as the wireframes to agree before any component is written, and
-the card is still an open question. Do not start with the loop.
+**Rule 12 is already satisfied for Phase 4, contrary to what this file said on
+2026-08-13.** `CONVENTIONS.md` names the approval card and the audit log as the
+wireframes to agree first, and `docs/DESIGN-TOKENS.md` contains both, in detail.
+Nothing is blocked on design.
+
+**Build the card early anyway** — against a hand-written `proposed_actions` row,
+before the loop exists. `CONVENTIONS.md` calls it the signature element of the
+whole project, and Phase 1 is the standing evidence for what happens otherwise:
+instrument work expands and the deliverable gets whatever time is left.
 
 **Done-condition 4 was closed on 2026-08-11:** the corpus had no coverage gaps at
 all while `corpus/README.md` asserted it did, and the seed now lapses SUP-06 for

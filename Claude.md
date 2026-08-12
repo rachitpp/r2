@@ -9,9 +9,9 @@ Two apps: `api/` (FastAPI, Python, uv) and `web/` (Next.js + Tailwind, npm).
 The API is the only boundary between them.
 
 **Current phase: 4 — Procurement agent + approval queue.** Phases 0–3 are closed;
-Phase 3 finished 2026-08-13 with demo beat 2 running in the browser. **Rule 12
-gates the start: the approval card and audit log wireframes get agreed before any
-component is written.**
+Phase 3 finished 2026-08-13 with demo beat 2 running in the browser. Rule 12 is
+already satisfied here — `docs/DESIGN-TOKENS.md` designs the approval card and the
+audit log, so nothing is blocked on design.
 
 ## Read these
 

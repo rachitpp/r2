@@ -8,6 +8,44 @@
 
 Tables first, then materialized views, then views.
 
+## `agent_events`
+
+Append-only audit. Every state change goes through here, so "what happened" is a query rather than a reconstruction (ADR-0003, reason 3). Never updated and never deleted — a log you can edit is not a log.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `agent_event_id` | bigint NOT NULL | PK |  |
+| `agent_run_id` | integer NOT NULL | FK → agent_runs |  |
+| `proposed_action_id` | integer | FK → proposed_actions |  |
+| `kind` | text NOT NULL |  |  |
+| `detail` | jsonb NOT NULL |  |  |
+| `actor` | text |  | The person who caused this event, or NULL for the agent and the worker. ADR-0002: the agent reports patterns, never people — the approver is the one identity this workflow is legitimately about. |
+| `occurred_at` | timestamp with time zone NOT NULL |  |  |
+
+## `agent_runs`
+
+One agent invocation. The agent is stateless and this row is the source of truth (ADR-0003), so a run survives a restart because nothing about it was held in memory.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `agent_run_id` | integer NOT NULL | PK |  |
+| `status` | text NOT NULL |  |  |
+| `prompt` | text NOT NULL |  |  |
+| `plan` | text |  |  |
+| `requested_by` | text NOT NULL |  |  |
+| `role` | text NOT NULL |  |  |
+| `store_id` | integer | FK → stores | The scope this run acts within. NULL only for manager/owner, enforced by agent_runs_scoped_role_has_store — rule 5, one layer below the API. |
+| `max_tool_calls` | integer NOT NULL |  | CLAUDE.md rule 3 — the loop caps at ~6 tool calls. Stored per run so a later config change cannot retroactively make an old run look compliant. |
+| `tool_calls_used` | integer NOT NULL |  |  |
+| `max_spend_usd` | numeric(8,4) NOT NULL |  |  |
+| `spend_usd` | numeric(8,4) NOT NULL |  |  |
+| `created_at` | timestamp with time zone NOT NULL |  |  |
+| `started_at` | timestamp with time zone |  |  |
+| `finished_at` | timestamp with time zone |  |  |
+| `claimed_by` | text |  | The worker holding it. Claimed with SELECT ... FOR UPDATE SKIP LOCKED so two workers cannot take the same run; a stale claim is reclaimable. |
+| `claimed_at` | timestamp with time zone |  |  |
+| `error` | text |  |  |
+
 ## `categories`
 
 Product categories, one level deep, grouped into departments. Demand seasonality and day-of-week patterns are properties of the category.
@@ -133,6 +171,28 @@ Promotional events. Promotions are a real table rather than an invisible multipl
 | `discount_pct` | numeric(5,2) NOT NULL |  |  |
 | `starts_on` | date NOT NULL |  |  |
 | `ends_on` | date NOT NULL |  |  |
+
+## `proposed_actions`
+
+A drafted action awaiting a human. The agent drafts; it does not place. Expiry, the spending cap and the recorded inputs are what make re-validation at execution time possible rather than aspirational.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `proposed_action_id` | integer NOT NULL | PK |  |
+| `agent_run_id` | integer NOT NULL | FK → agent_runs |  |
+| `tool` | text NOT NULL |  |  |
+| `args` | jsonb NOT NULL |  |  |
+| `reasoning` | text NOT NULL |  | Why the agent drafted this, in prose, shown on the approval card. CONVENTIONS.md: the evidence is the design. |
+| `inputs_used` | jsonb NOT NULL |  | The facts this proposal was drafted against — prices, stock, terms, each with the value read and when. Re-validation compares these to the world at execution time, so a proposal drafted against a price that has since moved refuses to fire. Without this column that promise cannot be kept. |
+| `status` | text NOT NULL |  |  |
+| `expires_at` | timestamp with time zone NOT NULL |  | A column, not a timer. Expiry survives a restart because it was never held in a process. |
+| `approved_by` | text |  |  |
+| `approved_at` | timestamp with time zone |  |  |
+| `executed_at` | timestamp with time zone |  |  |
+| `refusal` | text |  | Why it declined to execute — stale input, expiry, cap. The guardrail working, NOT a fault, which is why it is not merged with agent_runs.error. |
+| `estimated_total` | numeric(12,2) |  |  |
+| `spending_cap` | numeric(12,2) |  |  |
+| `created_at` | timestamp with time zone NOT NULL |  |  |
 
 ## `purchase_order_lines`
 

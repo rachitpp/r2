@@ -988,9 +988,21 @@ These are unresolved by design. If you hit one, stop.
   nothing to key off, so building it means a migration plus a seed regeneration,
   and regenerating the seed voids every eval expected result set. Recorded so it is
   not re-asked from the category names alone, which is what makes it look open.
-- **The approval-card wireframe** (Phase 4). Palette and type are settled — proposed
-  in `docs/DESIGN-TOKENS.md` and built from; say if they should change and it is a
-  `tailwind.config.ts` edit.
+- ~~**The approval-card wireframe** (Phase 4).~~ **Not open, and listing it here
+  was wrong.** `docs/DESIGN-TOKENS.md` designs the approval card and the audit log
+  in detail — the countdown, the "Why this order" reasoning block, "Checked
+  against", the stale-input warning, and the rule that state is carried by border
+  and label together and never by colour alone. Rule 12 was satisfied when that
+  document was written and agreed. **This entry survived because its own body only
+  discusses palette and type**, which are settled separately, so nothing ever
+  contradicted the heading. Left struck through rather than deleted: it would have
+  cost the next session a design round that had already happened.
+
+  What `DESIGN-TOKENS.md` genuinely leaves open, and these are the real questions:
+  **no dark mode** (a ledger has a paper colour; design one rather than inverting),
+  **no live-mode query view** (latency and refusal states demo mode cannot
+  produce), **no audit-log empty state**, and **no zero-results state** — the last
+  two needing copy rather than styling.
 
 **Resolved since this list was written — removed, not forgotten:** the
 text-to-SQL outcome (ADR-0001, resolved; Phase 1 closed), role-scoping (decided,
