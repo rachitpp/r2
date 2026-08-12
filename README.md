@@ -71,13 +71,20 @@ from — see the caveats below, they matter more than the numbers.)_
 Scored by `make eval-extraction` — deterministic comparison against Postgres, no
 LLM-as-judge, free to re-run.
 
-> ### ⚠️ The text-to-SQL block below is STALE and has not been re-measured
+> ### ⚠️ The text-to-SQL block below is STALE for two independent reasons
 >
-> Every figure was scored against seed fingerprint `206fb7a8e55164f9`. **The seed
-> is now `e1ca4fb60f9e710e`** — two suppliers were given deliberate coverage
-> lapses on 2026-08-11 so that "no document in force" could be told apart from
-> "not found" — and **two expected result sets changed with it**: q017 and q048,
-> both of which read `supplier_terms` by period.
+> **The seed moved.** Every figure was scored against seed fingerprint
+> `206fb7a8e55164f9`; it is now **`e1ca4fb60f9e710e`** — two suppliers were given
+> deliberate coverage lapses on 2026-08-11 so that "no document in force" could be
+> told apart from "not found" — and **two expected result sets changed with it**:
+> q017 and q048, both of which read `supplier_terms` by period.
+>
+> **The prompt moved too.** Phase 3's migration added `supplier_term_clauses` and
+> `doc_chunks`, which regenerates `schema.md` and therefore the SQL prompt:
+> `f3b7a9193a56f10d` → **`dd9008f5de482522`**. The prompt these numbers were
+> measured under no longer exists. That was planned rather than stumbled into —
+> the reasoning, and why the cache it voided cost nothing, is in
+> `evals/PROMPT_FREEZE.json`.
 >
 > The error is probably small and bounded, two questions with one changed value
 > each. But "probably" is not a measurement, and these are published as if they

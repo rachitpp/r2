@@ -1548,6 +1548,11 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+retrieval = [
+    { name = "psycopg", extra = ["binary"] },
+    { name = "torch" },
+    { name = "transformers" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1570,6 +1575,11 @@ dev = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "ruff", specifier = ">=0.8" },
+]
+retrieval = [
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "torch", specifier = ">=2.13" },
+    { name = "transformers", specifier = ">=5.8" },
 ]
 
 [[package]]

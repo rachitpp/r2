@@ -18,6 +18,25 @@ Product categories, one level deep, grouped into departments. Demand seasonality
 | `name` | text NOT NULL |  |  |
 | `department` | text NOT NULL |  |  |
 
+## `doc_chunks`
+
+Retrieval units from corpus/parsed/. Every chunk carries its own validity period so date filtering happens BEFORE the vector search, and scope columns so role restriction is part of the retrieval query rather than a filter over its results (CLAUDE.md rules 5 and 7).
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `doc_chunk_id` | integer NOT NULL | PK |  |
+| `doc_id` | text NOT NULL |  |  |
+| `doc_type` | text NOT NULL |  |  |
+| `chunk_index` | integer NOT NULL |  |  |
+| `content` | text NOT NULL |  |  |
+| `embedding` | vector(384) |  | bge-small-en-v1.5, 384d, CPU-local. NULL until make embed has run, which is why nothing may assume it is populated. |
+| `supplier_id` | integer | FK → suppliers | Scope column. NULL means the chunk is not supplier-specific — a policy applies chain-wide — and a scoped query must therefore match NULL as well as its own supplier, or it silently loses every policy document. |
+| `store_id` | integer | FK → stores |  |
+| `effective_from` | date NOT NULL |  |  |
+| `effective_to` | date |  |  |
+| `valid_period` | daterange |  | Half-open [effective_from, effective_to). Query with valid_period @> DATE. A date with no chunk in force is "no document in force", which is NOT the same as "not found" — demo beat 2 rests on that distinction. |
+| `content_sha256` | text NOT NULL |  | SHA-256 of content. Lets a re-embed skip unchanged chunks, and makes "the parse moved underneath the embeddings" detectable rather than silent. |
+
 ## `festivals`
 
 The festival calendar for the trading window, one row per festival occurrence. Use this rather than hardcoding dates: it is what makes "how did we do over Diwali" and "which festivals fell in Q3" answerable by query. Only festivals whose day falls inside the sales history are listed.
@@ -245,6 +264,25 @@ Which suppliers can supply which products, and the non-temporal facts about that
 | `is_preferred` | boolean NOT NULL |  | Exactly one supplier per product is preferred. Restock proposals default to the preferred supplier. |
 | `min_order_qty` | integer NOT NULL |  |  |
 | `case_pack` | integer NOT NULL |  |  |
+
+## `supplier_term_clauses`
+
+What a supplier document SAYS, one row per clause it states. Distinct from supplier_terms, which is the wide projection of what is IN FORCE. An amendment that varies three clauses produces three rows here and does not restate the rest; the set in force is computed from the whole chain. Populated by Phase 3 from corpus/extracted/.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| `supplier_term_clause_id` | integer NOT NULL | PK |  |
+| `supplier_id` | integer NOT NULL | FK → suppliers |  |
+| `doc_id` | text NOT NULL |  | The corpus document this clause was read from, matching MANIFEST.csv. This is the provenance: it answers "which document said so", which supplier_terms structurally cannot. |
+| `clause` | text NOT NULL |  | Clause name, matching the extraction schema: payment_terms_days, lead_time_days, min_order_value, volume_discount_pct, returns_window_days. |
+| `clause_number` | text |  | The number as printed in the document ("3", "7"). Text, not integer: amendments cite "3(b)" and a schema that assumed integers would lose it. |
+| `value_numeric` | numeric(12,2) |  |  |
+| `value_text` | text |  |  |
+| `verbatim` | text NOT NULL |  | The sentence as it appears in the document. This is what makes a citation checkable by a reader rather than trusted. |
+| `effective_from` | date NOT NULL |  |  |
+| `effective_to` | date |  |  |
+| `valid_period` | daterange |  | Half-open [effective_from, effective_to). Query with valid_period @> DATE. |
+| `source` | text NOT NULL |  |  |
 
 ## `supplier_terms`
 

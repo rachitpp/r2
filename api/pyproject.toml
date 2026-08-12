@@ -32,6 +32,18 @@ corpus = [
     "pymupdf>=1.28.2",
     "reportlab>=5.0.0",
 ]
+# Phase 3, per CLAUDE.md rule 2: embeddings stay LOCAL at every tier, so the
+# system a reader runs never needs paid inference for retrieval. torch and
+# transformers are already here via the `corpus` group; this group exists
+# because query embedding happens at SERVE time, not only at ingest, so the
+# runtime path needs them too. No sentence-transformers — bge-small is a BERT
+# encoder and the pooling is four lines in pos_copilot/embed.py, written out
+# where it can be read.
+retrieval = [
+    "torch>=2.13",
+    "transformers>=5.8",
+    "psycopg[binary]>=3.2",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.8",
@@ -71,7 +83,14 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "scripts"]
-addopts = "-q --strict-markers"
+addopts = "-q --strict-markers -m 'not slow'"
 markers = [
     "db: requires a seeded Postgres (skipped when TEST_DATABASE_URL is unset)",
+    # Loads the local embedding model. No key and no quota — but the first run
+    # downloads ~130MB of weights, so CI and the fast loop skip it by default
+    # and `make test-slow` opts in.
+    "slow: loads the local embedding model (deselected unless -m slow)",
 ]
+# `slow` is deselected by default so the ordinary loop stays under two seconds.
+# The embedding assertions are the ones that catch a pooling change, so they
+# must actually be run at phase boundaries, not merely exist.

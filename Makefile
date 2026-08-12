@@ -9,7 +9,8 @@ SHELL := /bin/bash
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
-        extract extract-stub corpus-checksums eval-extraction injection-demo
+        extract extract-stub corpus-checksums eval-extraction injection-demo \
+        embed test-slow
 
 -include .env
 
@@ -302,6 +303,24 @@ eval-extraction: ## Score corpus/extracted/ against the rows it came from
 	fi
 	cd api && $(UV) run python scripts/eval_extraction.py \
 	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
+
+embed: ## Load corpus/ into supplier_term_clauses and doc_chunks (no model calls)
+	@# Embeddings are LOCAL — bge-small-en-v1.5 on CPU, no key and no quota
+	@# (CLAUDE.md rule 2). The first run downloads ~130MB of weights from
+	@# HuggingFace; that is a model download, not a model call.
+	@#
+	@# Idempotent by content hash: a chunk whose text has not changed keeps its
+	@# vector, so a re-run after a parse change re-embeds only what moved.
+	@if [ -z "$$DATABASE_URL" ]; then \
+	  echo "DATABASE_URL is not set."; exit 1; \
+	fi
+	cd api && $(UV) run --group retrieval python scripts/embed_corpus.py $(EMBED_ARGS)
+
+test-slow: ## Run the tests that load the embedding model (deselected by default)
+	@# These are the assertions that catch a pooling or prefix change, which is
+	@# invisible otherwise — the vectors keep their shape and retrieval quietly
+	@# degrades. Run them at phase boundaries, not just on every commit.
+	cd api && $(UV) run --group retrieval pytest -m slow
 
 injection-demo: ## Run the injection specimens through both prompts (SPENDS QUOTA)
 	@# Done-condition 5 wants a trace of the NAIVE path following an injection,
