@@ -8,9 +8,13 @@ injected difficulty was too gentle, not that the pipeline is good.** So the bar
 for an entry is a defect someone would otherwise hit — not a list assembled to
 satisfy the condition.
 
-Entries 1 and 2 were found by measuring the corpus rather than by extracting from
-it, which is worth saying: **no model has been run over these documents yet.**
-Everything a real extraction pass finds gets added below.
+Entries 1–7 were found by measuring the corpus rather than by extracting from it.
+**Entries 8–11 come from the first real extraction run, 2026-08-12** — 40
+documents, 40 model calls, ~$0.18 — and they are a different kind of finding:
+three of the four are defects in this repo's own schema, generator and
+bookkeeping, caught only because a model was finally pointed at the documents.
+The extraction itself was accurate everywhere it was checked against the
+database.
 
 ---
 
@@ -216,3 +220,84 @@ passed check in a summary. Generated documents carry no personal data unless a
 generator writes it; the scan is a standing check that the generator never invents
 anything person-like, and **a check that cannot fail is not evidence that it
 passed.**
+
+## 8. The invoice schema required three fields no invoice contains
+
+**Found by the first real extraction run, 2026-08-12, and it failed all 10
+invoices while their content came back perfect.**
+
+`validate()` required `invoice_number`, `tax_total` and `total`. The generator
+writes none of them. A generated invoice carries a supplier, a supplier code, an
+invoice date, an order date, a **PO number**, a `Subtotal (INR)` and a line-item
+table — no invoice number, no tax line, no grand total anywhere in the document.
+
+So the run reported `30/40 well-formed` and the real figure was 40/40. Measured
+against the database on the same output:
+
+| | |
+|---|---|
+| Invoice line items | **63/63 exact** (quantity and line total) |
+| Invoice subtotals | **10/10 exact** |
+| `invoice-sup-12-5436`, the table spanning a page break | **41/41 lines** |
+
+**Why it survived until a real run:** the stub returns invented values that
+include those three fields, so 31 tests passed against a shape the corpus has
+never had. The schema was describing an invoice nobody generated, and every check
+agreed with it because every check was fed by the same imagination.
+
+**The model's behaviour was correct and is worth keeping.** Asked for three
+fields that are not in the document, it returned `null` for all three rather than
+inventing plausible numbers — 10 out of 10. That is a live hallucination check on
+absent fields, so **the prompt still asks for them on purpose**; only the
+validator was wrong. Fixed there, which also cost nothing: the 40 responses
+re-validated from cache at 0 calls and $0.00.
+
+## 9. Two supplier names are HTML-escaped in the documents themselves
+
+`contract-sup-02-20260113` extracts as `Godavari Grains &amp; Pulses`. The
+database says `Godavari Grains & Pulses`.
+
+**The extraction is right and the document is wrong.** `&amp;` is in the rendered
+PDF and therefore in `corpus/parsed/`; the model transcribed what it was given,
+which is exactly what rule 6 and the clause-level provenance decision ask of it.
+`corpus_generate.py` HTML-escapes supplier names, and two suppliers have `&` in
+theirs — **SUP-02 Godavari Grains & Pulses** and **SUP-04 Deccan Oils &
+Provisions**. Three parsed documents carry entities.
+
+**Fixing it means regenerating the corpus**, which voids the parse, the checksums
+and all 40 extractions. It is therefore a `corpus/corrections/` entry rather than
+a regeneration — and note what the correction has to say, because it is not the
+usual one: **the pipeline got this right and the corpus got it wrong.**
+
+## 10. One scanned contract loses its identity fields entirely
+
+`contract-sup-01-20241130` extracts `supplier_code: null` and
+`supplier_name: "Kir   (-t) r i   () l i le."`. It is `Sahyadri Agro Traders`,
+SUP-01.
+
+**Every number in the same document is correct** — payment terms 14, lead time
+10, minimum order 8000, volume discount 0, returns window 14, and both period
+dates, all exact against `supplier_terms`. The clause body OCRs cleanly; the
+letterhead does not survive rasterisation.
+
+**1 of the 5 scanned documents is affected.** The other four resolve their
+supplier correctly, and `policy-cold-chain` has no supplier by design.
+
+**No prompt change fixes this** — the pixels do not contain readable text. The
+open question is whether identity may fall back to `MANIFEST.csv`, which would
+resolve it in every case and **weaken the claim that extraction records what the
+document says.** Not decided. Until it is, those five clauses are attributable
+only by filename, which is exactly the provenance the clause-level decision was
+meant to make explicit.
+
+## 11. Extraction does not refresh `CHECKSUMS.txt`, and it is now the last stage
+
+`corpus_ingest.py` calls `write_checksums` because it was the last stage that
+wrote artifacts. Extraction now writes 41 — 40 JSON files and `EXTRACT.csv` — and
+calls nothing, so `verify-corpus` failed immediately after the first successful
+run with 41 artifacts "present but unlisted". Nothing was wrong except the
+bookkeeping.
+
+Run `make corpus-checksums` after `make extract` until the call moves into the
+runner. Entry 6's note applies here too: the check is doing its job, and the
+thing it caught was that ownership of the last write moved and nobody told it.

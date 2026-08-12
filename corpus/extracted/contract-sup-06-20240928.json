@@ -1,0 +1,40 @@
+{
+  "readable": true,
+  "supplier_code": "SUP-06",
+  "supplier_name": "Jhat Pat Foods",
+  "document_kind": "agreement",
+  "effective_from": "2024-09-28",
+  "effective_to": "2025-10-22",
+  "clauses": [
+    {
+      "clause": "payment_terms_days",
+      "clause_number": "3",
+      "value": 14,
+      "verbatim": "Net 14 days from invoice date."
+    },
+    {
+      "clause": "lead_time_days",
+      "clause_number": "4",
+      "value": 5,
+      "verbatim": "5 days from purchase order to delivery."
+    },
+    {
+      "clause": "min_order_value",
+      "clause_number": "5",
+      "value": 12000.00,
+      "verbatim": "INR 12,000.00 per purchase order."
+    },
+    {
+      "clause": "volume_discount_pct",
+      "clause_number": "6",
+      "value": 2.5,
+      "verbatim": "2.50% on orders above the minimum."
+    },
+    {
+      "clause": "returns_window_days",
+      "clause_number": "7",
+      "value": 28,
+      "verbatim": "28 days from receipt."
+    }
+  ]
+}

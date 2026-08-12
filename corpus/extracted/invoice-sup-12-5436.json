@@ -1,0 +1,260 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-12",
+  "supplier_name": "Deepmala Festive Supplies",
+  "invoice_date": "2025-01-06",
+  "purchase_order_ref": "5436",
+  "currency": "INR",
+  "subtotal": 54681.92,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Little Konkan Baby Oil Medium",
+      "quantity": 6,
+      "unit_price": 169.05,
+      "line_total": 1014.3
+    },
+    {
+      "description": "Little Konkan Baby Soap Value Pack",
+      "quantity": 12,
+      "unit_price": 264.0,
+      "line_total": 3168.0
+    },
+    {
+      "description": "Shishu Feeding Bottle Medium",
+      "quantity": 12,
+      "unit_price": 170.52,
+      "line_total": 2046.24
+    },
+    {
+      "description": "Nazuk Baby Soap Large",
+      "quantity": 1,
+      "unit_price": 179.83,
+      "line_total": 179.83
+    },
+    {
+      "description": "Nanhe Kadam Feeding Bottle Medium",
+      "quantity": 6,
+      "unit_price": 204.85,
+      "line_total": 1229.1
+    },
+    {
+      "description": "Nazuk Baby Lotion Multipack",
+      "quantity": 12,
+      "unit_price": 337.37,
+      "line_total": 4048.44
+    },
+    {
+      "description": "Nanhe Kadam Baby Oil Medium",
+      "quantity": 12,
+      "unit_price": 315.54,
+      "line_total": 3786.48
+    },
+    {
+      "description": "Shishu Baby Soap Value Pack",
+      "quantity": 24,
+      "unit_price": 201.95,
+      "line_total": 4846.8
+    },
+    {
+      "description": "Nanhe Kadam Infant Cereal Small",
+      "quantity": 6,
+      "unit_price": 162.56,
+      "line_total": 975.36
+    },
+    {
+      "description": "Shishu Baby Oil Large",
+      "quantity": 6,
+      "unit_price": 304.78,
+      "line_total": 1828.68
+    },
+    {
+      "description": "Nazuk Baby Lotion Small",
+      "quantity": 12,
+      "unit_price": 270.1,
+      "line_total": 3241.2
+    },
+    {
+      "description": "Nazuk Baby Soap Multipack",
+      "quantity": 6,
+      "unit_price": 215.74,
+      "line_total": 1294.44
+    },
+    {
+      "description": "Nanhe Kadam Baby Wipes Medium",
+      "quantity": 12,
+      "unit_price": 194.52,
+      "line_total": 2334.24
+    },
+    {
+      "description": "Nazuk Infant Cereal Small",
+      "quantity": 6,
+      "unit_price": 178.36,
+      "line_total": 1070.16
+    },
+    {
+      "description": "Little Konkan Feeding Bottle Multipack",
+      "quantity": 6,
+      "unit_price": 277.48,
+      "line_total": 1664.88
+    },
+    {
+      "description": "Nazuk Baby Wipes Value Pack",
+      "quantity": 6,
+      "unit_price": 262.01,
+      "line_total": 1572.06
+    },
+    {
+      "description": "Nazuk Baby Wipes Value Pack #2",
+      "quantity": 24,
+      "unit_price": 173.42,
+      "line_total": 4162.08
+    },
+    {
+      "description": "Deepmala Torans Pack of 6",
+      "quantity": 6,
+      "unit_price": 79.28,
+      "line_total": 475.68
+    },
+    {
+      "description": "Deepmala Dhoop Sticks Pack of 12",
+      "quantity": 6,
+      "unit_price": 65.51,
+      "line_total": 393.06
+    },
+    {
+      "description": "Deepmala Cotton Wicks Single",
+      "quantity": 6,
+      "unit_price": 35.79,
+      "line_total": 214.74
+    },
+    {
+      "description": "Kesari Cotton Wicks Pack of 6",
+      "quantity": 12,
+      "unit_price": 125.38,
+      "line_total": 1504.56
+    },
+    {
+      "description": "Utsav Ghar Gift Wrap Gift Set",
+      "quantity": 12,
+      "unit_price": 195.76,
+      "line_total": 2349.12
+    },
+    {
+      "description": "Kesari Torans Single",
+      "quantity": 6,
+      "unit_price": 17.73,
+      "line_total": 106.38
+    },
+    {
+      "description": "Deepmala Agarbatti Pack of 6",
+      "quantity": 6,
+      "unit_price": 111.44,
+      "line_total": 668.64
+    },
+    {
+      "description": "Shubh Labh Cotton Wicks Single",
+      "quantity": 1,
+      "unit_price": 32.77,
+      "line_total": 32.77
+    },
+    {
+      "description": "Utsav Ghar Diya Set Pack of 12",
+      "quantity": 1,
+      "unit_price": 122.07,
+      "line_total": 122.07
+    },
+    {
+      "description": "Deepmala Rangoli Colours Pack of 6",
+      "quantity": 6,
+      "unit_price": 121.7,
+      "line_total": 730.2
+    },
+    {
+      "description": "Shubh Labh Diya Set Pack of 12",
+      "quantity": 6,
+      "unit_price": 100.71,
+      "line_total": 604.26
+    },
+    {
+      "description": "Deepmala LED String Lights Pack of 6",
+      "quantity": 24,
+      "unit_price": 123.72,
+      "line_total": 2969.28
+    },
+    {
+      "description": "Deepmala Rangoli Colours Single",
+      "quantity": 6,
+      "unit_price": 27.53,
+      "line_total": 165.18
+    },
+    {
+      "description": "Deepmala Torans Single",
+      "quantity": 1,
+      "unit_price": 34.54,
+      "line_total": 34.54
+    },
+    {
+      "description": "Shubh Labh Puja Thali Gift Set",
+      "quantity": 12,
+      "unit_price": 133.74,
+      "line_total": 1604.88
+    },
+    {
+      "description": "Shubh Labh Diya Set Single",
+      "quantity": 12,
+      "unit_price": 31.67,
+      "line_total": 380.04
+    },
+    {
+      "description": "Utsav Ghar Gift Wrap Single",
+      "quantity": 12,
+      "unit_price": 35.84,
+      "line_total": 430.08
+    },
+    {
+      "description": "Kesari Gift Wrap Gift Set",
+      "quantity": 1,
+      "unit_price": 130.37,
+      "line_total": 130.37
+    },
+    {
+      "description": "Deepmala Puja Thali Gift Set",
+      "quantity": 6,
+      "unit_price": 114.04,
+      "line_total": 684.24
+    },
+    {
+      "description": "Shubh Labh LED String Lights Single",
+      "quantity": 6,
+      "unit_price": 30.79,
+      "line_total": 184.74
+    },
+    {
+      "description": "Deepmala Puja Thali Gift Set #2",
+      "quantity": 6,
+      "unit_price": 52.7,
+      "line_total": 316.2
+    },
+    {
+      "description": "Deepmala Dhoop Sticks Gift Set",
+      "quantity": 6,
+      "unit_price": 180.18,
+      "line_total": 1081.08
+    },
+    {
+      "description": "Utsav Ghar Torans Pack of 12",
+      "quantity": 6,
+      "unit_price": 143.8,
+      "line_total": 862.8
+    },
+    {
+      "description": "Deepmala LED String Lights Single",
+      "quantity": 6,
+      "unit_price": 29.12,
+      "line_total": 174.72
+    }
+  ]
+}

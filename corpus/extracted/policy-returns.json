@@ -1,0 +1,23 @@
+{
+  "readable": true,
+  "policy_name": "GOODS RETURN AND CREDIT NOTE POLICY",
+  "effective_from": "2025-01-01",
+  "rules": [
+    {
+      "heading": "1. Scope",
+      "statement": "Applies to all goods received from suppliers under a current supply agreement."
+    },
+    {
+      "heading": "2. Window",
+      "statement": "Returns are raised within the returns window stated in the applicable supply agreement. Where no agreement is in force on the date of receipt, no return may be raised and the matter is escalated to the owner."
+    },
+    {
+      "heading": "3. Condition",
+      "statement": "Goods must be in original packaging and, for perishables, within one third of remaining shelf life."
+    },
+    {
+      "heading": "4. Credit",
+      "statement": "Credit notes are applied against the next invoice from the same supplier, never refunded in cash."
+    }
+  ]
+}

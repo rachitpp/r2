@@ -1,0 +1,26 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-06",
+  "supplier_name": "Jhat Pat Foods",
+  "invoice_date": "2025-07-08",
+  "purchase_order_ref": "1764",
+  "currency": "INR",
+  "subtotal": 2783.73,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Rasoi Rani Soup Mix Value Pack",
+      "quantity": 13,
+      "unit_price": 155.97,
+      "line_total": 2027.61
+    },
+    {
+      "description": "Mumbai Tiffin Idli Batter Value Pack",
+      "quantity": 12,
+      "unit_price": 63.01,
+      "line_total": 756.12
+    }
+  ]
+}

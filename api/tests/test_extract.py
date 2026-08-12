@@ -123,6 +123,50 @@ class TestValidateOtherTypes:
         )
         assert any("subtotal is not a number" in e for e in errors)
 
+    def test_an_invoice_shaped_like_the_real_corpus_validates(self):
+        """The shape every generated invoice actually has: a PO number and a
+        subtotal, and no invoice number, tax line or grand total anywhere in
+        the document.
+
+        This is what the corpus produces, and requiring the three absent fields
+        failed all 10 invoices on the first real run while their line items came
+        back 63/63 exact. The schema was describing an invoice nobody generated.
+        """
+        data = {
+            "readable": True,
+            "invoice_number": None,
+            "purchase_order_ref": "5316",
+            "invoice_date": "2026-06-30",
+            "subtotal": 2119.5,
+            "tax_total": None,
+            "total": None,
+            "line_items": [
+                {
+                    "description": "Green Konkan Tomatoes Grade A",
+                    "quantity": 54,
+                    "unit_price": 39.25,
+                    "line_total": 2119.5,
+                }
+            ],
+        }
+        assert extract.validate("invoice", data) == []
+
+    def test_a_present_but_non_numeric_total_is_still_an_error(self):
+        """Optional is not unchecked. A document that DOES carry a total and
+        yields a string for it is a real extraction failure, and relaxing the
+        requirement must not swallow that."""
+        errors = extract.validate(
+            "invoice",
+            {
+                "readable": True,
+                "invoice_date": "2026-06-30",
+                "subtotal": 100.0,
+                "total": "one hundred and five",
+                "line_items": [],
+            },
+        )
+        assert any("total is present but not a number" in e for e in errors)
+
     def test_catalog_needs_an_effective_date(self):
         errors = extract.validate(
             "catalog", {"readable": True, "effective_from": None, "prices": []}
@@ -227,15 +271,33 @@ class TestRunner:
         version passed tmp_path, which meant the out-of-place check was what
         made it pass and the stub guard was never exercised at all — a probe
         that could not fail, which is the class this repo keeps finding.
+
+        This asserts the directory is UNCHANGED, not that it is empty. Two of
+        the three assertions here used to say "empty", which meant they could
+        only hold until extraction was first run for real — on 2026-08-12 they
+        started failing on a repo where nothing was wrong. A check whose
+        meaning depends on work not having happened yet expires the moment it
+        does, and it fails pointing at the wrong thing.
+
+        Contents are compared, not filenames: with the directory now populated,
+        a stub overwriting a real extraction in place keeps every name intact.
         """
         canonical = corpus_extract.CORPUS / "extracted"
-        before = sorted(canonical.glob("*.json")) if canonical.is_dir() else []
+        report = corpus_extract.CORPUS / "EXTRACT.csv"
+
+        def snapshot() -> dict[str, str]:
+            if not canonical.is_dir():
+                return {}
+            return {p.name: p.read_text() for p in sorted(canonical.glob("*.json"))}
+
+        before = snapshot()
+        report_before = report.read_text() if report.exists() else None
 
         assert corpus_extract.run(argparse_namespace(provider="stub", out=None)) == 1
 
-        after = sorted(canonical.glob("*.json")) if canonical.is_dir() else []
-        assert after == before, "the stub wrote into corpus/extracted/"
-        assert not (corpus_extract.CORPUS / "EXTRACT.csv").exists()
+        assert snapshot() == before, "the stub wrote into corpus/extracted/"
+        report_after = report.read_text() if report.exists() else None
+        assert report_after == report_before, "the stub wrote EXTRACT.csv"
 
     def test_it_writes_one_file_per_document(self, tmp_path):
         corpus_extract.run(argparse_namespace(provider="stub", out=str(tmp_path)))

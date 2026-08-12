@@ -1,0 +1,183 @@
+{
+  "readable": true,
+  "supplier_code": "SUP-01",
+  "supplier_name": "Sahyadri Agro Traders",
+  "effective_from": "2025-04-01",
+  "currency": "INR",
+  "prices": [
+    {
+      "product_name": "Ratnagiri Alphonso Mangoes Loose",
+      "product_code": "FNV-0001",
+      "unit_price": 17.5,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Potatoes Grade A",
+      "product_code": "FNV-0002",
+      "unit_price": 15.07,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Tomatoes 500 g Pack",
+      "product_code": "FNV-0003",
+      "unit_price": 22.4,
+      "case_pack": null
+    },
+    {
+      "product_name": "Ratnagiri Bottle Gourd 500 g Pack",
+      "product_code": "FNV-0004",
+      "unit_price": 17.46,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Bananas 1 kg Pack",
+      "product_code": "FNV-0005",
+      "unit_price": 91.92,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Okra Loose",
+      "product_code": "FNV-0006",
+      "unit_price": 18.54,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Potatoes Loose",
+      "product_code": "FNV-0007",
+      "unit_price": 10.98,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Bottle Gourd Grade A",
+      "product_code": "FNV-0009",
+      "unit_price": 43.31,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Lemons 500 g Pack",
+      "product_code": "FNV-0010",
+      "unit_price": 35.48,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Tomatoes Grade A",
+      "product_code": "FNV-0011",
+      "unit_price": 39.25,
+      "case_pack": null
+    },
+    {
+      "product_name": "Ratnagiri Onions Farm Fresh",
+      "product_code": "FNV-0013",
+      "unit_price": 25.84,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Cauliflower Farm Fresh",
+      "product_code": "FNV-0014",
+      "unit_price": 38.64,
+      "case_pack": null
+    },
+    {
+      "product_name": "Ratnagiri Onions Farm Fresh #2",
+      "product_code": "FNV-0015",
+      "unit_price": 18.22,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Tomatoes Grade A",
+      "product_code": "FNV-0016",
+      "unit_price": 47.48,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Coriander Farm Fresh",
+      "product_code": "FNV-0017",
+      "unit_price": 17.91,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Okra Loose #2",
+      "product_code": "FNV-0018",
+      "unit_price": 25.72,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Bananas 500 g Pack",
+      "product_code": "FNV-0019",
+      "unit_price": 26.2,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Alphonso Mangoes 500 g Pack",
+      "product_code": "FNV-0020",
+      "unit_price": 45.55,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Cauliflower Grade A",
+      "product_code": "FNV-0021",
+      "unit_price": 37.58,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Cauliflower Farm Fresh",
+      "product_code": "FNV-0022",
+      "unit_price": 21.61,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Bananas Farm Fresh",
+      "product_code": "FNV-0024",
+      "unit_price": 27.1,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Onions Grade A",
+      "product_code": "FNV-0025",
+      "unit_price": 35.11,
+      "case_pack": null
+    },
+    {
+      "product_name": "Ratnagiri Bottle Gourd Grade A",
+      "product_code": "FNV-0026",
+      "unit_price": 24.19,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Potatoes Farm Fresh",
+      "product_code": "FNV-0027",
+      "unit_price": 14.58,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Lemons Farm Fresh",
+      "product_code": "FNV-0029",
+      "unit_price": 34.19,
+      "case_pack": null
+    },
+    {
+      "product_name": "Sahyadri Onions 500 g Pack",
+      "product_code": "FNV-0030",
+      "unit_price": 29.52,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Bottle Gourd Farm Fresh",
+      "product_code": "FNV-0031",
+      "unit_price": 28.82,
+      "case_pack": null
+    },
+    {
+      "product_name": "Krishi Bazaar Spinach Grade A",
+      "product_code": "FNV-0032",
+      "unit_price": 40.31,
+      "case_pack": null
+    },
+    {
+      "product_name": "Green Konkan Bananas Grade A",
+      "product_code": "FNV-0033",
+      "unit_price": 46.56,
+      "case_pack": null
+    }
+  ]
+}

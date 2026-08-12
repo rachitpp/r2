@@ -1,0 +1,26 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-03",
+  "supplier_name": "Gokul Dairy Distributors",
+  "invoice_date": "2025-12-16",
+  "purchase_order_ref": "14107",
+  "currency": "INR",
+  "subtotal": 5380.32,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Gokul Butter Pouch",
+      "quantity": 48,
+      "unit_price": 39.67,
+      "line_total": 1904.16
+    },
+    {
+      "description": "Amrit Dhara Butter Pouch",
+      "quantity": 72,
+      "unit_price": 48.28,
+      "line_total": 3476.16
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-05",
+  "supplier_name": "Bhusari Foods Pvt Ltd",
+  "invoice_date": "2026-01-30",
+  "purchase_order_ref": "9119",
+  "currency": "INR",
+  "subtotal": 3338.76,
+  "tax_total": null,
+  "total": 3338.76,
+  "line_items": [
+    {
+      "description": "Nagpur Crisp Masala Peanuts Sharing Pack",
+      "quantity": 30,
+      "unit_price": 24.56,
+      "line_total": 736.80
+    },
+    {
+      "description": "Chivda Ghar Aloo Bhujia Multipack #2",
+      "quantity": 24,
+      "unit_price": 23.12,
+      "line_total": 554.88
+    },
+    {
+      "description": "Bhusari Masala Peanuts 150 g",
+      "quantity": 18,
+      "unit_price": 31.22,
+      "line_total": 561.96
+    },
+    {
+      "description": "Bhusari Sev Sharing Pack",
+      "quantity": 42,
+      "unit_price": 35.36,
+      "line_total": 1485.12
+    }
+  ]
+}

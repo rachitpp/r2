@@ -1,0 +1,40 @@
+{
+  "readable": true,
+  "supplier_code": "SUP-08",
+  "supplier_name": "Mithas Confectioners",
+  "document_kind": "agreement",
+  "effective_from": "2025-07-29",
+  "effective_to": null,
+  "clauses": [
+    {
+      "clause": "payment_terms_days",
+      "clause_number": "3",
+      "value": 60,
+      "verbatim": "Net 60 days from invoice date."
+    },
+    {
+      "clause": "lead_time_days",
+      "clause_number": "4",
+      "value": 10,
+      "verbatim": "10 days from purchase order to delivery."
+    },
+    {
+      "clause": "min_order_value",
+      "clause_number": "5",
+      "value": 10000,
+      "verbatim": "INR 10,000.00 per purchase order."
+    },
+    {
+      "clause": "volume_discount_pct",
+      "clause_number": "6",
+      "value": 3,
+      "verbatim": "3.00% on orders above the minimum."
+    },
+    {
+      "clause": "returns_window_days",
+      "clause_number": "7",
+      "value": 30,
+      "verbatim": "30 days from receipt."
+    }
+  ]
+}

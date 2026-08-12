@@ -1,0 +1,26 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-03",
+  "supplier_name": "Gokul Dairy Distributors",
+  "invoice_date": "2026-05-31",
+  "purchase_order_ref": "10305",
+  "currency": "INR",
+  "subtotal": 1282.14,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Chitale Wadi Shrikhand Twin Pack",
+      "quantity": 6,
+      "unit_price": 33.89,
+      "line_total": 203.34
+    },
+    {
+      "description": "Chitale Wadi Lassi Twin Pack",
+      "quantity": 24,
+      "unit_price": 44.95,
+      "line_total": 1078.80
+    }
+  ]
+}

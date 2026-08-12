@@ -1,0 +1,26 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-10",
+  "supplier_name": "Softwrap Paper Mills",
+  "invoice_date": "2026-02-02",
+  "purchase_order_ref": "14562",
+  "currency": "INR",
+  "subtotal": 448.82,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Softwrap Napkins Single",
+      "quantity": 7,
+      "unit_price": 34.94,
+      "line_total": 244.58
+    },
+    {
+      "description": "Panchali Aluminium Foil Single #2",
+      "quantity": 6,
+      "unit_price": 34.04,
+      "line_total": 204.24
+    }
+  ]
+}

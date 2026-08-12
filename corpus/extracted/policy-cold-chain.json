@@ -1,0 +1,19 @@
+{
+  "readable": true,
+  "policy_name": "COLD CHAIN AND PERISHABLEHANDLING",
+  "effective_from": "2025-09-01",
+  "rules": [
+    {
+      "heading": "1.Dairy",
+      "statement": "Received between 2°C and 6°C. Any consignment outside that range at the point of receipt is refused entire."
+    },
+    {
+      "heading": "2.Fresh produce",
+      "statement": "Inspected on receipt; wastage above 5% of the consignment is raised as a return the same day."
+    },
+    {
+      "heading": "3. Recording",
+      "statement": "Receiving temperature is written on the delivery note and retained with the invoice."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-10",
+  "supplier_name": "Softwrap Paper Mills",
+  "invoice_date": "2026-04-25",
+  "purchase_order_ref": "15385",
+  "currency": null,
+  "subtotal": 140.16,
+  "tax_total": null,
+  "total": 140.16,
+  "line_items": [
+    {
+      "description": "Neatfold Toilet Rolls Single",
+      "quantity": 3,
+      "unit_price": 46.72,
+      "line_total": 140.16
+    }
+  ]
+}

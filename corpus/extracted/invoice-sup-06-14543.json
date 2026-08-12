@@ -1,0 +1,38 @@
+{
+  "readable": true,
+  "invoice_number": "invoice-sup-06-14543",
+  "supplier_code": "SUP-06",
+  "supplier_name": "Jhat Pat Foods",
+  "invoice_date": "2026-02-01",
+  "purchase_order_ref": null,
+  "currency": "INR",
+  "subtotal": 10421.68,
+  "tax_total": null,
+  "total": null,
+  "line_items": [
+    {
+      "description": "Instant Ghar Upma Mix Family. Pack",
+      "quantity": 6,
+      "unit_price": 71.51,
+      "line_total": 429.06
+    },
+    {
+      "description": "Rasoi Rani Gravy Base Standard",
+      "quantity": 8,
+      "unit_price": 51.08,
+      "line_total": 408.64
+    },
+    {
+      "description": "Jhat Pat Dosa Batter Family Pack",
+      "quantity": 77,
+      "unit_price": 79.02,
+      "line_total": 6084.54
+    },
+    {
+      "description": "Jhat Pat Frozen Parathas Multipack",
+      "quantity": 84,
+      "unit_price": 41.66,
+      "line_total": 3499.44
+    }
+  ]
+}

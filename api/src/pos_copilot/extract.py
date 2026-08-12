@@ -273,12 +273,31 @@ def validate(doc_type: str, data: dict) -> list[str]:
                 )
 
     elif doc_type == "invoice":
-        if not data.get("invoice_number"):
-            errors.append("invoice_number is required")
+        # invoice_number, tax_total and total were required here until
+        # 2026-08-12, and NOT ONE of the 40 generated invoices contains any of
+        # them. The generator writes a PO number, a subtotal and a line-item
+        # table; there is no invoice number, no tax line and no grand total in
+        # the documents at all. So all 10 invoices failed validation on the
+        # first real run while their content was extracted perfectly — 63/63
+        # line items and 10/10 subtotals exact against the database.
+        #
+        # The schema was describing an invoice nobody generated. It survived
+        # because the stub returns invented values that happen to include those
+        # fields, so every test passed against a shape the corpus never had.
+        #
+        # Kept in the PROMPT deliberately rather than removed: asked for three
+        # fields that do not exist, the model returned null for all three
+        # instead of inventing plausible numbers. That is a live hallucination
+        # check on absent fields, it passes 10/10, and removing it from the
+        # prompt would both discard the check and void 40 cached responses.
+        # Requiring them HERE is what was wrong.
         errors += _check_date(data.get("invoice_date"), "invoice_date", required=True)
-        for money in ("subtotal", "tax_total", "total"):
-            if not _is_number(data.get(money)):
-                errors.append(f"{money} is not a number: {data.get(money)!r}")
+        if not _is_number(data.get("subtotal")):
+            errors.append(f"subtotal is not a number: {data.get('subtotal')!r}")
+        for money in ("tax_total", "total"):
+            value = data.get(money)
+            if value is not None and not _is_number(value):
+                errors.append(f"{money} is present but not a number: {value!r}")
         errors += _check_rows(
             data.get("line_items"),
             "line_items",

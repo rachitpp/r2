@@ -1,0 +1,38 @@
+{
+  "readable": true,
+  "invoice_number": null,
+  "supplier_code": "SUP-07",
+  "supplier_name": "Nilgiri Beverage Company",
+  "invoice_date": "2026-04-19",
+  "purchase_order_ref": "4672",
+  "currency": "INR",
+  "subtotal": 5055.18,
+  "tax_total": null,
+  "total": 5055.18,
+  "line_items": [
+    {
+      "description": "Coolwave Nimbu Pani 1.25 L",
+      "quantity": 34,
+      "unit_price": 60.32,
+      "line_total": 2050.88
+    },
+    {
+      "description": "Aamras Jaljeera 2 L",
+      "quantity": 12,
+      "unit_price": 49.39,
+      "line_total": 592.68
+    },
+    {
+      "description": "Sharbat Co Nimbu Pani 250 ml",
+      "quantity": 8,
+      "unit_price": 12.44,
+      "line_total": 99.52
+    },
+    {
+      "description": "Chai Adda Instant Coffee Refill",
+      "quantity": 18,
+      "unit_price": 128.45,
+      "line_total": 2312.10
+    }
+  ]
+}
