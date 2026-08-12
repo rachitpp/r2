@@ -78,6 +78,32 @@ pinned versions in `PIPELINE.json`:
 - It is **stable run-to-run on a single machine**: re-parsing on Windows twice
   gives identical output. This is a platform split, not randomness.
 
+**A third platform, measured 2026-08-12: macOS 25.5 reads `2/4`, and the OCR
+document is the news.** Of the four-document sample, `catalog-sup-01-20251103` and
+`contract-sup-01-20250629` match; the other two do not.
+
+- **`contract-sup-01-20241130` differs, and it never had before.** It is the
+  scanned, no-text-layer document, and it was one of the three originals published
+  here as platform-stable. One character: RapidOCR reads `## 6. Volume discount` on
+  Linux and `## 6.Volume discount` here, dropping the space. **So the OCR path is
+  not the robust part — it survived the one platform pair that had been tried, and
+  fails on the second.** The claim was "these three are stable"; what was true is
+  "these three are stable across Linux and Windows".
+- **`invoice-sup-12-5436` differs in a different way than on Windows.** Windows
+  lost the block to the bare word `Supplier`; macOS keeps every word and loses the
+  *structure*, turning a 4-row markdown header table into 22 loose lines, and moving
+  the `54,681.92` total. Same document, same cause, two unlike symptoms.
+
+**Neither output is wrong.** Read as documents they are both fine. What fails is
+byte-identity, which is the claim being made — and the failures are what you would
+expect from a threshold decision landing differently in the last decimal place: is
+this pixel gap a space, do these boxes form a table.
+
+**None of this is on the critical path**, and it should not be allowed to look like
+it is. `corpus/parsed/` is committed, extraction reads the committed files, and no
+Phase 2 done-condition needs a re-parse. The one thing a reference-environment run
+would fix is SUP-11's heading marker, below.
+
 **`verify-parse` could not see this, and its sample was why.** It re-parsed three
 documents and all three happen to be platform-stable, so the check passed on a
 machine that reproduced only 34 of 38 — the recurring class, in a check written

@@ -52,14 +52,20 @@ written**: `supplier_term_clauses` would regenerate `schema.md`, change the SQL
 prompt fingerprint and void 147 cached responses for ~$3.30, and no Phase 2
 done-condition needs a table. It belongs in Phase 3, where retrieval queries it.
 
-**What still gates the first paid run: one thing, the canonical Vertex terms**
-(narrowed three times, still not resolved — it needs a browser, not a fetcher).
-The other two closed on 2026-08-12. **Data residency:** accepted with a tripwire,
-written up in ADR-0009. **GCP budget alert: created**, $15/month with thresholds at
-50/90/100% actual plus 100% forecasted, scoped to this project; reasoning in
-`PLAN.md` → *Money*. Reported by the project owner rather than verified from here —
-the Cloud Billing API is still not enabled, so nothing in this repo can read the
-console.
+**Nothing gates the first paid run any more. All three closed 2026-08-12.**
+**Budget alert: created**, $15/month, thresholds 50/90/100% actual plus 100%
+forecasted (reported by the project owner — the Cloud Billing API is still not
+enabled, so nothing here can read the console). **Data residency:** accepted with a
+tripwire. **Canonical Vertex terms:** accepted for a synthetic corpus, with the same
+tripwire — a no-training clause protects confidential content and there is none
+here, so reading the terms is owed before a *real* document is sent, not before 40
+generated ones. Both write-ups are in ADR-0009.
+
+**What that ADR now concedes, and it should not be lost:** its free-tier/paid split
+was justified on data terms, and for a synthetic corpus that justification is thin.
+`EXTRACT` is on Vertex for rate limits and a service-account credential, not for
+data protection. **The run is unblocked; the reasoning behind the ADR is weaker
+than it reads.**
 
 ### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
@@ -117,7 +123,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **One thing now blocks the first paid run: the canonical Vertex terms.** The budget alert ($15/month) and data residency (accepted with a tripwire, ADR-0009) both closed 2026-08-12 |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Nothing blocks the first paid run — all three gates closed 2026-08-12** (budget alert created; residency and the Vertex terms both accepted with a synthetic-corpus tripwire, ADR-0009). What is missing is a service-account credential, which is not a decision |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -174,10 +180,16 @@ _What didn't:_ **the extraction run — but two of its three gates closed, and o
 the Vertex terms are left.** **Data residency:** accepted with a tripwire
 (ADR-0009). **Budget alert: decided at $15/month and created**, with the rule now
 in `PLAN.md` → *Money*, which is where `PROGRESS` had been citing it from all along
-without it being there. **The canonical Vertex terms are still open** and need a
-browser. Three further open questions closed alongside: available RAM (8 GB), the
-Windows env-var placement, and perishables. **Phase 2 stays at 4 of 7** — decisions
-are not done-conditions, and nothing here was measured.
+without it being there. **The canonical Vertex terms closed too**, accepted for a
+synthetic corpus with the same tripwire — so **all three gates are down and the run
+is unblocked.** Three further open questions closed alongside: available RAM
+(8 GB), the Windows env-var placement, and perishables.
+
+**`verify-parse` was run on this Mac and read 2/4** — see below; it is not on the
+critical path and nothing was changed in response to it.
+
+**Phase 2 stays at 4 of 7** — decisions are not done-conditions, and nothing here
+was measured.
 _Anything half-finished someone would trip over:_ No. Documentation only, committed
 and pushed.
 _Is the system in a working state?_ **Yes, with the verification stated exactly.**
@@ -457,22 +469,24 @@ are listed under *Named debt* and each is cheap to do **inside** a later phase t
 touches the prompt anyway. Reopening it on its own is what the last three sessions
 did, at ~$9.83 and diminishing returns.
 
-**Extraction is built and has never been run. Everything left in Phase 2 is
-downstream of running it, and exactly one thing still gates it:**
+**Extraction is built and has never been run. Nothing gates it any more — all
+three gates closed 2026-08-12. Run it.** In order, and the first step is not
+optional:
 
-1. **The canonical Vertex terms**, which ADR-0009 rests on. Three fetches on
-   2026-08-11 narrowed it and did not close it: the data-governance page is
-   client-rendered and returns navigation only, so **it needs a browser rather than
-   a tool.** Look for the **"Zero Data Retention"** section that page's title
-   advertises, and **Appendix 4 (Specific Products)** of the Cloud Data Processing
-   Addendum. See *Open questions* for why the CDPA's §5.2 purpose limitation is
-   weaker than what the ADR claims. **If the terms disagree with ADR-0009, the ADR
-   is void** — which is why this one is worth doing properly rather than waving
-   through.
+1. **`make extract EXTRACT_ARGS="--limit 5"`, then read all five by hand** before
+   the full 40. The stage-1 rule was written for evals and the reason carries
+   exactly: a schema cannot be validated by inspection, only by use. The first
+   staged run of the SQL set scored 0/4 and none of it was the model.
+2. **The full 40** — ~$0.80 under a 60-call / $2.00 ceiling. Raw output into
+   `corpus/extracted/`, **never hand-edited** (rule 8); fixes into
+   `corpus/corrections/` with a note per fix.
+3. **Gold set — label all 40**, then conditions 2, 3 and 5.
 
-**Both other gates closed 2026-08-12.** Data residency: accepted with a tripwire
-(ADR-0009). Budget alert: created at $15/month, thresholds 50/90/100% actual plus
-100% forecasted, this project only — reasoning in `PLAN.md` → *Money*.
+**Credentials are the only thing standing in the way**, and they are not a
+decision: a Vertex service-account JSON, with `GOOGLE_APPLICATION_CREDENTIALS`
+pointing at it in `.env`. That variable was missing from `.env.example` until
+2026-08-12 — the one variable the paid path needs was the one variable nothing
+documented.
 
 Then, in order:
 
@@ -815,10 +829,16 @@ These are unresolved by design. If you hit one, stop.
   `corpus/sources/` voids the decision and it must be retaken. Written up in
   ADR-0009. **This does not settle the training question**, which is a separate
   clause and still open below.
-- **The canonical Vertex terms.** ADR-0009 rests on "customer data stays out of the
-  foundation model training corpus", confirmed from Google Cloud documentation
-  rather than the terms themselves. If they disagree, ADR-0009 is void. Read them
-  before the first extraction run.
+- ~~**The canonical Vertex terms.**~~ **No longer blocking, decided 2026-08-12:
+  accepted for a synthetic corpus with a tripwire, exactly like residency above.**
+  A no-training clause protects confidential content and there is none here — 40
+  generated documents about invented suppliers. **Reading the terms is still owed
+  before a real document is sent**, and any document not generated by this repo
+  entering `corpus/sources/` voids the acceptance. It also costs ADR-0009 something
+  real, recorded there: the free-tier/paid split was justified on data terms, so on
+  a synthetic corpus `EXTRACT` is on Vertex for rate limits and a credential, not
+  for data protection. **The research below stays** — it is what someone with a
+  browser needs, and it is still unfinished.
   **Retried 2026-08-09 and narrowed, not resolved:** `cloud.google.com/terms/service-terms`
   *does* load now — the earlier "would not load" is stale — but the fetched text
   carries no Vertex or generative-AI clause at all, only data location (§1) and
