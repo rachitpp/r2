@@ -118,7 +118,73 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 
 ## Last session
 
-_Date:_ 2026-08-11
+_Date:_ 2026-08-12
+_What landed:_ **The Phase 2 branch reached `master`, and the state document that
+described Phase 2 turned out to be two commits behind it.** No model calls, no
+spend, no code and no artifacts changed.
+
+### The branch was merged, and the repo is one branch again
+
+`phase-2-corpus-docs` was 9 commits ahead of `master` and 0 behind, so the merge
+was a fast-forward: `c7e9ef6..48151b3`, 36 files, +3041/−288. Pushed. Then both
+merged branches were deleted local and remote — `phase-2-corpus-docs` and the
+`codespace-…` branch already absorbed by PR #1 — and the remotes pruned. **The
+repo is now a single branch**, `master`, local and remote in sync.
+
+### `PROGRESS.md` was describing a phase two commits behind the one in the repo
+
+Nine claims here and one heading in `KNOWN_ISSUES.md` contradicted either the repo
+or this file's own other paragraphs. The cause is in the history: **48151b3 changed
+the artifacts and `KNOWN_ISSUES.md` and did not touch `PROGRESS.md`**, so the file
+kept describing the state before its own session's last three commits. Reconciled
+in `72f65ce`; the individual corrections are in that commit's message and in the
+sections above, corrected in place.
+
+Worth naming, because it is this project's recurring class and this is the fourth
+instance of it in two sessions: **the previous session's own entry says all four
+state documents had gone stale and that `HANDOFF.md` exists precisely so that can
+be corrected.** It then went stale again, in the same session, by the commits that
+closed the session. Being the file that warns about staleness confers nothing.
+
+The one that would have cost the most: **"`verify-parse` passes" was listed as
+evidence the system was green**, after that check had been deliberately rewritten
+to fail outside the reference environment. Read as a formality, it invites the next
+reader to treat a correct failure as a broken repo.
+
+### `make` does not run on this machine, and nothing said so
+
+macOS 25.5, and every Make target dies before its first line with *"You have not
+agreed to the Xcode license agreements."* `sudo xcodebuild -license` is owed before
+`make` is usable here. The underlying scripts run fine directly through `uv`, which
+is how everything below was verified.
+
+**Consequence for the parse layer: this is a third platform** — after the Linux
+codespace and the Windows checkout — **and it has not been measured.** `make ingest`
+and `make verify-parse` have never run here, so whether macOS reproduces the
+reference parse is unknown, not assumed either way. Entry 2 of `KNOWN_ISSUES.md`
+applies: run `verify-parse` before trusting any parse produced on this machine.
+
+_What didn't:_ **the extraction run, again.** None of its three gates moved, because
+none of them is mine: the GCP budget alert, data residency for `location=global`,
+and the canonical Vertex terms. Phase 2 stays at 4 of 7.
+_Anything half-finished someone would trip over:_ No. Documentation only, committed
+and pushed.
+_Is the system in a working state?_ **Yes, with the verification stated exactly.**
+What ran here: the 24 corpus tests (`test_corpus_timeline`, `test_corpus_checksums`)
+pass, `corpus_checksums --check` reports 82 artifacts matching with none unlisted,
+and `git add --renormalize` produces no byte changes. **What did not run here, and
+is therefore carried forward from 2026-08-11 rather than re-confirmed:** the full
+suite, ruff, `web-check`, and `verify-parse` — the first three because `make` is
+blocked, the last because this is not the reference environment. Neither edited file
+is checksummed or asserted against, so nothing downstream of them could have moved.
+
+## Session before this one — 2026-08-11
+
+**Kept rather than pruned**, against this file's own "delete resolved items" rule,
+because its findings are load-bearing: the parse platform split, four checks that
+could not fail, and the newline defect's third and fourth instances. Prune it once
+extraction has run and Phase 2 closes.
+
 _What landed:_ The environment stood up on Windows, and **four checks that were
 not running turned out to be wearing the label of checks that were.** No model
 calls, no spend.
