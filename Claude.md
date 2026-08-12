@@ -8,8 +8,10 @@ Solo portfolio project. Public GitHub. Free tier only — no paid model calls.
 Two apps: `api/` (FastAPI, Python, uv) and `web/` (Next.js + Tailwind, npm).
 The API is the only boundary between them.
 
-**Current phase: 3 — Grounded document Q&A.** Phase 2's seven done-conditions all
-hold as of 2026-08-12; the corpus is generated, parsed, extracted and scored.
+**Current phase: 4 — Procurement agent + approval queue.** Phases 0–3 are closed;
+Phase 3 finished 2026-08-13 with demo beat 2 running in the browser. **Rule 12
+gates the start: the approval card and audit log wireframes get agreed before any
+component is written.**
 
 ## Read these
 

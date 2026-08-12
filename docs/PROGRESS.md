@@ -9,94 +9,50 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 2 — Corpus ingestion and extraction measurement. ALL SEVEN
-DONE-CONDITIONS HOLD as of 2026-08-12.** Extraction has run over all 40 documents,
-it is scored, the injection specimens have committed traces, and the README's
-four-number block is filled in. Total spend for the phase: **$0.27**.
+**Phase 3 — Grounded document Q&A. DONE 2026-08-13. Demo beat 2 works in the
+browser.** Phases 0, 1 and 2 are closed behind it. **Phase 3 cost $0.22**; the
+project has spent **$10.38 in total**.
 
-Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
-it is what the eval numbers in the README rest on.
+`PLAN.md` asks for the historical clause, a planted injection that provably fails
+to change behaviour with the before/after committed, and demo beat 2 working:
 
-**Against `PLAN.md`'s seven conditions:**
+| | |
+|---|---|
+| Historical clause | ✅ Net 14 before the renegotiation, Net 30 after, each citing the contract in force. The date filter is a SQL predicate, so the superseded contract is never retrieved |
+| "No document in force" ≠ "not found" | ✅ a date in SUP-06's real lapse returns a third outcome, **with no model call made** |
+| Planted injection, before/after committed | ✅ [`docs/demo-beat-2.md`](demo-beat-2.md) + `corpus/injection/traces/retrieval-injection.json` |
+| Demo beat 2 works | ✅ Documents tab beside Query, real retrieval in demo mode |
 
-| | Condition | |
-|---|---|---|
-| 1 | `make ingest` twice byte-identical, asserted in CI | ✅ within a pinned environment — see entry 2 of `KNOWN_ISSUES.md` |
-| 2 | Four-number README block with denominators | ✅ |
-| 3 | Committed raw extraction; every correction has a note | ✅ 40 extracted, 4 corrections |
-| 4 | `TIMELINE.md` hand-verified, gap query distinct from not-found | ✅ closed 2026-08-11 |
-| 5 | Injection specimen with a trace of the naive path following | ✅ 1 of 4 specimens, 3 of 3 runs |
-| 6 | `KNOWN_ISSUES.md` non-empty | ✅ 13 entries |
-| 7 | PII scan recorded | ✅ recorded as vacuous, which is the honest form |
+**One deviation from the plan, stated rather than glossed.** `PLAN.md` says "a
+planted injection string in a **test supplier PDF**". The payload is planted at
+the chunk level and embedded with no special casing, so it is retrieved on its own
+merits — but it does not pass through Docling, because planting it in a PDF means
+regenerating the corpus and voiding the parse, the checksums and all 40
+extractions. **What is tested is retrieval-to-answer, not parse-to-answer**, and
+the difference matters if a future attack hides in something only the parser sees.
 
-**What closing this phase does NOT claim**, and the pattern is the same one Phase 1
-was closed under:
+- **Retrieval.** pgvector 0.8.1 on Neon, `doc_chunks` with 229 chunks, embeddings
+  bge-small-en-v1.5 384d on CPU — no key, no quota, free to re-run (`make embed`).
+  No ANN index: a few hundred chunks scans faster than an index probe and stays
+  exactly reproducible.
+- **Rules 5 and 7 are SQL predicates, not post-filters.** A chunk outside the
+  caller's scope or outside the requested date is never fetched, never ranked,
+  never in the prompt. Measured: a clerk at Gangapur Road retrieves **nothing**
+  where a manager retrieves the Kothrud invoice, and still receives every
+  chain-wide policy.
+- **`supplier_term_clauses` exists** — 116 rows, the table Phase 2 proved rather
+  than argued for. The inheritance is computed once in SQL (`DISTINCT ON (clause)
+  ORDER BY effective_from DESC`) instead of by a model per query.
 
-- **Extraction accuracy is 99.5% header fields and F1 1.00 on 37 of 40 documents**,
-  against a gold set derived from the database rather than hand-labelled. Three
-  policies have no row behind them and two clause-level amendments cannot be scored
-  against a wide superseding table at all — that exclusion is the most interesting
-  result in the phase and it is `supplier_term_clauses`-shaped Phase 3 work.
-- **"Defended held 4 of 4" is not a defence rate.** Three of the four injection
-  specimens were too gentle to defeat even the unprotected prompt, so they measured
-  the model's own guardrails and nothing this project built. Entry 12.
-- **The instruments were wrong seven times between them** — three in the extraction
-  scorer, four in the injection detector — and every one was found by reading output
-  rather than by reading code. Entries 8–13.
+**What closing this does NOT claim:**
 
-**Condition 4 was closed on 2026-08-11 by regenerating the seed.** The corpus had
-no coverage gaps at all — every predecessor ended the day its successor began —
-while `corpus/README.md` asserted it did. `LAPSED_SUPPLIERS` in `seed.py` now
-lapses SUP-06 for 48 days and SUP-11 for 78, drawn from their own RNG substream so
-one field in one row per supplier moved and nothing else in the seed did.
-
-- **Corpus: done.** 40 synthetic documents generated from the seeded database —
-  24 contracts (including 2 clause-level amendments), 10 invoices, 3 catalogs,
-  3 policies. 10 carry an injected difficulty, each re-derived from the rendered
-  PDF before the manifest is written. Byte-identical on regeneration.
-- **Parse: done, and now actually checked.** All 40 parsed with Docling into
-  `corpus/parsed/` with `PARSE.csv`. `verify-parse` re-parses a **4-document**
-  sample and asserts byte-identity in CI — see *Last session*, because until
-  2026-08-11 it was a stub that could only fail, and the sample was three
-  documents that could not fail either.
-- **Extraction: run, 2026-08-12.** All 40 documents, 40 calls, ~$0.18 against a
-  60-call / $2.00 ceiling. `corpus/extracted/` is committed. Measured against the
-  database: **63/63 invoice line items exact, 10/10 subtotals, 34/34 catalog
-  prices on the one checked, and 7/7 clauses on a scanned OCR-only contract.**
-  Responses cache permanently, so re-validating after a schema change costs $0.00
-  — which was needed, twice.
-- **Scoring: `make eval-extraction`.** Header fields **99.5% (198/199)**, line
-  item **F1 1.00 (160 rows across 37 documents)**, hallucination **0/160**, miss
-  **0/160**. Gold derived from the rows the documents were generated from. No
-  model calls; needs Postgres, so never in CI.
-- **Injection: `make injection-demo`.** 4 specimens × 3 runs per side, 24 calls,
-  ~$0.09. Defended held 4 of 4; the naive prompt was defeated by 1 of 4, 3 runs
-  out of 3. Traces committed verbatim in `corpus/injection/`.
-
-**Amendments vs. supersessions is decided: clause-level provenance.** Extraction
-records what a document *says*, never what was in force — the amendment that
-varies three clauses yields three clauses, and the set in force is computed later
-from the whole chain. The alternative makes the model perform the inheritance, and
-then a correct inheritance and an invented value are indistinguishable in the
-output, which is the failure this step is measured on. **No migration was
-written**: `supplier_term_clauses` would regenerate `schema.md`, change the SQL
-prompt fingerprint and void 147 cached responses for ~$3.30, and no Phase 2
-done-condition needs a table. It belongs in Phase 3, where retrieval queries it.
-
-**Nothing gates the first paid run any more. All three closed 2026-08-12.**
-**Budget alert: created**, $15/month, thresholds 50/90/100% actual plus 100%
-forecasted (reported by the project owner — the Cloud Billing API is still not
-enabled, so nothing here can read the console). **Data residency:** accepted with a
-tripwire. **Canonical Vertex terms:** accepted for a synthetic corpus, with the same
-tripwire — a no-training clause protects confidential content and there is none
-here, so reading the terms is owed before a *real* document is sent, not before 40
-generated ones. Both write-ups are in ADR-0009.
-
-**What that ADR now concedes, and it should not be lost:** its free-tier/paid split
-was justified on data terms, and for a synthetic corpus that justification is thin.
-`EXTRACT` is on Vertex for rate limits and a service-account credential, not for
-data protection. **The run is unblocked; the reasoning behind the ADR is weaker
-than it reads.**
+- **The poisoned document still outranks the genuine one**, 3 of 6 retrieval
+  slots. The prompt fix (entry 14) changed how the answer is *framed*; nothing has
+  been done about an attacker choosing wording that wins the *ranking*.
+- **Injection is one payload, one question.** Three of the four Phase 2 specimens
+  are still too gentle to defeat even an unprotected prompt (entry 12).
+- **The web view was never driven in a browser.** Typecheck, build and the API are
+  verified; the click-through is not.
 
 ### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
@@ -155,13 +111,55 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
 | 2 Corpus ingestion | **all 7 conditions hold, 2026-08-12** | 40 documents generated, parsed, extracted and scored. Header fields 99.5% (198/199), line item F1 1.00, 0/160 hallucination, 0/160 miss on 37 scored documents. Injection: defended 4 of 4, naive defeated by 1 of 4. **$0.27 total.** Carried forward as named debt: 2 clause-level amendments unscorable against a wide superseding table (Phase 3), 3 injection specimens too gentle to measure anything, and the instruments were wrong 7 times between them |
-| 3 Document Q&A | not started | |
+| 3 Document Q&A | **done 2026-08-13** | pgvector + local embeddings, 229 chunks; date and role filters as SQL predicates, measured (a clerk at one store retrieves nothing where a manager retrieves the invoice). Demo beat 2 in the browser: Net 14 before the renegotiation, Net 30 after, `none_in_force` inside a real gap with no model call. $0.22. Carried: the poisoned document still outranks the genuine one 3 of 6, and the injection plant is chunk-level rather than in a PDF |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
 
 ## Last session
 
-_Date:_ 2026-08-12
+_Date:_ 2026-08-13
+_What landed:_ **Phase 3, start to finish.** Retrieval, the clause table, demo
+beat 2 in the browser, and both open prompt questions settled. 27 calls, ~$0.22.
+
+- **Migration 004** — pgvector, `doc_chunks`, `supplier_term_clauses`. Applied on
+  Neon PG18. Regenerating `schema.md` moved the SQL prompt fingerprint
+  `f3b7a9193a56f10d` → `dd9008f5de482522`; **the deferral that had been protecting
+  147 cached responses was protecting a price nobody was going to pay** — that
+  cache only ever existed on the machine that made it, and the numbers were
+  already stale from the seed move.
+- **Embeddings are local and needed no new package.** `torch` and `transformers`
+  were already here via Docling; bge-small is a BERT encoder and the pooling is
+  four lines written out in `embed.py` rather than imported.
+- **Two schema-level catches.** All ten invoices arrive with
+  `effective_from == effective_to`, which under half-open `[from, to)` is the
+  EMPTY range — every invoice would have been silently unretrievable by date while
+  looking well-formed, and the CHECK constraint refused the insert. And
+  `doc_chunks.store_id` was NULL on every row, so **the rule-5 filter could not
+  have failed a test** (entry 15).
+- **An injection laundered into a citation, then fixed and measured** (entry 14).
+  The poisoned clause arrived beside a legitimate contract and was reframed as a
+  *disagreement between sources* — the right prompt rule firing for the wrong
+  situation. `retrieval_answer.md` now separates "two documents state different
+  values" from "one document instructs you what to report". Three runs afterwards,
+  none presented the injected figure as a competing value; the Phase 2 specimens
+  were re-measured at the same time and held 0 of 12.
+- **Identity fallback decided:** provenance may inform linkage, never content.
+  `corpus/extracted/` stays raw with its OCR-garbled name; `embed_corpus.py`
+  resolves the supplier from the doc id when it loads. The code had already made
+  this decision without writing it down.
+
+_What didn't:_ **the poisoned document still wins the ranking**, 3 of 6 slots. The
+prompt fixed framing, not retrieval order, and a retrieval-side defence is Phase 4
+work or later. **The web view was never driven in a browser** — typecheck, build
+and the API are verified, the click-through is not.
+_Anything half-finished someone would trip over:_ No.
+_Is the system in a working state?_ **Yes, and stated exactly.** 324 passed, 33
+skipped, 3 slow deselected; ruff clean; `tsc --noEmit` and `next build` clean;
+checksums 123 artifacts. **`make` itself still does not run on this machine** —
+Xcode license — so every target was invoked as its underlying script through `uv`.
+
+## Session before this one — 2026-08-12
+
 _What landed:_ **The Phase 2 branch reached `master`, and the state document that
 described Phase 2 turned out to be two commits behind it.** No model calls, no
 spend, no code and no artifacts changed.
@@ -529,45 +527,40 @@ output**, and do not read a failure on a new machine as the repo being broken.
 
 ## Next session should
 
-**Phase 2's seven conditions all hold. Phase 3 is next: grounded document Q&A.**
-Do not reopen Phase 2 to polish the numbers — everything still open in it is
-listed under *Named debt* and each item is cheap to do inside Phase 3, which
-touches the same layer anyway. Reopening a closed phase on its own is what three
-sessions did in Phase 1, at ~$9.83 and diminishing returns.
+**Phase 3 is done. Phase 4 is next: the procurement agent and its approval
+queue — the signature surface of this project**, and the only phase whose
+deliverable is a piece of interface rather than a measurement.
 
-**Start with the one thing Phase 2 proved is needed rather than argued.**
-`supplier_term_clauses` — a narrow table of what each document *says*, with
-`supplier_terms` kept as the queryable projection. Phase 2 demonstrated the case
-instead of asserting it: the two clause-level amendments restate three clauses on
-purpose, the wide row carries the full inherited set, and **no gold set derived
-from that row can score them.** They are excluded from the extraction score today
-and the exclusion is printed. Phase 3 is where retrieval queries this, so it is
-where the table belongs.
+**Rule 12 applies before any of it is written.** `CONVENTIONS.md` asks for a
+design plan — and names the approval card and the audit log specifically as the
+wireframes to agree first. Palette and type are settled in `DESIGN-TOKENS.md`; the
+card is not, and it is still listed under *Open questions*. **Do not start with
+the loop.**
 
-Then, in `PLAN.md`'s order: pgvector with local embeddings, metadata and date
-pre-filtering, role-scoped retrieval applied **before** generation (rule 5), and
-injection defence.
+Then, in `PLAN.md`'s order: own agent loop capped at ~6 tool calls (rule 3), state
+as rows in `agent_runs` and `proposed_actions` with status, payload, expiry and
+approver, and the approval interface in `web/`.
 
-**Three things Phase 2 hands over that will change what Phase 3 measures:**
+**Four things Phase 3 hands over that change what Phase 4 must do:**
 
-1. **The injection specimens are not good enough to evaluate a defence.** Three of
-   four were resisted by the *unprotected* prompt, so they measure the model's own
-   guardrails. Phase 3's done-condition asks for a planted injection that
-   *provably* fails to change behaviour — write more attacks shaped like
-   `supplier-preference`, which is a payload wearing the document's clothes, and
-   fewer shaped like a demo. Entry 12.
-2. **Store the raw generation, not the verdict.** Both Phase 2 runners kept their
-   answers, and the extraction validator and the injection detector were corrected
-   seven times between them for **$0.00** because re-scoring never needed a model
-   call. Any Phase 3 scorer should do the same before its first paid run.
-3. **`corpus/parsed/` is what gets embedded**, and it is single-provenance except
-   for `contract-sup-11-20230907`, which carries a Windows parse missing one `##`
-   marker. Dates are correct so the temporal demo is unaffected. A `make ingest`
-   in the reference environment fixes it; it has never been on the critical path.
+1. **A proposal drafted against a price that has moved must refuse to fire**, and
+   the machinery for detecting that already exists: `supplier_term_clauses` and
+   `valid_period`. Re-validation is a date-filtered lookup, not a new mechanism.
+2. **Scope is decided at the boundary, before anything runs.** `/ask` refuses a
+   clerk with no store rather than returning an empty set, and `/query` does the
+   same. The approval queue must refuse the same way — an agent acting for a
+   scoped user is where rule 5 stops being about reading.
+3. **The poisoned document still wins the ranking**, 3 of 6 slots. An agent that
+   *acts* on retrieved documents raises the stakes on that: framing was fixed,
+   ordering was not. Read entry 14 before wiring retrieval into a tool call.
+4. **Store the raw generation, not the verdict.** Every runner in Phases 2 and 3
+   does, and it is why nine instrument corrections across the two phases cost
+   $0.00 between them.
 
-**Do not reopen the Phase 1 eval** — same reasoning, and **the rule that cost the
-most to learn: never re-measure only the questions that failed.** It read 97.1%
-with zero silent-wrongs against a clean 91.4% with five.
+**Do not reopen Phases 1–3 to polish numbers.** Everything still open is under
+*Named debt*, and each item is cheap to do inside a later phase that touches the
+same layer anyway. **And the rule that cost the most to learn: never re-measure
+only the questions that failed.**
 
 ## Measured numbers
 
@@ -611,14 +604,42 @@ so Wilson understates it.
 
 _Attempts-to-correct:_ still not measured; no retry loop exists.
 
-_Extraction:_ Phase 2 — pipeline built, **never run**. No model has been called,
-`corpus/extracted/` does not exist, so there is no number here to quote.
-_Injection specimens:_ **Phase 2**, not started — `PLAN.md` done-condition 5 wants
-at least one specimen with a committed trace showing the naive implementation
-following it. Phase 3 gets injection *defence*; the specimens are what it is
-measured against, so they are built first.
+_Extraction, 2026-08-12_ — 40 documents, 40 calls, ~$0.18, scored by
+`make eval-extraction` against the rows the documents were generated from:
+header fields **99.5% (198/199)**, line item **F1 1.00 (160 rows across 37
+documents)**, hallucination **0/160**, miss **0/160**. Three policies and two
+clause-level amendments are excluded and the exclusions are printed; read the
+denominators in `README.md` before the percentages.
+
+_Injection, 2026-08-12, re-measured 2026-08-13_ — 4 specimens x 3 runs per side,
+24 calls, ~$0.09. Defended held **0 of 12 followed**; the naive prompt was
+defeated by **1 of 4** specimens. Not a defence rate: three specimens were
+resisted by the unprotected prompt too (`KNOWN_ISSUES.md` entry 12).
+
+_Retrieval, 2026-08-13_ — `make demo-beat-2`, 3 calls, ~$0.01. Net 14 before the
+renegotiation and Net 30 after, each citing the contract in force; a date inside
+SUP-06's real lapse returns `none_in_force` with no model call.
 
 ## Named debt carried forward
+
+**From Phase 3, 2026-08-13:**
+
+- **The poisoned document outranks the genuine one, 3 of 6 retrieval slots.** The
+  prompt fix (entry 14) changed how an injected instruction is *framed* in the
+  answer; nothing addresses an attacker choosing wording that wins the *ranking*.
+  It matters more in Phase 4, where an agent acts on what it retrieves.
+- **The injection plant is chunk-level, not a PDF.** `PLAN.md` asked for a planted
+  string in a test supplier PDF; putting one there means regenerating the corpus
+  and voiding the parse, checksums and all 40 extractions. Retrieval-to-answer is
+  tested; parse-to-answer is not.
+- **The web view has never been driven in a browser.** Typecheck, build, and the
+  API in demo mode are verified; the click-through is not.
+- **`AS_OF_DATE` is duplicated.** `live.py.as_of_date()` returns a string and
+  `docqa.as_of_date()` returns a `date`, both reading the same variable with the
+  same fallback. Two functions, one rule — reconcile when something touches both.
+- **No ANN index on `doc_chunks`**, deliberately: an exact scan over a few hundred
+  chunks is faster and exactly reproducible. Revisit when the corpus makes it
+  necessary, and record what it costs in recall.
 
 **From Phase 2, 2026-08-12:**
 

@@ -11,23 +11,28 @@ Portfolio project, not a production system. Built solo, free tier only.
 ## What's actually interesting here
 
 Most RAG portfolio projects show a chatbot answering questions over documents.
-Three things here are harder, and each carries its build status, because two of
-the three are not standing up yet:
+Three things here are harder, and each carries its build status:
 
-- **Temporal correctness.** Supplier terms change. Ask what the payment terms are
-  and you get today's answer; ask what they were before the renegotiation and you
-  get the correct historical clause. _Built in the database and the corpus_ — the
-  schema carries `valid_period`, and two suppliers have deliberate coverage lapses
-  so "nothing in force" is distinguishable from "not found". Extracted terms carry
-  `effective_from` / `effective_to` **once extraction runs**, which it has not.
-- **A real approval queue.** The agent drafts purchase orders; it does not place
-  them. Proposals persist as database rows, survive a server restart, expire, and
-  re-validate their inputs before executing — a proposal drafted against a price
-  that has since moved refuses to fire. **_Phase 4, not built._**
-- **Prompt injection, demonstrated rather than asserted.** The corpus will carry
-  labelled injection specimens with committed traces showing a naive
-  implementation following them and this one not. **_Phase 2 done-condition 5,
-  not built_** — there is no `corpus/injection/` to link to yet.
+- **Temporal correctness. _Built and demonstrated._** Supplier terms change. Ask
+  what the payment terms are and you get today's answer; ask what they were before
+  the renegotiation and you get the correct historical clause — **Net 14 before,
+  Net 30 after, each citing the contract in force at that date.** The date filter
+  is a SQL predicate, so the superseded contract is never retrieved and the model
+  is never asked to sort out the chronology. A date inside a real coverage gap
+  returns *"no document in force"*, which is a third outcome and not an empty one.
+  [`docs/demo-beat-2.md`](docs/demo-beat-2.md).
+- **Prompt injection, demonstrated rather than asserted. _Built._** Labelled
+  specimens with committed traces in [`corpus/injection/`](corpus/injection/),
+  showing a naive implementation following an attack and this one not. The
+  interesting result is which attack worked: the three that shout — *"IGNORE ALL
+  PREVIOUS INSTRUCTIONS"* — were resisted even by the unprotected prompt, because
+  a current model declines those unaided. The one that got through is a payload
+  written as a numbered contract clause. **The attack that works is the one that
+  does not look like an attack.**
+- **A real approval queue. _Phase 4, not built._** The agent drafts purchase
+  orders; it does not place them. Proposals persist as database rows, survive a
+  server restart, expire, and re-validate their inputs before executing — a
+  proposal drafted against a price that has since moved refuses to fire.
 
 ## Results
 
@@ -338,11 +343,29 @@ above, and what they do and don't support is in
 [`docs/PROGRESS.md`](docs/PROGRESS.md). It was closed with known instrument debt,
 listed there rather than hidden.
 
-**Phase 2 in progress — corpus ingestion.** The corpus exists: 40 synthetic
-documents generated from the seeded database, byte-identical on regeneration,
-and parsed with Docling into [`corpus/parsed/`](corpus/parsed/). A 4-document
-sample is re-parsed and byte-compared in CI on every push. **Extraction is built
-and has never been run** — prompt, schemas, validator and runner are all exercised
-against a stub, and no model call has ever been made — so every extraction number
-above is still blank and `corpus/extracted/` does not exist. Four of the phase's
-seven done-conditions hold. See [`docs/PLAN.md`](docs/PLAN.md).
+**Phase 2 closed 2026-08-12 — corpus ingestion and extraction measurement.** All
+seven done-conditions hold. 40 synthetic documents generated from the seeded
+database, parsed with Docling, extracted, and scored against the rows they came
+from: header fields 99.5%, line-item F1 1.00, zero hallucinated or missed rows.
+Injection specimens carry committed traces. **$0.27 for the whole phase.** The
+denominators and the three exclusions are in *Results* above and they matter more
+than the percentages.
+
+**Phase 3 closed 2026-08-13 — grounded document Q&A.** pgvector with local
+embeddings (bge-small-en-v1.5, CPU, no quota), date and metadata pre-filtering,
+role-scoped retrieval applied in the WHERE clause rather than to the results, and
+injection defence measured end to end. **Demo beat 2 runs in the browser:** the
+same question at two dates returns the contract in force at each, and a date
+inside a real coverage gap returns "no document in force" — a third outcome, not
+an empty one, and with no model call made. The artifact is
+[`docs/demo-beat-2.md`](docs/demo-beat-2.md).
+
+One deviation from the plan, stated rather than glossed: the plan says "a planted
+injection string in a **test supplier PDF**". The payload is planted at the chunk
+level and embedded with no special casing, so it is retrieved on its own merits —
+but it does not pass through Docling, because planting it in a PDF would mean
+regenerating the corpus and voiding the parse, the checksums and all 40
+extractions. What is tested is retrieval-to-answer, not parse-to-answer.
+
+See [`docs/PLAN.md`](docs/PLAN.md). Phase 4 — the procurement agent and its
+approval queue, the signature surface of the project — is not built.
