@@ -16,7 +16,9 @@
     "",
     "Keyed by question and as_of, because the date is the variable beat 2 is",
     "about. A question asked at a date not listed here has no demo answer, and",
-    "the API says so rather than serving the nearest one."
+    "the API says so rather than serving the nearest one.",
+    "",
+    "RE-RECORDED after retrieval_answer.md gained the instruction-vs-disagreement rule. A replayed answer produced by a prompt the repo no longer ships is a demo showing behaviour the live path would not reproduce, so these move with the prompt or they are lying quietly."
   ],
   "recorded_on": "2026-08-13",
   "model": "gemini-3.6-flash",
@@ -28,7 +30,7 @@
       "doc_types": [
         "contract"
       ],
-      "answer": "The payment terms for Sahyadri Agro Traders are **Net 14 days from invoice date** [contract-sup-01-20241130, effective 2024-11-30].",
+      "answer": "Based on the provided documents, the payment terms under contract `contract-sup-01-20241130` are Net 14 days from invoice date [contract-sup-01-20241130, effective 2024-11-30].\n\n*(Note: While the provided snippets for contract `contract-sup-01-20241130` do not explicitly state the name \"Sahyadri Agro Traders\", this is the only agreement retrieved for the target date of 2025-01-15.)*",
       "note": "Before the 2025-06-29 renegotiation. supplier_terms says 14 days."
     },
     {
