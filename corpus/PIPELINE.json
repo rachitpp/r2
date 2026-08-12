@@ -11,8 +11,15 @@
     "serving a different build behind the same string, which would look like",
     "model drift and be untraceable.",
     "",
-    "corpus/ is empty until Phase 2. The parse and extraction blocks are",
-    "recorded here now so the shape does not change when it lands."
+    "As of 2026-08-11 corpus/ holds 40 generated sources and 40 parsed",
+    "documents; corpus/extracted/ does not exist because extraction has been",
+    "built but never run. This comment read 'corpus/ is empty until Phase 2'",
+    "for two weeks after the corpus landed.",
+    "",
+    "GAP, NOT YET CLOSED: the parse block below pins Docling's VERSION and not",
+    "its ENVIRONMENT, and 5 of the 40 documents parse differently across",
+    "platforms (ADR-0006, amended 2026-08-11). A value missing from this file",
+    "is a value the claim does not cover, and platform is currently missing."
   ],
   "generation": {
     "provider": "vertex",

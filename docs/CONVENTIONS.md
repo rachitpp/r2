@@ -218,8 +218,12 @@ Runs on every push with **no API key present**. Two jobs.
 **Python:**
 - `make verify-corpus` — SHA-256 every file in `parsed/` and `extracted/` against
   `corpus/CHECKSUMS.txt`.
-- `make verify-parse` — re-run Docling on a committed 3-document sample and assert
-  byte-identity. Local, no network, no key.
+- `make verify-parse` — re-run Docling on a committed 4-document sample and assert
+  byte-identity. Local, no network, no key. **It is an environment gate, not a
+  formality:** the sample includes a document known to parse differently across
+  platforms, so it passes only in the reference environment and reads `3/4`
+  elsewhere. A failure on a new machine means that machine does not reproduce the
+  reference parse — not that the repo is broken. ADR-0006, amended 2026-08-11.
 - `pytest`, `ruff check`.
 
 **Web:**

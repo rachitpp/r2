@@ -110,8 +110,13 @@ extraction itself, and failure is silent.
   schema settles.
 - Every raw extraction is committed, so re-running is only ever a deliberate
   verification (`make ingest-verify`), never a step in using the project.
-- `PIPELINE.json` pins the model string and temperature, so a re-run is a
-  re-run rather than a new experiment.
+- `PIPELINE.json` pins the model string **and the serving location**, so a re-run
+  is a re-run rather than a new experiment. **It does not pin temperature, and
+  this line said it did until 2026-08-12:** the sampling parameters are deprecated
+  and ignored on these models, so `PIPELINE.json` records
+  `"sampling_parameters": null` with a note saying why. See ADR-0006's 2026-08-06
+  amendment — a temperature sitting in a reproducibility claim is worse than none,
+  because it looks like a control and is not one.
 
 ## What would flip it
 
