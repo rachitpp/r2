@@ -9,17 +9,40 @@ the history. This file answers one question: what does the next session need?
 
 ## Current phase
 
-**Phase 2 — Corpus ingestion. IN PROGRESS. The corpus exists and is parsed;
-extraction is built and has never been run, and that run is the gate.**
+**Phase 2 — Corpus ingestion and extraction measurement. ALL SEVEN
+DONE-CONDITIONS HOLD as of 2026-08-12.** Extraction has run over all 40 documents,
+it is scored, the injection specimens have committed traces, and the README's
+four-number block is filled in. Total spend for the phase: **$0.27**.
 
 Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
 it is what the eval numbers in the README rest on.
 
-**Where Phase 2 stands against `PLAN.md`'s seven done-conditions: four hold.**
-1 (reproducible parse asserted in CI), 4 (`TIMELINE.md` hand-verified **and** a
-date inside a real gap returns nothing in force), 6 (`KNOWN_ISSUES.md` non-empty),
-7 (PII scan recorded honestly as vacuous). Three do not: no extraction, no gold
-set, no injection specimen, and the README's four-number block is blank.
+**Against `PLAN.md`'s seven conditions:**
+
+| | Condition | |
+|---|---|---|
+| 1 | `make ingest` twice byte-identical, asserted in CI | ✅ within a pinned environment — see entry 2 of `KNOWN_ISSUES.md` |
+| 2 | Four-number README block with denominators | ✅ |
+| 3 | Committed raw extraction; every correction has a note | ✅ 40 extracted, 4 corrections |
+| 4 | `TIMELINE.md` hand-verified, gap query distinct from not-found | ✅ closed 2026-08-11 |
+| 5 | Injection specimen with a trace of the naive path following | ✅ 1 of 4 specimens, 3 of 3 runs |
+| 6 | `KNOWN_ISSUES.md` non-empty | ✅ 13 entries |
+| 7 | PII scan recorded | ✅ recorded as vacuous, which is the honest form |
+
+**What closing this phase does NOT claim**, and the pattern is the same one Phase 1
+was closed under:
+
+- **Extraction accuracy is 99.5% header fields and F1 1.00 on 37 of 40 documents**,
+  against a gold set derived from the database rather than hand-labelled. Three
+  policies have no row behind them and two clause-level amendments cannot be scored
+  against a wide superseding table at all — that exclusion is the most interesting
+  result in the phase and it is `supplier_term_clauses`-shaped Phase 3 work.
+- **"Defended held 4 of 4" is not a defence rate.** Three of the four injection
+  specimens were too gentle to defeat even the unprotected prompt, so they measured
+  the model's own guardrails and nothing this project built. Entry 12.
+- **The instruments were wrong seven times between them** — three in the extraction
+  scorer, four in the injection detector — and every one was found by reading output
+  rather than by reading code. Entries 8–13.
 
 **Condition 4 was closed on 2026-08-11 by regenerating the seed.** The corpus had
 no coverage gaps at all — every predecessor ended the day its successor began —
@@ -36,11 +59,19 @@ one field in one row per supplier moved and nothing else in the seed did.
   sample and asserts byte-identity in CI — see *Last session*, because until
   2026-08-11 it was a stub that could only fail, and the sample was three
   documents that could not fail either.
-- **Extraction: built, and never run.** `api/prompts/extract.md`,
-  `pos_copilot.extract`, `scripts/corpus_extract.py`, `make extract` /
-  `make extract-stub`. Every path is exercised against a stub — no key, no
-  network, no quota — and **no model has been called.** `corpus/extracted/` does
-  not exist yet, so nothing here is a measurement.
+- **Extraction: run, 2026-08-12.** All 40 documents, 40 calls, ~$0.18 against a
+  60-call / $2.00 ceiling. `corpus/extracted/` is committed. Measured against the
+  database: **63/63 invoice line items exact, 10/10 subtotals, 34/34 catalog
+  prices on the one checked, and 7/7 clauses on a scanned OCR-only contract.**
+  Responses cache permanently, so re-validating after a schema change costs $0.00
+  — which was needed, twice.
+- **Scoring: `make eval-extraction`.** Header fields **99.5% (198/199)**, line
+  item **F1 1.00 (160 rows across 37 documents)**, hallucination **0/160**, miss
+  **0/160**. Gold derived from the rows the documents were generated from. No
+  model calls; needs Postgres, so never in CI.
+- **Injection: `make injection-demo`.** 4 specimens × 3 runs per side, 24 calls,
+  ~$0.09. Defended held 4 of 4; the naive prompt was defeated by 1 of 4, 3 runs
+  out of 3. Traces committed verbatim in `corpus/injection/`.
 
 **Amendments vs. supersessions is decided: clause-level provenance.** Extraction
 records what a document *says*, never what was in force — the amendment that
@@ -123,7 +154,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Nothing blocks the first paid run — all three gates closed 2026-08-12** (budget alert created; residency and the Vertex terms both accepted with a synthetic-corpus tripwire, ADR-0009). What is missing is a service-account credential, which is not a decision |
+| 2 Corpus ingestion | **all 7 conditions hold, 2026-08-12** | 40 documents generated, parsed, extracted and scored. Header fields 99.5% (198/199), line item F1 1.00, 0/160 hallucination, 0/160 miss on 37 scored documents. Injection: defended 4 of 4, naive defeated by 1 of 4. **$0.27 total.** Carried forward as named debt: 2 clause-level amendments unscorable against a wide superseding table (Phase 3), 3 injection specimens too gentle to measure anything, and the instruments were wrong 7 times between them |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -176,20 +207,54 @@ and `make verify-parse` have never run here, so whether macOS reproduces the
 reference parse is unknown, not assumed either way. Entry 2 of `KNOWN_ISSUES.md`
 applies: run `verify-parse` before trusting any parse produced on this machine.
 
-_What didn't:_ **the extraction run — but two of its three gates closed, and only
-the Vertex terms are left.** **Data residency:** accepted with a tripwire
-(ADR-0009). **Budget alert: decided at $15/month and created**, with the rule now
-in `PLAN.md` → *Money*, which is where `PROGRESS` had been citing it from all along
-without it being there. **The canonical Vertex terms closed too**, accepted for a
-synthetic corpus with the same tripwire — so **all three gates are down and the run
-is unblocked.** Three further open questions closed alongside: available RAM
-(8 GB), the Windows env-var placement, and perishables.
+### Then all three gates closed and the run happened
 
-**`verify-parse` was run on this Mac and read 2/4** — see below; it is not on the
-critical path and nothing was changed in response to it.
+Budget alert created at $15/month; residency and the canonical Vertex terms both
+accepted **for a synthetic corpus, with a tripwire** — a no-training clause
+protects confidential content and there is none here, so reading the terms is owed
+before a *real* document is sent rather than before 40 generated ones (ADR-0009,
+which also concedes what that costs its own reasoning). Open questions closed
+alongside: available RAM (8 GB), Windows env-var placement, perishables.
 
-**Phase 2 stays at 4 of 7** — decisions are not done-conditions, and nothing here
-was measured.
+**Extraction ran over all 40 documents. 40 calls, ~$0.18.** The staged 5 were read
+by hand first, and that paid for itself immediately — it caught the scanned
+contract's identity loss and gave the catalog cross-check that made the invoice
+result legible when it arrived.
+
+**The run reported 30/40 and the true figure was 40/40.** All ten invoices failed
+on `invoice_number`, `tax_total` and `total`, and **not one generated invoice
+contains any of them.** The schema was describing an invoice nobody generated, and
+it survived because the stub returns invented values that include those fields — so
+31 tests agreed with a shape the corpus never had. Asked for three fields that do
+not exist, the model returned null for all three rather than inventing numbers,
+10 out of 10, so the prompt still asks for them on purpose as a hallucination
+check and only the validator was relaxed.
+
+**Scoring: 99.5% header fields, F1 1.00, 0/160 hallucination, 0/160 miss.** And
+**the scorer was wrong three times before the model was wrong once** — 42.2% from
+reading top-level fields on documents that carry `clauses`; scoring two catalog
+hallucinations CORRECT and one honest refusal as a MISS; demanding a date the
+document never printed.
+
+**Injection: defended 4 of 4, naive defeated by 1 of 4.** The three that failed to
+work are the finding — they announce themselves and a current model declines them
+unaided, so they measure its guardrails and not this project. The one that worked
+is a payload written as a numbered contract clause. **The detector was wrong four
+times**, always scoring the defended prompt as FOLLOWED for reporting an attack as
+instructed.
+
+_What didn't:_ **the two clause-level amendments still cannot be scored**, and
+that is not a gap to close here — a wide superseding table structurally cannot
+score a document that restates three clauses on purpose. It needs
+`supplier_term_clauses` in Phase 3.
+
+**`verify-parse` was run on this Mac and read 2/4.** Not on the critical path;
+nothing was changed in response to it.
+
+**Phase 2 is at 7 of 7** — and the closing note that matters: **seven instrument
+defects were found across the two runs, every one by reading output rather than
+code.** Entries 8–13 of `KNOWN_ISSUES.md`. Three of them made a wrong number
+*print confidently*, which is the class this project keeps paying to relearn.
 _Anything half-finished someone would trip over:_ No. Documentation only, committed
 and pushed.
 _Is the system in a working state?_ **Yes, with the verification stated exactly.**
@@ -464,61 +529,45 @@ output**, and do not read a failure on a new machine as the repo being broken.
 
 ## Next session should
 
-**Phase 1 is closed. Do not reopen the eval to chase the remaining items** — they
-are listed under *Named debt* and each is cheap to do **inside** a later phase that
-touches the prompt anyway. Reopening it on its own is what the last three sessions
-did, at ~$9.83 and diminishing returns.
+**Phase 2's seven conditions all hold. Phase 3 is next: grounded document Q&A.**
+Do not reopen Phase 2 to polish the numbers — everything still open in it is
+listed under *Named debt* and each item is cheap to do inside Phase 3, which
+touches the same layer anyway. Reopening a closed phase on its own is what three
+sessions did in Phase 1, at ~$9.83 and diminishing returns.
 
-**Extraction is built and has never been run. Nothing gates it any more — all
-three gates closed 2026-08-12. Run it.** In order, and the first step is not
-optional:
+**Start with the one thing Phase 2 proved is needed rather than argued.**
+`supplier_term_clauses` — a narrow table of what each document *says*, with
+`supplier_terms` kept as the queryable projection. Phase 2 demonstrated the case
+instead of asserting it: the two clause-level amendments restate three clauses on
+purpose, the wide row carries the full inherited set, and **no gold set derived
+from that row can score them.** They are excluded from the extraction score today
+and the exclusion is printed. Phase 3 is where retrieval queries this, so it is
+where the table belongs.
 
-1. **`make extract EXTRACT_ARGS="--limit 5"`, then read all five by hand** before
-   the full 40. The stage-1 rule was written for evals and the reason carries
-   exactly: a schema cannot be validated by inspection, only by use. The first
-   staged run of the SQL set scored 0/4 and none of it was the model.
-2. **The full 40** — ~$0.80 under a 60-call / $2.00 ceiling. Raw output into
-   `corpus/extracted/`, **never hand-edited** (rule 8); fixes into
-   `corpus/corrections/` with a note per fix.
-3. **Gold set — label all 40**, then conditions 2, 3 and 5.
+Then, in `PLAN.md`'s order: pgvector with local embeddings, metadata and date
+pre-filtering, role-scoped retrieval applied **before** generation (rule 5), and
+injection defence.
 
-**Credentials are the only thing standing in the way**, and they are not a
-decision: a Vertex service-account JSON, with `GOOGLE_APPLICATION_CREDENTIALS`
-pointing at it in `.env`. That variable was missing from `.env.example` until
-2026-08-12 — the one variable the paid path needs was the one variable nothing
-documented.
+**Three things Phase 2 hands over that will change what Phase 3 measures:**
 
-Then, in order:
+1. **The injection specimens are not good enough to evaluate a defence.** Three of
+   four were resisted by the *unprotected* prompt, so they measure the model's own
+   guardrails. Phase 3's done-condition asks for a planted injection that
+   *provably* fails to change behaviour — write more attacks shaped like
+   `supplier-preference`, which is a payload wearing the document's clothes, and
+   fewer shaped like a demo. Entry 12.
+2. **Store the raw generation, not the verdict.** Both Phase 2 runners kept their
+   answers, and the extraction validator and the injection detector were corrected
+   seven times between them for **$0.00** because re-scoring never needed a model
+   call. Any Phase 3 scorer should do the same before its first paid run.
+3. **`corpus/parsed/` is what gets embedded**, and it is single-provenance except
+   for `contract-sup-11-20230907`, which carries a Windows parse missing one `##`
+   marker. Dates are correct so the temporal demo is unaffected. A `make ingest`
+   in the reference environment fixes it; it has never been on the critical path.
 
-1. **Run `make extract --limit 5` and read all five by hand** before the full 40.
-   The stage-1 rule is written for evals and the reason generalises exactly: a
-   schema cannot be validated by inspection, only by use. The first staged run of
-   the SQL set scored 0/4 and none of it was the model.
-2. **Then the full 40** — ~$0.80 under a 60-call, $2.00 ceiling. Raw output into
-   `corpus/extracted/`, **never hand-edited** (rule 8); fixes into
-   `corpus/corrections/` with a note per fix saying what the pipeline got wrong.
-3. **Gold set — label all 40.** The *Open questions* estimate of "~40, never
-   confirmed" is now confirmed at exactly 40, and the rule already written there
-   says: under 40, label all of it and skip gold-set sampling. `PLAN.md` asks for
-   30; the corpus is 40, so sampling would save little and cost a denominator.
-4. **`TIMELINE.md`, the gap query, injection specimens, `KNOWN_ISSUES.md`,** and
-   the README's four-number block. Note done-condition 6's own warning: for a
-   corpus we generated, an empty `KNOWN_ISSUES.md` means the injected difficulty
-   was too gentle, not that the pipeline is good.
-
-**Both repo-level decisions are now taken.** `.gitattributes` is committed, and
-the two Windows-only ingest environment variables live in **`.env.example`**,
-commented out under a `Windows only` heading with the failure each one prevents —
-chosen because it is the file a fresh clone already copies and the Makefile
-already does `-include .env`, so it needs no new machinery. Both are no-ops on
-Linux, macOS and CI.
-
-**Do not reopen the Phase 1 eval to chase the remaining items** — they are listed
-under *Named debt* and each is cheap to do **inside** a later phase that touches
-the prompt anyway. Reopening it on its own is what three sessions did, at ~$9.83
-and diminishing returns. **And the rule that cost the most to learn: never
-re-measure only the questions that failed.** It read 97.1% with zero
-silent-wrongs against a clean 91.4% with five.
+**Do not reopen the Phase 1 eval** — same reasoning, and **the rule that cost the
+most to learn: never re-measure only the questions that failed.** It read 97.1%
+with zero silent-wrongs against a clean 91.4% with five.
 
 ## Measured numbers
 
@@ -570,6 +619,36 @@ following it. Phase 3 gets injection *defence*; the specimens are what it is
 measured against, so they are built first.
 
 ## Named debt carried forward
+
+**From Phase 2, 2026-08-12:**
+
+- **Two clause-level amendments cannot be scored, and no amount of care fixes it
+  at this layer.** `supplier_terms` is wide and supersedes as a set, so its row
+  carries clauses the amendment deliberately does not restate. Any gold set
+  derived from that row measures the inheritance. Excluded from the score with the
+  exclusion printed; **`supplier_term_clauses` in Phase 3 is the fix**, and Phase 2
+  is what turned that from an argument into a demonstration.
+- **Three of the four injection specimens are too gentle to measure anything** —
+  resisted by the *unprotected* prompt, so they test the model's guardrails rather
+  than this project's. Phase 3's injection done-condition needs more attacks shaped
+  like `supplier-preference` and fewer shaped like a demo. Entry 12.
+- **`corpus/README.md` says "the four scanned documents" against a manifest with
+  five.** The two numbers sum to 40 so they moved together; settling which is wrong
+  needs a regeneration, which needs Postgres. Recorded rather than guessed.
+- **One parsed document carries a Windows provenance.**
+  `contract-sup-11-20230907` is missing one `##` heading marker. Dates are correct,
+  so the temporal demo is unaffected. `corpus/parsed/` is what Phase 3 embeds, so a
+  `make ingest` in the reference environment is worth doing before that — it has
+  never been on the critical path and still is not.
+- **`supplier_code` on one scanned contract is unrecoverable by prompt.** OCR lost
+  the letterhead. Whether identity may fall back to `MANIFEST.csv` — resolving it
+  in every case, at the cost of the claim that extraction records what the document
+  says — is undecided. `corpus/corrections/contract-sup-01-20241130.md`.
+- **`make extract` does not refresh `CHECKSUMS.txt`** although it is now the last
+  stage that writes artifacts, so `verify-corpus` fails immediately after a
+  successful run. Run `make corpus-checksums` after it until the call moves into
+  the runner. Entry 11.
+
 
 - **The eval response cache is not on this machine, and is not portable.**
   `evals/.cache/` is gitignored, so the 147 responses behind the published
