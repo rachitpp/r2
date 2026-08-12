@@ -139,9 +139,7 @@ def store_ids_for_invoices(conn, manifest: list[dict]) -> dict[str, int]:
             (list(po_ids.values()),),
         )
         by_po = dict(cur.fetchall())
-    return {
-        doc_id: by_po[po_id] for doc_id, po_id in po_ids.items() if po_id in by_po
-    }
+    return {doc_id: by_po[po_id] for doc_id, po_id in po_ids.items() if po_id in by_po}
 
 
 def load_chunks(

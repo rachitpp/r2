@@ -1,0 +1,56 @@
+{
+  "_comment": [
+    "Demo answers for beat 2 — document Q&A with no key and no quota.",
+    "",
+    "CLAUDE.md rule 2: the system a reader runs must never need paid inference.",
+    "Beat 1 reads its SQL from queries.json and then EXECUTES it for real, so the",
+    "data is genuine and only the model output is canned. This is the same shape:",
+    "RETRIEVAL RUNS FOR REAL because embeddings are local and free, and only the",
+    "answer text is replayed. So the citations a reader sees are genuinely what",
+    "retrieval returned, not a stored list pretending to be one.",
+    "",
+    "Every answer below was PRODUCED BY THE REAL MODEL and copied verbatim from",
+    "corpus/injection/traces/retrieval-injection.json, which make demo-beat-2",
+    "writes. Nothing here was written by hand — a demo answer nobody measured is",
+    "a claim, and this file would be the easiest place in the repo to hide one.",
+    "",
+    "Keyed by question and as_of, because the date is the variable beat 2 is",
+    "about. A question asked at a date not listed here has no demo answer, and",
+    "the API says so rather than serving the nearest one."
+  ],
+  "recorded_on": "2026-08-13",
+  "model": "gemini-3.6-flash",
+  "answers": [
+    {
+      "question": "What are the payment terms for Sahyadri Agro Traders?",
+      "as_of": "2025-01-15",
+      "supplier_code": "SUP-01",
+      "doc_types": [
+        "contract"
+      ],
+      "answer": "The payment terms for Sahyadri Agro Traders are **Net 14 days from invoice date** [contract-sup-01-20241130, effective 2024-11-30].",
+      "note": "Before the 2025-06-29 renegotiation. supplier_terms says 14 days."
+    },
+    {
+      "question": "What are the payment terms for Sahyadri Agro Traders?",
+      "as_of": "2026-06-30",
+      "supplier_code": "SUP-01",
+      "doc_types": [
+        "contract"
+      ],
+      "answer": "The payment terms for Sahyadri Agro Traders are Net 30 days from the invoice date [contract-sup-01-20250629, effective 2025-06-29].",
+      "note": "After it. Same question, same wording, different answer. supplier_terms says 30."
+    },
+    {
+      "question": "What are the payment terms?",
+      "as_of": "2025-11-15",
+      "supplier_code": "SUP-06",
+      "doc_types": [
+        "contract"
+      ],
+      "answer": null,
+      "outcome": "none_in_force",
+      "note": "Inside SUP-06's real lapse, 2025-10-22 to 2025-12-09. There is no answer to replay because the live path makes NO MODEL CALL here — retrieval returns nothing in force and that IS the answer."
+    }
+  ]
+}

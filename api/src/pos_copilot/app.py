@@ -249,3 +249,166 @@ def _live_answer(request: QueryRequest) -> QueryResponse:
         error=outcome.error,
         answer=_answer_of(outcome.result) if outcome.result else None,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Demo beat 2 — grounded document Q&A
+#
+# Retrieval is local and free (rule 2), so it runs for real in BOTH modes and
+# only the answer text differs: replayed in demo mode, generated in live mode.
+# A reader with no key still sees the citations retrieval actually produced.
+#
+# Rule 5 is enforced in `retrieve()`'s WHERE clause and rule 7 alongside it, so
+# a chunk outside the caller's scope or outside the requested date is never
+# fetched. This layer decides the scope BEFORE retrieval, exactly as `/query`
+# decides it before any SQL exists.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    #: The date the question is asked "as of". Required, never defaulted to
+    #: today: this system's data has a fixed end date, so wall-clock would
+    #: silently retrieve nothing — and the date is the whole point of beat 2.
+    as_of: str = Field(min_length=10, max_length=10)
+    role: Literal["clerk", "manager", "owner"] = "owner"
+    store_id: int | None = Field(default=None, ge=1)
+    supplier_code: str | None = Field(default=None, max_length=16)
+    doc_types: list[str] | None = None
+
+
+class Citation(BaseModel):
+    doc_id: str
+    doc_type: str
+    effective_from: str
+    effective_to: str | None
+    similarity: float
+    #: The chunk text itself. Shown, never hidden — an answer whose sources you
+    #: cannot read is an answer you cannot check, which is the same reason
+    #: `/query` returns the SQL it ran.
+    content: str
+
+
+class AskResponse(BaseModel):
+    mode: Literal["demo", "live"]
+    question: str
+    as_of: str
+    #: "answered" | "none_in_force" | "not_found"
+    #:
+    #: The last two are NOT the same and the UI must not collapse them. "No
+    #: contract covered that month" and "we hold nothing for this supplier" are
+    #: different answers to different questions, and telling them apart is what
+    #: demo beat 2 exists to show.
+    outcome: str
+    answer: str | None
+    citations: list[Citation]
+    #: True when no model call was made. Always true for none_in_force and
+    #: not_found, because there is nothing to ground an answer in and spending a
+    #: call to say so would give the model the chance to answer from general
+    #: knowledge instead.
+    grounded_without_model: bool
+
+
+@app.get("/demo/document-questions", response_model=list[dict])
+def demo_document_questions() -> list[dict]:
+    """Question AND date pairs demo mode can replay.
+
+    The date is part of the key, so it is part of the catalogue. A UI offering
+    the question without its dates would let a reader pick a combination with no
+    answer and read the 404 as the system being broken.
+    """
+    return demo.document_catalogue()
+
+
+@app.post("/ask", response_model=AskResponse)
+def ask(request: AskRequest) -> AskResponse:
+    from datetime import date as _date
+
+    from pos_copilot import docqa
+    from pos_copilot.embed import default_embedder
+    from pos_copilot.retrieve import retrieve, store_scope_for
+
+    try:
+        on = _date.fromisoformat(request.as_of)
+    except ValueError:
+        raise HTTPException(422, f"as_of is not a date: {request.as_of!r}") from None
+
+    # Scope is decided here, before retrieval runs and before a prompt exists.
+    try:
+        store_scope = store_scope_for(request.role, request.store_id)
+    except StoreRequired as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    supplier_id = None
+    try:
+        with psycopg.connect(readonly_url()) as conn:
+            if request.supplier_code:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "select supplier_id from suppliers where code = %s",
+                        (request.supplier_code,),
+                    )
+                    row = cur.fetchone()
+                if row is None:
+                    raise HTTPException(
+                        404, f"no supplier with code {request.supplier_code!r}"
+                    )
+                supplier_id = row[0]
+
+            embedder = default_embedder()
+
+            if demo_mode():
+                found = retrieve(
+                    conn,
+                    request.question,
+                    as_of=on,
+                    embedder=embedder,
+                    supplier_id=supplier_id,
+                    store_id=store_scope,
+                    doc_types=request.doc_types,
+                )
+                try:
+                    replay = demo.lookup_document(request.question, request.as_of)
+                except demo.DemoUnavailable as exc:
+                    raise HTTPException(404, str(exc)) from None
+                # The replayed answer is only used when retrieval agrees there
+                # is something to answer from. If retrieval says nothing is in
+                # force, that wins — the demo must not narrate over the data.
+                outcome = found.outcome
+                answer = replay.answer if found.found else None
+                chunks = found.chunks
+            else:
+                got = docqa.ask(
+                    conn,
+                    request.question,
+                    embedder=embedder,
+                    as_of=on,
+                    supplier_id=supplier_id,
+                    store_id=store_scope,
+                    doc_types=request.doc_types,
+                )
+                if got.outcome == "error":
+                    raise HTTPException(502, got.error or "generation failed")
+                outcome, answer, chunks = got.outcome, got.answer, got.chunks
+    except psycopg.OperationalError as exc:
+        raise HTTPException(503, f"database unavailable: {exc}") from None
+
+    return AskResponse(
+        mode="demo" if demo_mode() else "live",
+        question=request.question,
+        as_of=request.as_of,
+        outcome=outcome,
+        answer=answer,
+        citations=[
+            Citation(
+                doc_id=c.doc_id,
+                doc_type=c.doc_type,
+                effective_from=str(c.effective_from),
+                effective_to=str(c.effective_to) if c.effective_to else None,
+                similarity=round(c.similarity, 4),
+                content=c.content,
+            )
+            for c in chunks
+        ],
+        grounded_without_model=(outcome != "answered") or demo_mode(),
+    )

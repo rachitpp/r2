@@ -120,3 +120,93 @@ def catalogue() -> list[dict]:
         }
         for p in load().values()
     ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Demo beat 2 — document answers
+#
+# Same principle as the SQL pairs above and a different shape, because the two
+# beats cost different things. Beat 1 replays SQL and executes it for real. Here
+# RETRIEVAL IS ALREADY FREE — embeddings are local (rule 2) — so retrieval runs
+# for real and only the answer text is replayed. A reader sees the citations
+# retrieval actually produced.
+#
+# Every answer in documents.json was produced by the real model and copied from
+# corpus/injection/traces/retrieval-injection.json. A hand-written demo answer
+# would be a claim nobody measured, and this is the easiest place in the repo to
+# hide one.
+# ─────────────────────────────────────────────────────────────────────────────
+
+DOCUMENTS_FILE = API_ROOT / "demo" / "documents.json"
+
+
+@dataclass(frozen=True)
+class DemoDocAnswer:
+    """One replayed document answer, keyed by question AND date.
+
+    `answer` is None for the none_in_force case, and that is not a missing
+    value: the live path makes no model call there, so there is no output to
+    replay. Storing a sentence would invent one.
+    """
+
+    question: str
+    as_of: str
+    supplier_code: str | None
+    doc_types: list[str] | None
+    answer: str | None
+    outcome: str
+
+
+@lru_cache(maxsize=1)
+def _document_answers() -> list[DemoDocAnswer]:
+    if not DOCUMENTS_FILE.is_file():
+        return []
+    raw = json.loads(DOCUMENTS_FILE.read_text(encoding="utf-8"))
+    return [
+        DemoDocAnswer(
+            question=entry["question"],
+            as_of=entry["as_of"],
+            supplier_code=entry.get("supplier_code"),
+            doc_types=entry.get("doc_types"),
+            answer=entry.get("answer"),
+            outcome=entry.get("outcome", "answered"),
+        )
+        for entry in raw.get("answers", [])
+    ]
+
+
+def document_catalogue() -> list[dict]:
+    """What demo mode can answer about documents, and at which dates.
+
+    The date is part of the key, so it has to be part of the catalogue — a UI
+    that offered the question without its dates would let a reader pick a
+    combination that has no answer and read the 404 as the system failing.
+    """
+    return [
+        {
+            "question": entry.question,
+            "as_of": entry.as_of,
+            "supplier_code": entry.supplier_code,
+            "outcome": entry.outcome,
+        }
+        for entry in _document_answers()
+    ]
+
+
+def lookup_document(question: str, as_of: str) -> DemoDocAnswer:
+    """Find the replayed answer for this question at this date.
+
+    Matched on normalised question text and exact date. **No nearest-date
+    fallback**: serving the answer from a neighbouring date would be the demo
+    silently contradicting the one property beat 2 exists to show.
+    """
+    wanted = normalise(question)
+    for entry in _document_answers():
+        if normalise(entry.question) == wanted and entry.as_of == as_of:
+            return entry
+    raise DemoUnavailable(
+        f"demo mode has no document answer for {question!r} as of {as_of}. "
+        "Answers are keyed by date on purpose; there is no nearest-date "
+        "fallback, because serving one would contradict the thing this beat "
+        "demonstrates. Set DEMO_MODE=false to ask it live."
+    )

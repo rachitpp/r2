@@ -90,3 +90,77 @@ export const STORES = [
   { id: 2, name: "Gangapur Road, Nashik" },
   { id: 3, name: "Dharampeth, Nagpur" },
 ] as const;
+
+/* ── Demo beat 2: grounded document Q&A ───────────────────────────────────
+ *
+ * Retrieval is local and free, so it runs for real in BOTH modes. Only the
+ * answer text differs — replayed in demo, generated live — which means the
+ * citations below are genuinely what retrieval returned either way.
+ */
+
+export type DocQuestion = {
+  question: string;
+  /** Part of the key, not a filter. Demo answers are recorded per date, and
+   *  there is no nearest-date fallback: serving a neighbouring date's answer
+   *  would contradict the one property this beat demonstrates. */
+  as_of: string;
+  supplier_code: string | null;
+  outcome: string;
+};
+
+export type Citation = {
+  doc_id: string;
+  doc_type: string;
+  effective_from: string;
+  effective_to: string | null;
+  similarity: number;
+  /** The chunk text. Shown, never hidden — the same reason `/query` returns
+   *  the SQL it ran. An answer whose sources you cannot read is one you
+   *  cannot check. */
+  content: string;
+};
+
+export type AskResponse = {
+  mode: "demo" | "live";
+  question: string;
+  as_of: string;
+  /** "answered" | "none_in_force" | "not_found".
+   *
+   *  THE LAST TWO MUST NOT BE COLLAPSED IN THE UI. "No contract covered that
+   *  month" and "we hold nothing for this supplier" are different answers to
+   *  different questions, and telling them apart is what this beat is for. */
+  outcome: string;
+  answer: string | null;
+  citations: Citation[];
+  /** True when no model call was made — always true for the two empty
+   *  outcomes, because there is nothing to ground an answer in. */
+  grounded_without_model: boolean;
+};
+
+export async function listDocQuestions(): Promise<DocQuestion[]> {
+  return unwrap<DocQuestion[]>(await fetch("/api/demo/document-questions"));
+}
+
+export async function askDocuments(input: {
+  question: string;
+  as_of: string;
+  role?: "clerk" | "manager" | "owner";
+  store_id?: number | null;
+  supplier_code?: string | null;
+  doc_types?: string[] | null;
+}): Promise<AskResponse> {
+  return unwrap<AskResponse>(
+    await fetch("/api/ask", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        question: input.question,
+        as_of: input.as_of,
+        role: input.role ?? "owner",
+        ...(input.store_id ? { store_id: input.store_id } : {}),
+        ...(input.supplier_code ? { supplier_code: input.supplier_code } : {}),
+        ...(input.doc_types ? { doc_types: input.doc_types } : {}),
+      }),
+    }),
+  );
+}

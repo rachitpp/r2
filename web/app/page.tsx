@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Documents from "./documents";
 import {
   ApiError,
   STORES,
@@ -17,6 +18,7 @@ export default function QueryView() {
   const [result, setResult] = useState<QueryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [beat, setBeat] = useState<"sql" | "docs">("sql");
 
   useEffect(() => {
     listDemoQuestions()
@@ -62,16 +64,49 @@ export default function QueryView() {
     }
   }
 
+  // Two beats, two shapes of evidence. Beat 1 shows the SQL it ran; beat 2
+  // shows the passages it retrieved. Tabs rather than one merged view, because
+  // the thing each demonstrates is different and a combined form would blur
+  // both — "answer beside its query" and "same question, moved through time".
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
-      <header className="mb-8">
+      <header className="mb-6">
         <h1 className="font-display text-[28px] leading-[1.15] tracking-tight">
-          Ask about the shop
+          {beat === "sql" ? "Ask about the shop" : "Ask about the documents"}
         </h1>
         <p className="mt-1 text-[13px] text-brass">
-          the answer, beside the query that produced it
+          {beat === "sql"
+            ? "the answer, beside the query that produced it"
+            : "the same question, moved through time — the date is the variable"}
         </p>
       </header>
+
+      <nav className="mb-6 flex gap-1 border-b border-rule" aria-label="Demo beats">
+        {(
+          [
+            ["sql", "Query"],
+            ["docs", "Documents"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setBeat(key)}
+            aria-current={beat === key ? "page" : undefined}
+            className={
+              "-mb-px border-b-2 px-3 py-2 text-[15px] " +
+              (beat === key
+                ? "border-indigo font-medium text-indigo"
+                : "border-transparent text-brass")
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {beat === "docs" && <Documents />}
+      {beat === "sql" && (
+        <>
 
       <section className="rounded border border-rule bg-card p-4">
         <label htmlFor="question" className="block text-[13px] font-medium">
@@ -146,6 +181,8 @@ export default function QueryView() {
       {result?.refusal && <Refusal response={result} />}
       {result?.error && <Failure response={result} />}
       {result?.answer && <Result response={result} />}
+        </>
+      )}
     </main>
   );
 }
