@@ -11,19 +11,23 @@ Portfolio project, not a production system. Built solo, free tier only.
 ## What's actually interesting here
 
 Most RAG portfolio projects show a chatbot answering questions over documents.
-Three things here are harder and are measured rather than claimed:
+Three things here are harder, and each carries its build status, because two of
+the three are not standing up yet:
 
 - **Temporal correctness.** Supplier terms change. Ask what the payment terms are
   and you get today's answer; ask what they were before the renegotiation and you
-  get the correct historical clause. Every chunk and every extracted term carries
-  `effective_from` / `effective_to`.
+  get the correct historical clause. _Built in the database and the corpus_ — the
+  schema carries `valid_period`, and two suppliers have deliberate coverage lapses
+  so "nothing in force" is distinguishable from "not found". Extracted terms carry
+  `effective_from` / `effective_to` **once extraction runs**, which it has not.
 - **A real approval queue.** The agent drafts purchase orders; it does not place
   them. Proposals persist as database rows, survive a server restart, expire, and
   re-validate their inputs before executing — a proposal drafted against a price
-  that has since moved refuses to fire.
-- **Prompt injection, demonstrated rather than asserted.** The corpus contains
+  that has since moved refuses to fire. **_Phase 4, not built._**
+- **Prompt injection, demonstrated rather than asserted.** The corpus will carry
   labelled injection specimens with committed traces showing a naive
-  implementation following them and this one not. See [`corpus/injection/`](corpus/injection/).
+  implementation following them and this one not. **_Phase 2 done-condition 5,
+  not built_** — there is no `corpus/injection/` to link to yet.
 
 ## Results
 
@@ -37,8 +41,25 @@ Measured, not estimated. Methodology in [`corpus/README.md`](corpus/README.md).
     Hallucination      _._%    (___/___)
     Miss               _._%    (___/___)
 
+> ### ⚠️ The text-to-SQL block below is STALE and has not been re-measured
+>
+> Every figure was scored against seed fingerprint `206fb7a8e55164f9`. **The seed
+> is now `e1ca4fb60f9e710e`** — two suppliers were given deliberate coverage
+> lapses on 2026-08-11 so that "no document in force" could be told apart from
+> "not found" — and **two expected result sets changed with it**: q017 and q048,
+> both of which read `supplier_terms` by period.
+>
+> The error is probably small and bounded, two questions with one changed value
+> each. But "probably" is not a measurement, and these are published as if they
+> were one. **Re-scoring is not free:** `evals/.cache/` is gitignored and exists
+> only on the machine that produced it, so restoring these numbers means
+> re-running — 147 calls, ~$3.30, and a Vertex service account.
+> `docs/CONVENTIONS.md` allows exactly two responses to a number whose inputs
+> moved: re-run it, or mark it stale. This is the mark.
+
 **Text-to-SQL** _(n=49 questions × 3 runs = 147 responses, 2026-08-09, prompt
-`f3b7a9193a56f10d`, `gemini-3.6-flash` via Vertex, ~$3.32)_
+`f3b7a9193a56f10d`, `gemini-3.6-flash` via Vertex, ~$3.32, **seed
+`206fb7a8e55164f9` — superseded**)_
 
     Execution accuracy      91.4%  (96/105 not-view-covered, 95% CI 85-95%)
                             97.0%  (32/33 view-covered)
@@ -115,10 +136,10 @@ omitted.
 
 Three levels, by how much setup you want.
 
-**1. Read only — no setup.** Browse [`corpus/`](corpus/) for the source documents
-and every extraction the pipeline produced, [`corpus/injection/`](corpus/injection/)
-for the attack traces, and [`docs/adr/`](docs/adr/) for why things are the way
-they are.
+**1. Read only — no setup.** Browse [`corpus/sources/`](corpus/sources/) for the
+40 source documents, [`corpus/parsed/`](corpus/parsed/) for what Docling made of
+them, and [`docs/adr/`](docs/adr/) for why things are the way they are.
+Extractions and injection traces are Phase 2 and are not here yet.
 
 **2. Run the demo — no API key.**
 
@@ -198,17 +219,28 @@ injected difficulty, and known extraction failures are in
 [`corpus/README.md`](corpus/README.md) — [`KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md)
 is deliberately non-empty.
 
-Raw pipeline output in [`corpus/extracted/`](corpus/extracted/) is never
-hand-edited. Hand fixes live in [`corpus/corrections/`](corpus/corrections/) with
-a note per fix saying what the pipeline got wrong. That separation is what makes
-the accuracy number above believable.
+Raw pipeline output in `corpus/extracted/` is never hand-edited; hand fixes live
+in `corpus/corrections/` with a note per fix saying what the pipeline got wrong.
+That separation is what will make the accuracy number above believable —
+**neither directory exists yet**, because extraction has never been run.
 
 ## Reproducibility
 
-- **Parse layer:** byte-identical, asserted in CI on a committed 3-document sample.
-- **Artifact integrity:** SHA-256 verified against `corpus/CHECKSUMS.txt` on every push.
-- **Extraction layer:** pinned model and temperature 0; verified reproducible
-  <!-- TODO date --> via `make ingest-verify`.
+- **Parse layer:** byte-identical **within a pinned environment**, asserted in CI
+  on a committed 4-document sample. **Not across environments, and that was
+  measured rather than assumed:** re-parsing the corpus on a second platform put
+  **5 of 40 documents** in the divergent set — four heading-versus-paragraph flips
+  and one lost table. The sample deliberately includes the document that diverges,
+  so `make verify-parse` is an environment gate rather than a formality. See
+  [`corpus/KNOWN_ISSUES.md`](corpus/KNOWN_ISSUES.md) entry 2.
+- **Artifact integrity:** SHA-256 verified against `corpus/CHECKSUMS.txt` on every
+  push — 82 artifacts, with nothing unlisted permitted to be present.
+- **Extraction layer:** pinned model string **and serving location**, both
+  recorded in `corpus/PIPELINE.json`. **No sampling parameters are sent:**
+  `temperature`, `top_p` and `top_k` are deprecated and ignored on these models,
+  so a `temperature=0` in the code would look like a reproducibility control while
+  doing nothing. Reproducibility here is therefore **measured, not asserted from a
+  parameter** — and it has not been measured, because extraction has never run.
 
 LLM inference is not guaranteed byte-stable across provider changes. The claim is
 scoped accordingly rather than overstated.
@@ -251,7 +283,9 @@ listed there rather than hidden.
 
 **Phase 2 in progress — corpus ingestion.** The corpus exists: 40 synthetic
 documents generated from the seeded database, byte-identical on regeneration,
-and parsed with Docling into [`corpus/parsed/`](corpus/parsed/). A 3-document
-sample is re-parsed and byte-compared in CI on every push. **Extraction has not
-been built**, so every extraction number above is still blank. See
-[`docs/PLAN.md`](docs/PLAN.md).
+and parsed with Docling into [`corpus/parsed/`](corpus/parsed/). A 4-document
+sample is re-parsed and byte-compared in CI on every push. **Extraction is built
+and has never been run** — prompt, schemas, validator and runner are all exercised
+against a stub, and no model call has ever been made — so every extraction number
+above is still blank and `corpus/extracted/` does not exist. Four of the phase's
+seven done-conditions hold. See [`docs/PLAN.md`](docs/PLAN.md).
