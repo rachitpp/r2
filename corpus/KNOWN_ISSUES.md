@@ -55,7 +55,7 @@ Three things worth keeping from the fix:
 > with the other: **only SUP-01 has price catalogs**, so a price question about any
 > other supplier is a genuine "not found".
 
-## 2. The Docling parse is platform-dependent, and two parses are stale
+## 2. The Docling parse is platform-dependent, and two parses carry a Windows provenance
 
 **ADR-0006 says "Deterministic parse layer, asserted in CI". That is true within a
 platform and false across one.** Measured 2026-08-11 by re-parsing the whole

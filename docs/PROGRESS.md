@@ -10,7 +10,7 @@ the history. This file answers one question: what does the next session need?
 ## Current phase
 
 **Phase 2 — Corpus ingestion. IN PROGRESS. The corpus exists and is parsed;
-extraction is not built, and that is the gate.**
+extraction is built and has never been run, and that run is the gate.**
 
 Phase 1 closed 2026-08-09 and the reasoning for closing it is kept below, because
 it is what the eval numbers in the README rest on.
@@ -111,7 +111,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. Data residency and the canonical Vertex terms still block the first paid run |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Three things block the first paid run, all of them yours: a GCP budget alert (never confirmed to exist), data residency for `location=global`, and the canonical Vertex terms** |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -157,16 +157,24 @@ ADR-0005 both need does not fit. See *Named debt*.
 ### The Docling parse is platform-dependent, and I said otherwise
 
 Re-parsing the whole corpus on Windows against the Linux-generated committed
-output: **4 of the 38 documents whose PDFs had not changed parsed differently.**
-Three are heading-versus-paragraph flips. The fourth, `invoice-sup-12-5436` —
-the `table-spans-page-break` document — **lost its table entirely**, parsing to
+output: **5 of the 40 documents parse differently.** Four are
+heading-versus-paragraph flips. The fifth, `invoice-sup-12-5436` — the
+`table-spans-page-break` document — **lost its table entirely**, parsing to
 the bare word `Supplier`. Re-parsing twice on Windows gives identical output, so
 it is a platform split, not randomness.
 
+**The count first published here was 4 of 38 and it undercounted**: the two
+documents whose PDFs had just been regenerated were excluded, because there was
+nothing to compare them against. Parsing their *previous* PDFs and diffing against
+the committed output put `contract-sup-11-20230907` in the divergent set too. **A
+sample that silently excludes the cases you changed is not measuring the
+population you think it is.**
+
 **I claimed the opposite earlier in this session**, from one document and then
-from `verify-parse`'s 3/3. Those three happen to be platform-stable; ~10% of the
-corpus is not. That is `verify-parse`'s sample hiding the property it names — the
-recurring class, in a check written the same day, by me.
+from `verify-parse`'s 3/3. Those three happen to be platform-stable; 5 of 40 are
+not. That is `verify-parse`'s sample hiding the property it names — the
+recurring class, in a check written the same day, by me. **Fixed by widening the
+sample to include a document that diverges**, so it is now 3/4 on Windows.
 
 **ADR-0006's "deterministic parse layer" should be scoped to "within a pinned
 environment".** The seed layer already runs in a digest-pinned image for exactly
@@ -174,10 +182,16 @@ this reason; the parse layer pins Docling's version but not its environment. CI
 runs one platform, so this is not assertable there at all.
 
 The Windows parse was **discarded rather than committed**, so `corpus/parsed/`
-stays single-provenance and keeps the table. The cost: `contract-sup-06-20240928`
-and `contract-sup-11-20230907` still hold the parse of their *previous* PDFs.
-**Recorded in `corpus/KNOWN_ISSUES.md` entry 2, and owed before extraction reads
-them.**
+keeps the table — with two deliberate exceptions, since
+`contract-sup-06-20240928` and `contract-sup-11-20230907` were holding the parse
+of their *previous* PDFs. **That was not cosmetic:** until it was fixed the lapse
+existed in the database, the manifest and the PDF but not in the layer extraction
+reads and Phase 3 will embed, so a document-grounded question would still have
+answered that coverage was continuous — the exact thing done-condition 4 exists to
+disprove. **Both were re-parsed**, with the platform cost measured first: SUP-06
+reproduced the committed output byte for byte, SUP-11 loses one `##` heading marker
+on line 3, which a `make ingest` in the reference environment restores. Recorded in
+`corpus/KNOWN_ISSUES.md` entry 2, which carries the commands.
 
 ### Two more instances of the newline defect, and two probes of mine that could not fail
 
@@ -329,13 +343,21 @@ numbers** below. They have not changed._
 _What didn't:_ **the extraction run itself** — built and unrun, blocked on the
 three gates in *Next session should*. Building the pipeline moved no
 done-condition, and saying otherwise would count code as measurement. Phase 2 is
-at 3 of 7, and the three that moved are documentation and checks, not extraction.
+at 4 of 7, and all four are documentation and checks, not extraction.
 _Anything half-finished someone would trip over:_ No. `make extract` refuses
 without `MODEL_EXTRACT`; `make extract-stub` needs nothing and cannot write into
 the committed corpus.
 _Is the system in a working state?_ Yes. 259 passed, 33 skipped without a
-database; ruff clean; `make web-check` clean; `verify-corpus` (82 artifacts) and
-`verify-parse` both pass; `git add --renormalize .` stages nothing.
+database; ruff clean; `make web-check` clean; `verify-corpus` (82 artifacts)
+passes; `git add --renormalize .` stages nothing.
+
+**`verify-parse` is now an environment gate, not a formality, and is expected to
+fail outside the reference environment.** Its sample was widened to include
+`invoice-sup-12-5436`, the document that does diverge, so it reads `3/4 matched`
+on Windows by design — a sample that cannot fail is not a sample. Passing it is
+what separates "this machine reproduces the reference parse" from "this machine
+produced something plausible". **Run it before trusting any `make ingest`
+output**, and do not read a failure on a new machine as the repo being broken.
 
 
 ## Next session should
@@ -376,10 +398,10 @@ Then, in order:
    corpus we generated, an empty `KNOWN_ISSUES.md` means the injected difficulty
    was too gentle, not that the pipeline is good.
 
-**Two repo-level decisions are waiting and neither is mine to take:** a committed
-`.gitattributes` (without it, every hash in this project is wrong on a Windows
-clone), and where the two Windows-only ingest environment variables belong. Both
-are described in *Last session*.
+**One repo-level decision is waiting and it is not mine to take:** where the two
+Windows-only ingest environment variables belong — `.env.example`, the corpus
+README, or the Makefile. Described in *Last session*. The other one, a committed
+`.gitattributes`, was taken and done in that same session.
 
 **Do not reopen the Phase 1 eval to chase the remaining items** — they are listed
 under *Named debt* and each is cheap to do **inside** a later phase that touches
@@ -430,8 +452,12 @@ so Wilson understates it.
 
 _Attempts-to-correct:_ still not measured; no retry loop exists.
 
-_Extraction:_ Phase 2, not started.
-_Injection specimens:_ Phase 3, not started.
+_Extraction:_ Phase 2 — pipeline built, **never run**. No model has been called,
+`corpus/extracted/` does not exist, so there is no number here to quote.
+_Injection specimens:_ **Phase 2**, not started — `PLAN.md` done-condition 5 wants
+at least one specimen with a committed trace showing the naive implementation
+following it. Phase 3 gets injection *defence*; the specimens are what it is
+measured against, so they are built first.
 
 ## Named debt carried forward
 
