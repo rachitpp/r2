@@ -622,6 +622,23 @@ SUP-06's real lapse returns `none_in_force` with no model call.
 
 ## Named debt carried forward
 
+**From Phase 4, 2026-08-13 — and the first one has a deadline:**
+
+- **Three eval reference queries read `purchase_orders` without filtering
+  `source`** — q017, q040, q048. Every one of the 16,105 rows is `source='seed'`
+  today, so adding `and o.source = 'seed'` to those references changes **no
+  value at all**. The moment an agent proposal executes for real it becomes a
+  correction instead of a precaution, and a silent one: nothing checks. **Do it
+  before the first execution, not after.** `approval.execute()` therefore
+  defaults `allow_writes=False` and refuses with that reason in the text, so the
+  guard cannot be forgotten by accident.
+- **Execution does not write a `purchase_orders` row yet.** It marks the
+  proposal executed and finishes the run. The insert is deliberately not written
+  until the reference queries above are guarded.
+- **No agent loop.** `scripts/worker.py` runs a labelled stub that refuses
+  without `--allow-stub`. Rule 3's ceiling is enforced by a CHECK constraint, so
+  the loop inherits it rather than having to remember it.
+
 **From Phase 3, 2026-08-13:**
 
 - **The poisoned document outranks the genuine one, 3 of 6 retrieval slots.** The
