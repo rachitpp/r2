@@ -9,7 +9,7 @@ SHELL := /bin/bash
         test lint fmt psql verify-corpus verify-parse db-roles \
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
-        extract extract-stub corpus-checksums eval-extraction
+        extract extract-stub corpus-checksums eval-extraction injection-demo
 
 -include .env
 
@@ -302,6 +302,21 @@ eval-extraction: ## Score corpus/extracted/ against the rows it came from
 	fi
 	cd api && $(UV) run python scripts/eval_extraction.py \
 	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
+
+injection-demo: ## Run the injection specimens through both prompts (SPENDS QUOTA)
+	@# Done-condition 5 wants a trace of the NAIVE path following an injection,
+	@# so this deliberately runs api/prompts/retrieval_answer_unsafe.md — rule 6's
+	@# one sanctioned violation, labelled at the top of that file.
+	@#
+	@# --runs 3 rather than 1 because two single runs of this disagreed with each
+	@# other. 24 calls, ~$$0.09, ceiling 30 calls / $$0.30. The raw answers land in
+	@# corpus/injection/traces/SUMMARY.json, so `--rescore` recomputes verdicts
+	@# for nothing when the detector changes — and it changed four times.
+	@if [ -z "$$MODEL_PLAN" ]; then \
+	  echo "MODEL_PLAN is not set. Pin an exact model string in .env."; exit 1; \
+	fi
+	cd api && $(UV) run python scripts/injection_demo.py \
+	  --runs 3 --max-calls 30 --max-spend 0.30 $(INJECTION_ARGS)
 
 corpus-checksums: ## Regenerate corpus/CHECKSUMS.txt from what is on disk
 	@# A deliberate act, like seed-generate. `make ingest` does it automatically
