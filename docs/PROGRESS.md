@@ -133,7 +133,7 @@ repo is now a single branch**, `master`, local and remote in sync.
 
 ### `PROGRESS.md` was describing a phase two commits behind the one in the repo
 
-Nine claims here and one heading in `KNOWN_ISSUES.md` contradicted either the repo
+Ten claims here and one heading in `KNOWN_ISSUES.md` contradicted either the repo
 or this file's own other paragraphs. The cause is in the history: **48151b3 changed
 the artifacts and `KNOWN_ISSUES.md` and did not touch `PROGRESS.md`**, so the file
 kept describing the state before its own session's last three commits. Reconciled
@@ -303,12 +303,20 @@ reintroducing the defect and watching it fail** — `api/tests/test_corpus_inges
 the first corpus tests in the repo. Instance eight's lesson, applied on the way in
 rather than after.
 
-### The parse is deterministic across platforms — measured, not assumed
+### Three documents parse identically on Linux and Windows, and only those three
 
-The 3-document sample re-parsed on **Windows** is byte-identical to output
-generated in a **Linux** codespace, OCR included, on a 200dpi skewed scan with no
-text layer. ADR-0006 scopes the determinism claim to the parse layer; this is the
-first evidence that the scope holds across machines rather than only across runs.
+The 3-document `verify-parse` sample re-parsed on **Windows** is byte-identical to
+output generated in a **Linux** codespace, OCR included, on a 200dpi skewed scan
+with no text layer. The OCR path surviving a platform change is a real result. It
+is also the whole of the result.
+
+**This was written up as "the parse is deterministic across platforms — measured,
+not assumed", and the same session disproved it:** the whole-corpus comparison
+above puts 5 of 40 documents in the divergent set. These three are stable because
+they are the sample, and the sample was fixed before the property was ever
+measured — which is exactly why `invoice-sup-12-5436` was added to it afterwards.
+**Read this as evidence about three documents, never about the corpus**, and note
+that the overclaiming heading outlived the measurement that retracted it by a day.
 
 ### Extraction, built against a stub, never once called a model
 
