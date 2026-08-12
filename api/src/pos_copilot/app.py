@@ -20,6 +20,7 @@ failures onto status codes. The judgement lives in those two.
 
 from __future__ import annotations
 
+import json
 from typing import Literal
 
 import psycopg
@@ -42,6 +43,16 @@ app = FastAPI(
     description="Ask about the shop in English; get the answer and the SQL.",
     version="0.1.0",
 )
+
+
+def app_url() -> str:
+    """The read/write connection. Queueing a run is a write, and the read-only
+    role must not be able to make one — the same separation that stops the role
+    generated SQL runs under from approving anything (migration 005's grants)."""
+    url = env.text("DATABASE_URL")
+    if not url:
+        raise HTTPException(500, "DATABASE_URL is not set")
+    return url
 
 
 def readonly_url() -> str:
@@ -412,3 +423,78 @@ def ask(request: AskRequest) -> AskResponse:
         ],
         grounded_without_model=(outcome != "answered") or demo_mode(),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 4 — agent runs
+#
+# `POST /runs` writes a row and returns an id. It does NOT run the agent: the
+# work happens in `scripts/worker.py`, which is what makes "survives a server
+# restart" true and what keeps a request handler from holding a connection open
+# across a paced model call.
+#
+# Rule 5 is enforced twice on purpose — here, so a scoped role with no store is
+# a 422 rather than a row, and again by `agent_runs_scoped_role_has_store` in the
+# schema, so no other path can queue one either.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class RunRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=1000)
+    role: Literal["clerk", "manager", "owner"] = "owner"
+    store_id: int | None = Field(default=None, ge=1)
+    requested_by: str = Field(min_length=1, max_length=64)
+    #: Rule 3. Sent by the caller but bounded here, because a ceiling a client
+    #: can raise is not a ceiling.
+    max_tool_calls: int = Field(default=6, ge=1, le=6)
+
+
+class RunAccepted(BaseModel):
+    agent_run_id: int
+    status: str
+
+
+@app.post("/runs", response_model=RunAccepted, status_code=202)
+def create_run(request: RunRequest) -> RunAccepted:
+    """202, not 200. Nothing has happened yet and the response says so."""
+    from pos_copilot import runs as run_store
+    from pos_copilot.readonly_sql import StoreRequired as _StoreRequired
+
+    try:
+        visible_stores(request.role, request.store_id)
+    except _StoreRequired as exc:
+        raise HTTPException(422, str(exc)) from None
+
+    try:
+        with psycopg.connect(app_url()) as conn:
+            run_id = run_store.enqueue(
+                conn,
+                request.prompt,
+                requested_by=request.requested_by,
+                role=request.role,
+                store_id=request.store_id,
+                max_tool_calls=request.max_tool_calls,
+            )
+    except psycopg.OperationalError as exc:
+        raise HTTPException(503, f"database unavailable: {exc}") from None
+    return RunAccepted(agent_run_id=run_id, status="queued")
+
+
+@app.get("/runs/{agent_run_id}")
+def get_run(agent_run_id: int) -> dict:
+    """The run, its proposals and its whole audit trail.
+
+    The events are returned with it rather than behind a second endpoint: the
+    audit log is the point of storing state as rows (ADR-0003), and a UI that
+    has to ask twice will show the state without the explanation.
+    """
+    from pos_copilot import runs as run_store
+
+    try:
+        with psycopg.connect(readonly_url()) as conn:
+            run = run_store.load_run(conn, agent_run_id)
+    except psycopg.OperationalError as exc:
+        raise HTTPException(503, f"database unavailable: {exc}") from None
+    if run is None:
+        raise HTTPException(404, f"no run {agent_run_id}")
+    return json.loads(json.dumps(run, default=str))

@@ -57,6 +57,23 @@ def conn(db_url: str):
     admin.close()
 
 
+@pytest.fixture
+def second_conn(db_url: str):
+    """A SECOND connection to the same clone.
+
+    `SKIP LOCKED` cannot be tested on one connection — the point is what happens
+    when two transactions reach for the same row, and a single connection can
+    only ever hold one of them. Built here rather than derived inside a test
+    from `conn.info.dsn`, which psycopg strips the password out of, so
+    reconnecting from it fails authentication and reads like the race failing.
+    """
+    psycopg = pytest.importorskip("psycopg")
+    target = db_url.rsplit("/", 1)[0] + "/test_r2"
+    connection = psycopg.connect(target)
+    yield connection
+    connection.close()
+
+
 def fetch_one(conn, sql: str):
     with conn.cursor() as cur:
         cur.execute(sql)

@@ -10,7 +10,7 @@ SHELL := /bin/bash
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
         extract extract-stub corpus-checksums eval-extraction injection-demo \
-        embed test-slow demo-beat-2 smoke
+        embed test-slow demo-beat-2 smoke worker
 
 -include .env
 
@@ -303,6 +303,19 @@ eval-extraction: ## Score corpus/extracted/ against the rows it came from
 	fi
 	cd api && $(UV) run python scripts/eval_extraction.py \
 	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
+
+worker: ## Claim and run queued agent runs (no model calls yet)
+	@# POST /runs writes a row and returns an id; this does the work. That split
+	@# is what makes "survives a server restart" true — kill this process mid-run
+	@# and the row is still there with a claimed_at that stopped moving, so
+	@# another worker reclaims it. No registry to rebuild, no checkpointer to
+	@# restore (ADR-0003).
+	@#
+	@# The agent step is a STUB and refuses without --allow-stub: there is no loop
+	@# yet, and invented proposals sitting in proposed_actions are indistinguishable
+	@# from real ones — the same guard corpus_extract.py has, for the same reason.
+	@if [ -z "$$DATABASE_URL" ]; then echo "DATABASE_URL is not set."; exit 1; fi
+	cd api && $(UV) run python scripts/worker.py $(WORKER_ARGS)
 
 smoke: ## Drive both demo beats through the web app's own request path
 	@# Hits port 3000, NOT 8000, on purpose. pytest exercises FastAPI directly and
