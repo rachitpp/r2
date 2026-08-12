@@ -54,7 +54,8 @@ done-condition needs a table. It belongs in Phase 3, where retrieval queries it.
 
 **What still gates the first paid run**, all three yours: data residency for
 `location=global`, the canonical Vertex terms (narrowed again below, still not
-resolved), and **a GCP budget alert, which has never been confirmed to exist.**
+resolved), and **a GCP budget alert — amount decided 2026-08-12 at $15/month, but
+still never confirmed to exist in the console.**
 
 ### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
@@ -112,7 +113,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Three things block the first paid run, all of them yours: a GCP budget alert (never confirmed to exist), data residency for `location=global`, and the canonical Vertex terms** |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Three things block the first paid run, all of them yours: a GCP budget alert ($15/month decided, not confirmed created), data residency (**decided 2026-08-12** — accepted with a tripwire, ADR-0009), and the canonical Vertex terms** |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -165,9 +166,14 @@ and `make verify-parse` have never run here, so whether macOS reproduces the
 reference parse is unknown, not assumed either way. Entry 2 of `KNOWN_ISSUES.md`
 applies: run `verify-parse` before trusting any parse produced on this machine.
 
-_What didn't:_ **the extraction run, again.** None of its three gates moved, because
-none of them is mine: the GCP budget alert, data residency for `location=global`,
-and the canonical Vertex terms. Phase 2 stays at 4 of 7.
+_What didn't:_ **the extraction run, again — but two of its three gates moved.**
+**Data residency is decided** (accepted with a tripwire, ADR-0009). **The budget
+amount is decided at $15/month** and the rule now lives in `PLAN.md` → *Money*,
+which is where `PROGRESS` had been citing it from all along without it being there;
+what is left is creating the alert and confirming it here. **The canonical Vertex
+terms are still open**, and that one needs a browser. Three further open questions
+closed with them: available RAM (8 GB), the Windows env-var placement, and
+perishables. **Phase 2 stays at 4 of 7** — decisions are not done-conditions.
 _Anything half-finished someone would trip over:_ No. Documentation only, committed
 and pushed.
 _Is the system in a working state?_ **Yes, with the verification stated exactly.**
@@ -449,9 +455,11 @@ did, at ~$9.83 and diminishing returns.
 **Extraction is built and has never been run. Everything left in Phase 2 is
 downstream of running it, and three things gate that — all three yours:**
 
-1. **A GCP budget alert.** `PLAN.md` and the model-providers section below both
-   require one before the first Vertex call. It has never been confirmed to
-   exist, and it is the cheapest of the three to settle.
+1. **A GCP budget alert. The amount is decided — $15/month** (thresholds
+   50/90/100% actual, 100% forecasted, this project only), reasoned out in
+   `PLAN.md` → *Money*, which is where the rule now lives. **What remains is
+   creating it in the console and saying here that it exists.** Until then this
+   gate is open. It is the cheapest of the three to close.
 2. **Data residency.** Vertex serves this model from `location=global` only, so
    the run sends document content to an unpinned region. The corpus being
    synthetic weakens this a great deal — nothing in it is confidential — but it
@@ -667,7 +675,11 @@ is the accuracy level of those tables.
 `gemini-3.1-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`. Pin one
 exactly; never a floating alias.
 
-**Budget:** a GCP budget alert must exist before the first Vertex call.
+**Budget: $15/month, decided 2026-08-12** — thresholds 50% / 90% / 100% actual
+plus 100% forecasted, scoped to this project only. Reasoning, the spend to date and
+the per-phase estimates are in `PLAN.md` → *Money*. **The amount is settled; whether
+the alert has been created in the console is not confirmed here.** It must exist
+before the first Vertex call.
 
 ### Sampling parameters are gone
 

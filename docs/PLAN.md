@@ -146,6 +146,41 @@ template-database build, generated schema documentation, and pinned-image
 determinism. ADR-0007's cost note still quotes the pre-Phase-0 figures, since it
 records what was known when that decision was made.
 
+### Money
+
+The hours table above is the real budget; this section exists because `PROGRESS.md`
+cited a spend rule here that had never been written down.
+
+**Decided 2026-08-12: a $15/month GCP budget alert, thresholds at 50%, 90% and
+100% actual plus 100% forecasted, scoped to this project only.** It must exist
+before the first Vertex call.
+
+Set there because a Phase 2 month runs about $5, so the first alert fires at $7.50
+— only when spend is half again over plan. **A ceiling you cross doing the planned
+work is a ceiling you learn to ignore.**
+
+| | |
+|---|---|
+| Spent to date | ~$9.89 — Phase 1's eval at ~$9.83 over 447 calls, plus ~$0.06 proving the live path |
+| Empirical rate | ~$0.02 a call ($1.50/M input, $7.50/M output, ~400 output tokens) |
+| Phase 2 remaining | ~$4–8: $0.10 staged read, $0.80 full 40, ~$3.20 of re-runs while the schema settles, and ~$3.30 more only if the stale SQL numbers get re-measured |
+| Whole project | $25–35 lifetime |
+
+**The alert is a backstop, not a control, and the distinction matters.** It sends
+email; billing continues, and billing data lags by hours. The actual stops are in
+the repo, checked before every request: extraction defaults to 60 calls / $2.00,
+the live path to 50 calls / $1.00, `Budget` to $25. Per rule 2 every runner carries
+both a call ceiling and a spend ceiling — that is where a runaway loop dies.
+
+**A true hard stop was considered and rejected:** budget → Pub/Sub → a function
+that disables billing. It works, and it takes down everything else on the project
+when it fires. Wrong layer for a solo portfolio project that already has per-runner
+ceilings.
+
+**Watch for a step change rather than a ramp.** If credits are covering usage,
+charges read $0 until they run out — and credits expire 90 days from signup. Set
+the alert as though they could vanish tomorrow.
+
 **The only scheduling rule that matters:** each phase leaves a working system, so
 stopping after any of them leaves something demoable rather than something broken.
 If momentum goes after Phase 1, a measured, documented natural-language interface

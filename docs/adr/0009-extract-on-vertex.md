@@ -64,6 +64,10 @@ Model roles split across two credentials, on data terms rather than rate limits.
 | `EXTRACT` | **Vertex AI via service account** | **Paid** | Document content. Written when the corpus was to be real documents; it is synthetic as of 2026-08-09, which weakens the reason without removing it — see the residency decision below. |
 
 A GCP budget alert is configured **before the first Vertex call**, not after.
+**$15/month, decided 2026-08-12**, thresholds 50/90/100% actual plus 100%
+forecasted, scoped to this project. Reasoning in `PLAN.md` → *Money*. It is a
+backstop and not a control — it emails, billing continues, and billing data lags.
+The stops that actually bind are the per-runner call and spend ceilings.
 
 ### Data residency — decided 2026-08-12: accepted, with a tripwire
 
@@ -133,7 +137,7 @@ extraction itself, and failure is silent.
 
 ## Cost control
 
-- Budget alert on the GCP project before first use.
+- Budget alert on the GCP project before first use — $15/month, see *Decision*.
 - Extraction is bounded: roughly 40 documents, run a handful of times while the
   schema settles.
 - Every raw extraction is committed, so re-running is only ever a deliberate
