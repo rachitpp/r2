@@ -1,10 +1,10 @@
 {
-  "fingerprint": "9ddd8914f99c7b60",
+  "fingerprint": "7fecc6d554c96a01",
   "frozen_on": "2026-08-13",
   "hashes": {
     "sql_generate.md": "0afd2d9ad5c1ca09c6270102dab3ffcf7b1857e6ca0d7954219bc70dc942c5a9",
     "context/business_context.md": "e051d6d6c1dc3e333bbcfbcd7d70f83db9093fe1e5a88a8902ef5d4e0b1c4e78",
-    "context/schema.md": "206df324a5482f4aebd729344344eb76a0125638e1eaf0fe3ca1f86f35d604fd"
+    "context/schema.md": "4ea6b487a3456e18724361694d8acd75dcc2c51f0dcdcaa26ece5b6f220e846e"
   },
-  "reason": "Phase 4 migration 005 added agent_runs, proposed_actions and agent_events, which regenerates context/schema.md and moves this fingerprint again. Third move; the eval numbers were already stale twice over (seed e1ca4fb60f9e710e, and the migration-004 move), so this costs nothing additional. RAISED AND NOT YET DECIDED: schema_doc.sql emits EVERY table in public with no filter, so the text-to-SQL context now carries doc_chunks (including a vector(384) column) and the agent tables. None of that is business data a user asks questions about, and every table added is noise in the prompt plus another fingerprint move. Filtering schema.md to business tables is the open question. Previous fingerprint dd9008f5de482522."
+  "reason": "schema_doc.sql gained a filter: the text-to-SQL context no longer carries doc_chunks, agent_runs, proposed_actions or agent_events. It had NO filter at all until now, so doc_chunks reached the SQL prompt complete with a vector(384) column the moment Phase 3 landed, and the agent tables followed in Phase 4. Three costs and the first is the one that matters: noise, in a project whose ADR-0001 argument is that context does the work; a fingerprint move per table added; and pos_readonly can SELECT these, so a model that sees them can write queries against them. THE DEFAULT IS INCLUDE \u2014 a new business table appears without anyone remembering, which is the failure worth avoiding, while a new internal table shows up as visible noise. 79 rows left the file (483 -> 404). supplier_term_clauses stays: it is what a document SAYS, clause by clause, and a legitimate subject for a question. No eval question referenced any excluded table \u2014 checked, 0 of 49, so nothing in the set can have depended on them. api/tests/test_schema_doc.py pins it, validated by removing the filter and watching five assertions fail. Previous fingerprint 9ddd8914f99c7b60."
 }

@@ -18,6 +18,38 @@ WITH objs AS (
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public'
       AND c.relkind IN ('r', 'v', 'm')
+      -- INFRASTRUCTURE, NOT BUSINESS DATA. This file generates the context the
+      -- TEXT-TO-SQL model reads to answer questions about a shop, and these
+      -- tables are not about a shop — they are how this project stores
+      -- retrieval indexes and agent state.
+      --
+      -- Until 2026-08-13 there was no filter at all, so `doc_chunks` went into
+      -- the SQL prompt complete with a `vector(384)` column the moment Phase 3
+      -- landed, and the agent tables followed in Phase 4. Three costs, and the
+      -- first is the one that matters:
+      --
+      --   1. Noise. ADR-0001's whole argument is that context does the work;
+      --      the study the README cites moved GPT-4 from 8.3% to 78.3% on
+      --      business context. Tables a question can never be about are the
+      --      opposite of that, and `doc_chunks.embedding` is not queryable in
+      --      any sense a user means.
+      --   2. Every table added moves the prompt fingerprint and voids the eval
+      --      cache.
+      --   3. `pos_readonly` can SELECT these, so a model that sees them can
+      --      write queries against them.
+      --
+      -- **The default is INCLUDE.** A new business table appears here without
+      -- anyone remembering to add it, which is the failure worth avoiding; a
+      -- new internal table shows up as noise until someone notices, which is
+      -- visible rather than silent. Add to this list deliberately.
+      --
+      -- No eval question references any of them — checked, 0 of 49.
+      AND c.relname NOT IN (
+          'doc_chunks',        -- retrieval index (Phase 3)
+          'agent_runs',        -- agent state (Phase 4)
+          'proposed_actions',
+          'agent_events'
+      )
 ),
 cols AS (
     SELECT a.attrelid,

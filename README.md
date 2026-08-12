@@ -86,8 +86,10 @@ LLM-as-judge, free to re-run.
 >
 > **The prompt moved too.** Phase 3's migration added `supplier_term_clauses` and
 > `doc_chunks`, which regenerates `schema.md` and therefore the SQL prompt:
-> `f3b7a9193a56f10d` → **`dd9008f5de482522`**. The prompt these numbers were
-> measured under no longer exists. That was planned rather than stumbled into —
+> `f3b7a9193a56f10d` → **`7fecc6d554c96a01`**, across three moves — the Phase 3 and
+> Phase 4 migrations regenerating `schema.md`, and then a filter removing the
+> retrieval and agent tables from it. The prompt these numbers were measured under
+> no longer exists. That was planned rather than stumbled into —
 > the reasoning, and why the cache it voided cost nothing, is in
 > `evals/PROMPT_FREEZE.json`.
 >
