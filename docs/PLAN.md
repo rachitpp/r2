@@ -151,9 +151,11 @@ records what was known when that decision was made.
 The hours table above is the real budget; this section exists because `PROGRESS.md`
 cited a spend rule here that had never been written down.
 
-**Decided 2026-08-12: a $15/month GCP budget alert, thresholds at 50%, 90% and
-100% actual plus 100% forecasted, scoped to this project only.** It must exist
-before the first Vertex call.
+**Decided and created 2026-08-12: a $15/month GCP budget alert**, thresholds at
+50%, 90% and 100% actual plus 100% forecasted, scoped to this project only. It had
+to exist before the first Vertex call, and it does. **Created per the project
+owner** — the Cloud Billing API is not enabled, so nothing in this repo can read
+the console to confirm it.
 
 Set there because a Phase 2 month runs about $5, so the first alert fires at $7.50
 — only when spend is half again over plan. **A ceiling you cross doing the planned
@@ -194,7 +196,7 @@ Do not build these.
 |---|---|
 | Payment processing | Stub it; adds nothing to any demo beat. |
 | Customer-facing product assistant | Free tier can't carry a public surface; generic RAG chatbot. |
-| Dynamic pricing | Deferred to Phase 6, not deleted. Flips if the real corpus covers perishables. |
+| Dynamic pricing | **Stays cut, decided 2026-08-12.** The condition was "flips if the real corpus covers perishables"; the corpus is synthetic and the schema has no shelf-life or expiry field at all, so near-expiry pricing has nothing to key off. Building it means a migration plus a seed regeneration, which voids every eval expectation. Phase 6 keeps the perishable-markdown line as optional and additive. |
 | Multi-store UI | Column now, interface later; multiplies query complexity for an unshowable payoff. |
 | Self-correcting retrieval loops | Extra calls per query against a corpus too small to need them. |
 | Supplier price comparison as a feature | It's `ORDER BY price, lead_time`. Keep it as a tool, don't showcase it. |

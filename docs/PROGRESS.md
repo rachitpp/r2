@@ -52,10 +52,14 @@ written**: `supplier_term_clauses` would regenerate `schema.md`, change the SQL
 prompt fingerprint and void 147 cached responses for ~$3.30, and no Phase 2
 done-condition needs a table. It belongs in Phase 3, where retrieval queries it.
 
-**What still gates the first paid run**, all three yours: data residency for
-`location=global`, the canonical Vertex terms (narrowed again below, still not
-resolved), and **a GCP budget alert — amount decided 2026-08-12 at $15/month, but
-still never confirmed to exist in the console.**
+**What still gates the first paid run: one thing, the canonical Vertex terms**
+(narrowed three times, still not resolved — it needs a browser, not a fetcher).
+The other two closed on 2026-08-12. **Data residency:** accepted with a tripwire,
+written up in ADR-0009. **GCP budget alert: created**, $15/month with thresholds at
+50/90/100% actual plus 100% forecasted, scoped to this project; reasoning in
+`PLAN.md` → *Money*. Reported by the project owner rather than verified from here —
+the Cloud Billing API is still not enabled, so nothing in this repo can read the
+console.
 
 ### Why Phase 1 was closed the way it was — kept, because the README rests on it
 
@@ -113,7 +117,7 @@ State and corrections: `docs/HANDOFF.md`. Fix-list history:
 |---|---|---|
 | 0 Data foundation | **done** | ~32h against a 20h budget |
 | 1 Structured Q&A | **closed 2026-08-09** | Both halves done and demo beat 1 re-verified; live path proven. Measured six times; ADR-0001's thresholds resolved (3 retired, 1 fires on five *unstable* questions). Closed with known instrument debt, listed below — none of it blocks Phase 2. ~$9.83 and 447 calls across three sessions, against a phase budgeted ~32h |
-| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **Three things block the first paid run, all of them yours: a GCP budget alert ($15/month decided, not confirmed created), data residency (**decided 2026-08-12** — accepted with a tripwire, ADR-0009), and the canonical Vertex terms** |
+| 2 Corpus ingestion | **in progress** | Corpus generated (40 documents) and parsed; both reproducible and asserted. **4 of 7 done-conditions hold.** Extraction is built and unrun, and it is the gate. **One thing now blocks the first paid run: the canonical Vertex terms.** The budget alert ($15/month) and data residency (accepted with a tripwire, ADR-0009) both closed 2026-08-12 |
 | 3 Document Q&A | not started | |
 | 4 Procurement agent | not started | |
 | 5 Polish | not started | |
@@ -166,14 +170,14 @@ and `make verify-parse` have never run here, so whether macOS reproduces the
 reference parse is unknown, not assumed either way. Entry 2 of `KNOWN_ISSUES.md`
 applies: run `verify-parse` before trusting any parse produced on this machine.
 
-_What didn't:_ **the extraction run, again — but two of its three gates moved.**
-**Data residency is decided** (accepted with a tripwire, ADR-0009). **The budget
-amount is decided at $15/month** and the rule now lives in `PLAN.md` → *Money*,
-which is where `PROGRESS` had been citing it from all along without it being there;
-what is left is creating the alert and confirming it here. **The canonical Vertex
-terms are still open**, and that one needs a browser. Three further open questions
-closed with them: available RAM (8 GB), the Windows env-var placement, and
-perishables. **Phase 2 stays at 4 of 7** — decisions are not done-conditions.
+_What didn't:_ **the extraction run — but two of its three gates closed, and only
+the Vertex terms are left.** **Data residency:** accepted with a tripwire
+(ADR-0009). **Budget alert: decided at $15/month and created**, with the rule now
+in `PLAN.md` → *Money*, which is where `PROGRESS` had been citing it from all along
+without it being there. **The canonical Vertex terms are still open** and need a
+browser. Three further open questions closed alongside: available RAM (8 GB), the
+Windows env-var placement, and perishables. **Phase 2 stays at 4 of 7** — decisions
+are not done-conditions, and nothing here was measured.
 _Anything half-finished someone would trip over:_ No. Documentation only, committed
 and pushed.
 _Is the system in a working state?_ **Yes, with the verification stated exactly.**
@@ -426,7 +430,8 @@ fixed, q049 withdrawn — are preserved in `docs/HANDOFF.md` and in **Measured
 numbers** below. They have not changed._
 
 _What didn't:_ **the extraction run itself** — built and unrun, blocked on the
-three gates in *Next session should*. Building the pipeline moved no
+three gates open at the time; two of them closed on 2026-08-12, so *Next session
+should* now lists one. Building the pipeline moved no
 done-condition, and saying otherwise would count code as measurement. Phase 2 is
 at 4 of 7, and all four are documentation and checks, not extraction.
 _Anything half-finished someone would trip over:_ No. `make extract` refuses
@@ -453,19 +458,21 @@ touches the prompt anyway. Reopening it on its own is what the last three sessio
 did, at ~$9.83 and diminishing returns.
 
 **Extraction is built and has never been run. Everything left in Phase 2 is
-downstream of running it, and three things gate that — all three yours:**
+downstream of running it, and exactly one thing still gates it:**
 
-1. **A GCP budget alert. The amount is decided — $15/month** (thresholds
-   50/90/100% actual, 100% forecasted, this project only), reasoned out in
-   `PLAN.md` → *Money*, which is where the rule now lives. **What remains is
-   creating it in the console and saying here that it exists.** Until then this
-   gate is open. It is the cheapest of the three to close.
-2. **Data residency.** Vertex serves this model from `location=global` only, so
-   the run sends document content to an unpinned region. The corpus being
-   synthetic weakens this a great deal — nothing in it is confidential — but it
-   was never formally closed.
-3. **The canonical Vertex terms**, which ADR-0009 rests on. See *Open questions*:
-   three fetches on 2026-08-11 narrowed it again and did not close it.
+1. **The canonical Vertex terms**, which ADR-0009 rests on. Three fetches on
+   2026-08-11 narrowed it and did not close it: the data-governance page is
+   client-rendered and returns navigation only, so **it needs a browser rather than
+   a tool.** Look for the **"Zero Data Retention"** section that page's title
+   advertises, and **Appendix 4 (Specific Products)** of the Cloud Data Processing
+   Addendum. See *Open questions* for why the CDPA's §5.2 purpose limitation is
+   weaker than what the ADR claims. **If the terms disagree with ADR-0009, the ADR
+   is void** — which is why this one is worth doing properly rather than waving
+   through.
+
+**Both other gates closed 2026-08-12.** Data residency: accepted with a tripwire
+(ADR-0009). Budget alert: created at $15/month, thresholds 50/90/100% actual plus
+100% forecasted, this project only — reasoning in `PLAN.md` → *Money*.
 
 Then, in order:
 
@@ -675,11 +682,12 @@ is the accuracy level of those tables.
 `gemini-3.1-flash-lite`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`. Pin one
 exactly; never a floating alias.
 
-**Budget: $15/month, decided 2026-08-12** — thresholds 50% / 90% / 100% actual
-plus 100% forecasted, scoped to this project only. Reasoning, the spend to date and
-the per-phase estimates are in `PLAN.md` → *Money*. **The amount is settled; whether
-the alert has been created in the console is not confirmed here.** It must exist
-before the first Vertex call.
+**Budget: $15/month, decided and created 2026-08-12** — thresholds 50% / 90% /
+100% actual plus 100% forecasted, scoped to this project only. Reasoning, spend to
+date and per-phase estimates in `PLAN.md` → *Money*. **This gate is closed.**
+Reported by the project owner; the Cloud Billing API is still not enabled, so it
+cannot be verified from inside the repo — which is also why *who pays* remains
+unanswered below.
 
 ### Sampling parameters are gone
 
