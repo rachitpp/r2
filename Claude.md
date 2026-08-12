@@ -8,7 +8,8 @@ Solo portfolio project. Public GitHub. Free tier only — no paid model calls.
 Two apps: `api/` (FastAPI, Python, uv) and `web/` (Next.js + Tailwind, npm).
 The API is the only boundary between them.
 
-**Current phase: 2 — Corpus ingestion and extraction measurement.**
+**Current phase: 3 — Grounded document Q&A.** Phase 2's seven done-conditions all
+hold as of 2026-08-12; the corpus is generated, parsed, extracted and scored.
 
 ## Read these
 
