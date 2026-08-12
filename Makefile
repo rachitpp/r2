@@ -10,7 +10,7 @@ SHELL := /bin/bash
         eval-sql eval-sql-stub eval-expectations seed-if-missing hooks \
         serve serve-live web web-check corpus corpus-verify ingest ingest-verify \
         extract extract-stub corpus-checksums eval-extraction injection-demo \
-        embed test-slow
+        embed test-slow demo-beat-2
 
 -include .env
 
@@ -303,6 +303,19 @@ eval-extraction: ## Score corpus/extracted/ against the rows it came from
 	fi
 	cd api && $(UV) run python scripts/eval_extraction.py \
 	  --gold-out ../corpus/gold/gold.json --json-out ../corpus/gold/score.json
+
+demo-beat-2: ## Produce the Phase 3 artifact — temporal + injection (SPENDS QUOTA)
+	@# PLAN.md's Phase 3 done-condition, both halves, end to end against the real
+	@# database and the real model. 3 calls, ~$$0.01, ceiling 8 calls / $$0.30.
+	@#
+	@# The injection half PLANTS a poisoned document in doc_chunks, embeds it with
+	@# no special casing, and lets the retriever surface it on its own merits —
+	@# the whole path a real attack takes, rather than handing a specimen to a
+	@# prompt. The poison is removed again unless --keep-poison is passed.
+	@if [ -z "$$DATABASE_URL" ] || [ -z "$$MODEL_PLAN" ]; then \
+	  echo "DATABASE_URL and MODEL_PLAN must both be set."; exit 1; \
+	fi
+	cd api && $(UV) run --group retrieval python scripts/demo_beat2.py $(DEMO_ARGS)
 
 embed: ## Load corpus/ into supplier_term_clauses and doc_chunks (no model calls)
 	@# Embeddings are LOCAL — bge-small-en-v1.5 on CPU, no key and no quota
